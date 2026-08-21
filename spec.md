@@ -1,0 +1,186 @@
+# PROJECT SPECIFICATION: IT FULLSTACK INTERN PORTFOLIO
+
+## 1. Mục tiêu dự án
+
+Xây dựng portfolio tiếng Anh, chuẩn production, thể hiện rõ năng lực Fullstack Developer Intern qua sản phẩm hoàn chỉnh, UX/UI tốt, backend thực tế, database, realtime và AI tích hợp có chủ đích.
+
+Ưu tiên phát triển: **CV Editor & Resume Publishing**. Đây là module quản trị thực tế đầu tiên, đồng thời tạo ra một CV public và PDF luôn cập nhật.
+
+---
+
+## 2. Phạm vi sản phẩm
+
+* Website chỉ sử dụng **tiếng Anh**.
+* Public portfolio: Hero, Projects, Resume, Skills, Education, Contact, Blog (giai đoạn sau).
+* Admin panel có xác thực để quản lý CV, Projects, Blog và dữ liệu knowledge base cho RAG.
+* Dark/Light mode, Global Search, RAG assistant và Telegram live chat theo lộ trình.
+
+---
+
+## 3. Các module chức năng cốt lõi
+
+### 3.1 Hero & Navigation
+
+* Tên, role (`Fullstack Developer Intern`) và câu định vị ngắn.
+* CTA: `View Projects`, `View Resume`, `Contact Me`.
+* Social links: GitHub, LinkedIn, Email.
+* Navbar có nút **Search** và shortcut `Ctrl + K` / `Cmd + K`.
+
+### 3.2 Featured Projects
+
+* Hiển thị 2–3 dự án hoàn chỉnh nhất, mỗi dự án là card và có trang case study chi tiết.
+* Card gồm: thumbnail/GIF/video preview, tên, mô tả vấn đề, tech stack, vai trò, highlights.
+* CTA theo tình trạng dự án, không cố định chỉ có Live Demo:
+  * `Live Demo`: dùng demo environment độc lập, dữ liệu seed và tài khoản demo/read-only.
+  * `Demo Video`: video ngắn thể hiện user flow chính khi không thể public app.
+  * `Case Study`: kiến trúc, ERD, challenge, giải pháp và kết quả.
+  * `Source Code`: GitHub repo/README đã loại bỏ secrets.
+  * `Request Access`: dành cho dự án có dữ liệu nhạy cảm hoặc quyền truy cập riêng.
+
+### 3.3 Resume Editor & Resume Publishing — ưu tiên cao nhất
+
+#### Public Resume
+
+* Trang `/resume` hiển thị CV rõ ràng, dễ đọc với recruiter và responsive.
+* Có nút `Download PDF` và `Print`.
+* Render CV từ template React/HTML/CSS; dùng print stylesheet, khổ A4, lề và page-break được kiểm soát.
+
+#### Admin Resume Editor
+
+* Trang `/admin/resume`, chỉ tài khoản owner được truy cập.
+* Form cập nhật: profile/contact, summary, experience, education, skills, projects, certificates và avatar.
+* Live preview cạnh form.
+* Chọn template `Minimal` hoặc `Modern`.
+* Lưu draft/publish, lịch sử version, `updatedAt` và khả năng rollback phiên bản gần nhất.
+* Asset như avatar hoặc file đính kèm được lưu ở Supabase Storage.
+
+#### Nguyên tắc dữ liệu và xuất PDF
+
+* Lưu nội dung CV dưới dạng dữ liệu có cấu trúc (`JSONB`), **không lưu raw HTML**.
+* React template chuyển dữ liệu đó thành HTML/CSS; điều này an toàn hơn, dễ validate và đổi giao diện mà không mất nội dung.
+* MVP dùng browser print (`window.print`) để lưu PDF.
+* Giai đoạn sau, NestJS tạo PDF đồng nhất bằng headless Chromium/Puppeteer khi cần file tải về do server tạo.
+
+### 3.4 Skills, Education & Contact
+
+* Skills phân nhóm: Frontend, Backend & Database, DevOps & Tools.
+* Education, certificates, awards và hoạt động liên quan.
+* Contact form: name, email, message; validate, rate-limit và gửi notification email qua Resend/Nodemailer.
+
+---
+
+## 4. Tính năng mở rộng
+
+| Tính năng | Phạm vi |
+| --- | --- |
+| **Dark / Light Mode** | Theo `prefers-color-scheme`, cho phép đổi thủ công và lưu preference; tránh FOUC. |
+| **Global Search** | Nút Search trên navbar mở Command Palette. MVP tìm routes, projects, skills và resume sections bằng Fuse.js ở client. |
+| **Project Case Study** | Hình ảnh, kiến trúc hệ thống, ERD, quyết định kỹ thuật và kết quả. |
+| **Admin CMS** | CRUD có auth cho resume, projects, posts và knowledge base. |
+| **Blog & Newsletter** | MDX/CMS, subscribe email, rate limiting và welcome email. |
+| **API Healthcheck** | Widget tùy chọn hiển thị health/latency của NestJS API. |
+
+---
+
+## 5. Hybrid Livechat & RAG AI Assistant
+
+Hệ thống chat có hai chế độ: AI RAG trả lời thông tin portfolio/CV, hoặc chuyển sang live chat qua Telegram.
+
+```
+[Visitor] → [NestJS API] → [RAG: pgvector + AI provider] → AI response
+                      └──→ [Telegram Bot] → [Owner reply]
+                                              └──→ [Webhook] → [SSE] → [Visitor]
+```
+
+### RAG
+
+* Knowledge base gồm CV, projects, skills, education và FAQ phỏng vấn.
+* Nội dung được chia chunks, tạo embeddings và lưu trong `pgvector`.
+* Retriever chọn context liên quan trước khi LLM tạo câu trả lời.
+* Giai đoạn đầu gọi Gemini SDK trực tiếp; chưa đưa LangChainJS vào luồng MVP để giảm độ phức tạp. LangChainJS chỉ được thêm khi có nhu cầu orchestration rõ ràng.
+
+### AI provider
+
+* Gemini API là provider chính cho generation và embeddings.
+* OpenAI API là fallback cho **generation** thông qua interface `AiProvider`.
+* Embedding model phải được chọn cố định. Không so sánh vector từ các embedding model khác nhau; đổi model yêu cầu re-embed knowledge base.
+
+### Livechat
+
+* Visitor gửi tin nhắn qua chat widget; NestJS gửi Telegram Bot API khi owner takeover.
+* Owner phản hồi trên Telegram; Telegram webhook gọi NestJS.
+* NestJS đẩy phản hồi về client qua SSE.
+* V1 chạy một instance Render; nếu scale nhiều instances thì bổ sung Redis pub/sub.
+
+---
+
+## 6. Kiến trúc & Tech Stack đã chốt
+
+| Tầng hệ thống | Công nghệ | Quyết định sử dụng |
+| --- | --- | --- |
+| **Frontend** | Next.js App Router + TypeScript | SSR/SSG, SEO, portfolio public trên Vercel. |
+| **UI** | Tailwind CSS + shadcn/ui + Lucide Icons | Xây giao diện và template CV bằng HTML/CSS/React. |
+| **Forms** | React Hook Form + Zod | Quản lý Resume Editor và validation. |
+| **Client state** | Zustand | Chỉ dùng cho UI state: Command Palette, chat widget, modal, theme. Không dùng làm server-data store. |
+| **Backend** | NestJS | REST APIs, auth guards, webhook, SSE, PDF generation về sau. |
+| **Database & Storage** | Supabase PostgreSQL + Supabase Storage | Dữ liệu quan hệ, JSONB CV, files/images và pgvector. |
+| **ORM** | Prisma | CRUD domain và migration; phần `pgvector` dùng custom SQL migration/raw query trong repository riêng. |
+| **AI / RAG** | Gemini API + pgvector; OpenAI API fallback | Gemini primary; OpenAI chỉ fallback generation. |
+| **Realtime / Bot** | Telegram Bot API + Webhooks + SSE | Owner trả lời qua Telegram, visitor nhận realtime trên web. |
+| **Hosting** | Vercel + Render + Supabase | Next.js trên Vercel; NestJS trên Render; data trên Supabase. |
+| **CI/CD** | GitHub Actions | Chạy lint, test, build; Vercel/Render tự deploy từ nhánh production. |
+
+---
+
+## 7. Cấu trúc Database sơ bộ
+
+* **`users`**: Admin users và thông tin auth mapping từ Supabase Auth.
+* **`profile`**: Personal info, social links, summary và metadata portfolio.
+* **`resume`**: Bản CV hiện hành; `content JSONB`, `template`, `status` (`draft`/`published`), `published_at`, `updated_at`.
+* **`resume_versions`**: Snapshot JSONB của từng version CV để audit và rollback.
+* **`projects`**: title, slug, summary, thumbnail, tech_stack, role, featured, source_url, demo_url, video_url, case_study content và `demo_type`.
+* **`posts`**: title, slug, content_mdx, tags, published_at, view_count.
+* **`subscribers`**: email, status, created_at, unsubscribed_at.
+* **`chat_sessions`** và **`messages`**: session visitor, history, mode (`rag`/`human`), sender và delivery state.
+* **`knowledge_documents`**: source, content, metadata, checksum và trạng thái indexing.
+* **`document_embeddings`**: document/chunk id, content, embedding vector, embedding model và metadata.
+
+---
+
+## 8. Yêu cầu phi chức năng
+
+* **Performance/SEO:** Lighthouse mục tiêu 90+; WebP/AVIF, lazy loading, metadata, sitemap, responsive hoàn toàn.
+* **Security:** secrets chỉ lưu server-side; validate input bằng Zod; rate limit Contact/Chat; Supabase RLS; webhook secret verification.
+* **Availability:** Telegram webhook và SSE endpoint phải có HTTPS public; healthcheck cho NestJS.
+* **Observability:** log structured, error tracking và endpoint `/health`.
+* **Testing:** unit test cho business logic, integration test cho API quan trọng, E2E cho Resume Editor publish flow.
+
+---
+
+## 9. Lộ trình triển khai
+
+### Phase 1 — Resume & Portfolio Core
+
+* Khởi tạo monorepo/frontend/backend, Supabase và CI cơ bản.
+* Xây public pages: Hero, Projects, Skills, Education, Contact, Resume.
+* Xây Resume Editor: structured data, draft/publish, 2 templates, preview, print/PDF browser.
+* Tạo case study và CTA linh hoạt cho project.
+
+### Phase 2 — Admin, Search & Polish
+
+* Supabase Auth + NestJS guard cho admin.
+* CRUD Projects/Resume; upload asset lên Supabase Storage.
+* Nút Search trên navbar + Command Palette/Fuse.js.
+* Dark/Light mode, SEO, accessibility và responsive polish.
+
+### Phase 3 — Blog & RAG
+
+* Blog/Newsletter nếu vẫn cần.
+* Knowledge base, embedding pipeline, pgvector retrieval và Gemini RAG.
+* `AiProvider` abstraction, OpenAI fallback cho generation.
+
+### Phase 4 — Telegram Livechat & Production Hardening
+
+* Telegram Bot, webhook verification, human takeover và SSE.
+* Healthcheck, monitoring, rate limit, testing, Lighthouse 90+.
+* NestJS PDF export bằng Puppeteer nếu browser print không đủ đồng nhất.
