@@ -4,8 +4,7 @@ services:
     runtime: node
     plan: free
     buildCommand: pnpm install --frozen-lockfile && pnpm --filter backend db:generate && pnpm --filter backend build
-    preDeployCommand: pnpm --filter backend db:deploy
-    startCommand: pnpm --filter backend start:prod
+    startCommand: pnpm --filter backend db:deploy && pnpm --filter backend start:prod
     healthCheckPath: /api/health
     autoDeployTrigger: commit
     buildFilter:
