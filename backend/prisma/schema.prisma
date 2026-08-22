@@ -16,6 +16,7 @@ enum ResumeStatus {
 model Resume {
   id          String         @id @default(cuid())
   ownerId     String?        @unique
+  slug        String?        @unique
   content     Json
   template    String         @default("technical")
   status      ResumeStatus   @default(DRAFT)

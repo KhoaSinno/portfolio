@@ -30,9 +30,9 @@ export async function getDraftResume() {
   return validateContent(await request("/admin/resume", { cache: "no-store" }, true));
 }
 
-export async function getPublishedResume() {
+export async function getPublishedResume(slug?: string) {
   try {
-    return validateContent(await request("/resume", { cache: "no-store" }));
+    return validateContent(await request(slug ? `/resume/${encodeURIComponent(slug)}` : "/resume", { cache: "no-store" }));
   } catch (error) {
     if (error instanceof Error && error.message.includes("(404)")) return null;
     throw error;

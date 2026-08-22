@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Put,
   Req,
@@ -30,6 +31,16 @@ export class ResumeController {
   @Get('resume')
   async getPublished() {
     const resume = await this.resumeService.getPublished();
+    return {
+      content: resume.content,
+      template: resume.template,
+      publishedAt: resume.publishedAt,
+    };
+  }
+
+  @Get('resume/:slug')
+  async getPublishedBySlug(@Param('slug') slug: string) {
+    const resume = await this.resumeService.getPublishedBySlug(slug);
     return {
       content: resume.content,
       template: resume.template,

@@ -15,7 +15,7 @@ import { ResumePreview } from "./ResumePreview";
 import { getPublishedResume } from "./resume-api";
 import { defaultResume, type ResumeData } from "./resume-schema";
 
-export function PublicResume() {
+export function PublicResume({ slug }: { slug?: string }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [resume, setResume] = useState<ResumeData>(defaultResume);
   const [loading, setLoading] = useState(true);
@@ -24,7 +24,7 @@ export function PublicResume() {
   const printResume = useReactToPrint({ contentRef, documentTitle: `${resume.basics.name.replace(/\s+/g, "_")}_Resume` });
 
   useEffect(() => {
-    void getPublishedResume()
+    void getPublishedResume(slug)
       .then((published) => {
         if (published) setResume(published);
       })
@@ -32,7 +32,7 @@ export function PublicResume() {
         setResume(defaultResume);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [slug]);
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
