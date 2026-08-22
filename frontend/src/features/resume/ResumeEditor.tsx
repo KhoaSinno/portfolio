@@ -15,6 +15,7 @@ import {
   CircleAlert,
   ExternalLink,
   Eye,
+  History,
   LogOut,
   Plus,
   Printer,
@@ -27,7 +28,14 @@ import {
 } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { ResumePreview, type FieldSelectTarget } from "./ResumePreview";
-import { getDraftResume, publishResume, saveResumeDraft } from "./resume-api";
+import {
+  getDraftResume,
+  publishResume,
+  rollbackResumeVersion,
+  saveResumeDraft,
+  type ResumeVersionItem,
+} from "./resume-api";
+import { VersionHistoryDrawer } from "./VersionHistoryDrawer";
 import {
   DEFAULT_SECTION_ORDER,
   defaultResume,
@@ -46,6 +54,7 @@ export function ResumeEditor() {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [showPageGuide, setShowPageGuide] = useState(false);
   const [publicSlug, setPublicSlug] = useState<string | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Accordion collapsed state IDs
   const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>({});
@@ -126,6 +135,17 @@ export function ResumeEditor() {
     }
   };
 
+  const handleRollback = async (version: ResumeVersionItem) => {
+    try {
+      const restored = await rollbackResumeVersion(version.id);
+      reset(restored);
+      setNotice(`Restored successfully from Snapshot v${version.version}.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to restore version.";
+      setNotice(msg);
+    }
+  };
+
   const signOut = async () => {
     await getSupabaseBrowserClient().auth.signOut();
     router.push("/admin/login");
@@ -202,7 +222,7 @@ export function ResumeEditor() {
               placeholder="Final-year IT student and aspiring fullstack developer with a strong foundation in modern web development..."
               {...register("summary")}
             />
-            <Error message={errors.summary?.message} />
+            <FieldError message={errors.summary?.message} />
           </SectionHeader>
         );
 
@@ -252,7 +272,7 @@ export function ResumeEditor() {
                     placeholder="TypeScript, Next.js, React, Tailwind CSS, REST API..."
                     {...register(`technicalSkills.${index}.items`)}
                   />
-                  <Error message={errors.technicalSkills?.[index]?.items?.message} />
+                  <FieldError message={errors.technicalSkills?.[index]?.items?.message} />
                 </CollapsibleCard>
               );
             })}
@@ -524,6 +544,15 @@ export function ResumeEditor() {
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setIsHistoryOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50 active:scale-95 transition"
+              title="View snapshot history and rollback previous versions"
+            >
+              <History className="h-3.5 w-3.5 text-indigo-600" />
+              <span>History</span>
+            </button>
             <a
               href={publicSlug ? `/resume/${publicSlug}` : "/resume"}
               target="_blank"
@@ -756,6 +785,12 @@ export function ResumeEditor() {
           </div>
         </section>
       </main>
+
+      <VersionHistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onRollback={handleRollback}
+      />
     </div>
   );
 }
@@ -919,12 +954,12 @@ function Field({
     <label className={`block ${className}`}>
       <span className="text-xs font-medium text-zinc-700">{label}</span>
       <input className="field mt-1" {...props} />
-      <Error message={error} />
+      <FieldError message={error} />
     </label>
   );
 }
 
-function Error({ message }: { message?: string }) {
+function FieldError({ message }: { message?: string }) {
   return message ? (
     <span className="mt-1 block text-[11px] font-medium text-red-600">{message}</span>
   ) : null;

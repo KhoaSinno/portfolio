@@ -77,4 +77,19 @@ export class ResumeController {
   publish(@Req() request: AuthenticatedRequest, @Body() dto: UpsertResumeDto) {
     return this.resumeService.publish(request.user.id, dto);
   }
+
+  @Get('admin/resume/versions')
+  @UseGuards(SupabaseAuthGuard)
+  getVersions(@Req() request: AuthenticatedRequest) {
+    return this.resumeService.getVersions(request.user.id);
+  }
+
+  @Post('admin/resume/rollback/:versionId')
+  @UseGuards(SupabaseAuthGuard)
+  rollback(
+    @Req() request: AuthenticatedRequest,
+    @Param('versionId') versionId: string,
+  ) {
+    return this.resumeService.rollbackVersion(request.user.id, versionId);
+  }
 }

@@ -100,6 +100,70 @@ export class ResumeService {
     });
   }
 
+  async getVersions(ownerId: string) {
+    const resume = await this.prisma.resume.findUnique({ where: { ownerId } });
+    if (!resume) return [];
+    return this.prisma.resumeVersion.findMany({
+      where: { resumeId: resume.id },
+      orderBy: { version: 'desc' },
+      select: {
+        id: true,
+        version: true,
+        template: true,
+        createdAt: true,
+        content: true,
+      },
+    });
+  }
+
+  async rollbackVersion(ownerId: string, versionId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const resume = await tx.resume.findUnique({ where: { ownerId } });
+      if (!resume) throw new NotFoundException('Resume not found.');
+
+      const targetVersion = await tx.resumeVersion.findFirst({
+        where: { id: versionId, resumeId: resume.id },
+      });
+      if (!targetVersion) {
+        throw new NotFoundException('Selected version not found.');
+      }
+
+      const latest = await tx.resumeVersion.findFirst({
+        where: { resumeId: resume.id },
+        orderBy: { version: 'desc' },
+      });
+
+      const nextVersionNumber = (latest?.version ?? 0) + 1;
+
+      // Create new published snapshot version for the rollback
+      await tx.resumeVersion.create({
+        data: {
+          resumeId: resume.id,
+          version: nextVersionNumber,
+          content: targetVersion.content as Prisma.InputJsonValue,
+          template: targetVersion.template,
+        },
+      });
+
+      const updated = await tx.resume.update({
+        where: { id: resume.id },
+        data: {
+          content: targetVersion.content as Prisma.InputJsonValue,
+          template: targetVersion.template,
+          status: ResumeStatus.PUBLISHED,
+          publishedAt: new Date(),
+        },
+      });
+
+      return {
+        content: updated.content,
+        template: updated.template,
+        version: nextVersionNumber,
+        sourceVersion: targetVersion.version,
+      };
+    });
+  }
+
   private async claimLegacyResume(
     tx: Prisma.TransactionClient,
     ownerId: string,

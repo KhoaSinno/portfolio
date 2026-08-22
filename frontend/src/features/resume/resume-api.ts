@@ -49,3 +49,57 @@ export async function saveResumeDraft(content: ResumeData) {
 export async function publishResume(content: ResumeData) {
   await request("/admin/resume/publish", { method: "POST", body: JSON.stringify({ content, template: "technical" }) }, true);
 }
+
+export type ResumeVersionItem = {
+  id: string;
+  version: number;
+  template: string;
+  createdAt: string;
+  content: ResumeData;
+};
+
+export async function getResumeVersions(): Promise<ResumeVersionItem[]> {
+  const accessToken = (await getSupabaseBrowserClient().auth.getSession()).data.session?.access_token;
+  if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
+  const response = await fetch(`${API_URL}/admin/resume/versions`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`Failed to load versions (${response.status}).`);
+  const rawList = (await response.json()) as Array<{
+    id: string;
+    version: number;
+    template: string;
+    createdAt: string;
+    content: unknown;
+  }>;
+  return rawList.map((item) => ({
+    id: item.id,
+    version: item.version,
+    template: item.template,
+    createdAt: item.createdAt,
+    content: validateContent({ content: item.content }) ?? {
+      basics: { name: "", headline: "", email: "", location: "", website: "", linkedin: "", github: "" },
+      summary: "",
+      technicalSkills: [],
+      experience: [],
+      projects: [],
+      education: [],
+      sectionOrder: [...DEFAULT_SECTION_ORDER],
+    },
+  }));
+}
+
+export async function rollbackResumeVersion(versionId: string): Promise<ResumeData> {
+  const accessToken = (await getSupabaseBrowserClient().auth.getSession()).data.session?.access_token;
+  if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
+  const response = await fetch(`${API_URL}/admin/resume/rollback/${encodeURIComponent(versionId)}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) throw new Error(`Failed to rollback version (${response.status}).`);
+  const data = (await response.json()) as { content: unknown };
+  const valid = validateContent(data);
+  if (!valid) throw new Error("Restored version content was invalid.");
+  return valid;
+}

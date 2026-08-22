@@ -23,12 +23,12 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [x] Backend Render có health check `/api/health`, Prisma deploy khi khởi động, auto-deploy từ `main`.
 - [x] Frontend đã deploy Vercel; backend đã deploy Render; CORS đã cấu hình cho production Vercel URL.
 - [x] Public Landing Page hoàn chỉnh: Hero, Projects, Skills, Experience, Education, Contact, kết nối trực tiếp với Backend API `getPublishedResume()`.
+- [x] Resume Version History & Rollback UI: Xem lịch sử các bản snapshot đã publish, xem chi tiết và khôi phục (Rollback) bản cũ ngay trong Admin CMS.
 
 ### Đang triển khai / cần xác minh sau deploy mới nhất
 
 - [~] Hai migration mới `add_resume_owner` và `add_resume_slug` đã commit/push. Render cần chạy xong `prisma migrate deploy`; sau đó đăng nhập `/admin/resume` một lần để claim CV cũ và tạo slug.
 - [~] Nút **Public resume** trong editor đã trỏ vào URL riêng của owner sau khi draft được tải. Cần kiểm tra lại trên production sau deploy.
-- [~] Version snapshot đã được tạo trong DB, nhưng chưa có giao diện xem lịch sử hoặc rollback.
 - [~] CI/CD deploy tự động qua GitHub → Vercel/Render đã có; chưa có workflow GitHub Actions chạy lint/test/build độc lập.
 
 ### Chưa triển khai
