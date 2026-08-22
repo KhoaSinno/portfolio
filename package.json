@@ -1,0 +1,10 @@
+{
+  "name": "portfolio",
+  "private": true,
+  "packageManager": "pnpm@11.13.0",
+  "scripts": {
+    "dev": "pnpm --parallel --stream --filter frontend --filter backend run dev",
+    "dev:frontend": "pnpm --filter frontend run dev",
+    "dev:backend": "pnpm --filter backend run dev"
+  }
+}
