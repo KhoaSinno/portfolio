@@ -5,11 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useReactToPrint } from "react-to-print";
 import { ResumePreview } from "./ResumePreview";
-import { defaultResume, parseStoredResume, RESUME_DRAFT_KEY, RESUME_PUBLISHED_KEY, resumeSchema, type ResumeData } from "./resume-schema";
+import { getDraftResume, publishResume, saveResumeDraft } from "./resume-api";
+import { defaultResume, resumeSchema, type ResumeData } from "./resume-schema";
 
 export function ResumeEditor() {
   const contentRef = useRef<HTMLDivElement>(null);
-  const [notice, setNotice] = useState("Professional Experience is optional — add it only after you have relevant experience.");
+  const [notice, setNotice] = useState("Loading resume from the backend...");
   const form = useForm<ResumeData>({ resolver: zodResolver(resumeSchema), defaultValues: defaultResume, mode: "onBlur" });
   const { control, handleSubmit, register, reset, formState: { errors } } = form;
   const skills = useFieldArray({ control, name: "technicalSkills" });
@@ -20,12 +21,22 @@ export function ResumeEditor() {
   const printResume = useReactToPrint({ contentRef, documentTitle: "resume" });
 
   useEffect(() => {
-    const draft = parseStoredResume(window.localStorage.getItem(RESUME_DRAFT_KEY));
-    if (draft) { reset(draft); setNotice("Loaded your local draft."); }
+    void getDraftResume()
+      .then((draft) => {
+        if (draft) reset(draft);
+        setNotice(draft ? "Loaded the current backend draft." : "Professional Experience is optional — add it only after you have relevant experience.");
+      })
+      .catch(() => setNotice("Backend is unavailable. Start both frontend and backend, then refresh."));
   }, [reset]);
 
-  const saveDraft = (values: ResumeData) => { window.localStorage.setItem(RESUME_DRAFT_KEY, JSON.stringify(values)); setNotice("Draft saved locally."); };
-  const publish = (values: ResumeData) => { window.localStorage.setItem(RESUME_DRAFT_KEY, JSON.stringify(values)); window.localStorage.setItem(RESUME_PUBLISHED_KEY, JSON.stringify(values)); setNotice("Resume published locally. Open /resume to verify it."); };
+  const saveDraft = async (values: ResumeData) => {
+    try { await saveResumeDraft(values); setNotice("Draft saved to Supabase."); }
+    catch { setNotice("Could not save. Confirm the backend is running and retry."); }
+  };
+  const publish = async (values: ResumeData) => {
+    try { await publishResume(values); setNotice("Resume published to Supabase. Open /resume to verify it."); }
+    catch { setNotice("Could not publish. Confirm the backend is running and retry."); }
+  };
 
   return <div className="min-h-screen bg-zinc-100 text-zinc-900">
     <header className="no-print border-b border-zinc-200 bg-white"><div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-5 py-4 sm:px-8"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Portfolio CMS</p><h1 className="text-xl font-semibold tracking-tight">Resume Editor</h1></div><div className="flex flex-wrap justify-end gap-2"><a href="/resume" className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50">Public resume</a><button type="button" onClick={() => printResume()} className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50">Print / PDF</button><button type="button" onClick={handleSubmit(publish)} className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700">Publish</button></div></div></header>
