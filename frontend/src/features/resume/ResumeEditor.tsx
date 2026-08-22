@@ -45,6 +45,7 @@ export function ResumeEditor() {
   const [publishing, setPublishing] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [showPageGuide, setShowPageGuide] = useState(false);
+  const [publicSlug, setPublicSlug] = useState<string | null>(null);
 
   // Accordion collapsed state IDs
   const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>({});
@@ -84,7 +85,10 @@ export function ResumeEditor() {
   useEffect(() => {
     void getDraftResume()
       .then((draft) => {
-        if (draft) reset(draft);
+        if (draft) {
+          reset(draft.content);
+          setPublicSlug(draft.slug ?? null);
+        }
         setNotice(
           draft
             ? "Loaded backend draft successfully."
@@ -513,7 +517,7 @@ export function ResumeEditor() {
 
           <div className="flex flex-wrap items-center gap-1.5">
             <a
-              href="/resume"
+              href={publicSlug ? `/resume/${publicSlug}` : "/resume"}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50"

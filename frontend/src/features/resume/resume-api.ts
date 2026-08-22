@@ -3,7 +3,8 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
-type ResumeResponse = { content: unknown } | null;
+type ResumeResponse = { content: unknown; slug?: string | null } | null;
+export type DraftResume = { content: ResumeData; slug?: string | null } | null;
 
 async function request(path: string, init?: RequestInit, requiresAuth = false) {
   const accessToken = requiresAuth ? (await getSupabaseBrowserClient().auth.getSession()).data.session?.access_token : undefined;
@@ -27,7 +28,9 @@ function validateContent(response: ResumeResponse): ResumeData | null {
 }
 
 export async function getDraftResume() {
-  return validateContent(await request("/admin/resume", { cache: "no-store" }, true));
+  const response = await request("/admin/resume", { cache: "no-store" }, true);
+  const content = validateContent(response);
+  return content ? { content, slug: response?.slug ?? null } : null;
 }
 
 export async function getPublishedResume(slug?: string) {

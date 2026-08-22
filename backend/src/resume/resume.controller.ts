@@ -55,6 +55,7 @@ export class ResumeController {
     return resume
       ? {
           content: resume.content,
+          slug: resume.slug,
           template: resume.template,
           status: resume.status,
           updatedAt: resume.updatedAt,
