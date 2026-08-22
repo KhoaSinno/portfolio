@@ -17,18 +17,28 @@ export class ResumeService {
   }
 
   async getPublished() {
-    const resume = await this.prisma.resume.findFirst({
+    let resume = await this.prisma.resume.findFirst({
       where: { status: ResumeStatus.PUBLISHED },
       orderBy: { publishedAt: 'desc' },
     });
+    if (!resume) {
+      resume = await this.prisma.resume.findFirst({
+        orderBy: { updatedAt: 'desc' },
+      });
+    }
     if (!resume) throw new NotFoundException('No published resume exists yet.');
     return resume;
   }
 
   async getPublishedBySlug(slug: string) {
-    const resume = await this.prisma.resume.findFirst({
+    let resume = await this.prisma.resume.findFirst({
       where: { slug, status: ResumeStatus.PUBLISHED },
     });
+    if (!resume) {
+      resume = await this.prisma.resume.findFirst({
+        where: { slug },
+      });
+    }
     if (!resume) {
       throw new NotFoundException('No published resume exists for this URL.');
     }

@@ -490,28 +490,36 @@ export function ResumeEditor() {
       {/* Header bar */}
       <header className="no-print sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur-xs">
         <div className="mx-auto flex max-w-[1900px] items-center justify-between gap-3 px-3 py-2 sm:px-5">
-          <div className="flex items-center gap-2.5">
-            <div className="rounded-lg bg-blue-50 p-1.5 text-blue-700">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold tracking-tight sm:text-base">
-                  Sinoo Hub
-                </h1>
-                {isDirty ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">
-                    <CircleAlert className="h-2.5 w-2.5" />
-                    Unsaved
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
-                    <CheckCircle2 className="h-2.5 w-2.5" />
-                    Saved
-                  </span>
-                )}
+          <div className="flex items-center gap-3">
+            <a href="/" title="Back to Portfolio" className="group flex items-center">
+              <div className="flex items-center rounded-xl bg-[#090d16] px-3 py-1.5 border border-slate-800 shadow-sm transition group-hover:border-indigo-500/50 group-hover:shadow-md group-hover:shadow-indigo-500/10">
+                <img
+                  src="/logo.png"
+                  alt="Sinoo Hub"
+                  className="h-6 w-auto object-contain"
+                />
               </div>
-              <p className="text-[11px] text-zinc-500">{notice}</p>
+            </a>
+            <div className="flex items-center gap-2 border-l border-zinc-200 pl-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-600">
+                    Resume CMS
+                  </span>
+                  {isDirty ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                      <CircleAlert className="h-2.5 w-2.5" />
+                      Unsaved
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                      <CheckCircle2 className="h-2.5 w-2.5" />
+                      Saved
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-zinc-500">{notice}</p>
+              </div>
             </div>
           </div>
 

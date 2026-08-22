@@ -70,36 +70,65 @@ export type ResumeData = z.infer<typeof resumeSchema>;
 
 export const defaultResume: ResumeData = {
   basics: {
-    name: "Your Name",
-    headline: "Final-year IT Student | Aspiring Fullstack Developer",
-    email: "you@example.com",
-    location: "Ho Chi Minh City, Vietnam",
+    name: "Nguyen Tran Anh Khoa",
+    headline: "Intern Fullstack Developer",
+    email: "ntakhoa@gmail.com",
+    location: "Can Tho City, Vietnam",
     website: "yourportfolio.com",
-    linkedin: "linkedin.com/in/your-name",
-    github: "github.com/your-name",
+    linkedin: "linkedin.com/in/khoa-anh-7866b0351",
+    github: "github.com/khoasinno",
   },
-  summary: "Final-year IT student and aspiring fullstack developer with a strong foundation in modern web development. I enjoy turning ideas into useful products and continuously improving through hands-on projects.",
+  summary:
+    "Final-year IT student and aspiring fullstack developer with a strong foundation in modern web development. I enjoy turning ideas into useful products and continuously improving through hands-on projects.",
   technicalSkills: [
-    { category: "Frontend", items: "TypeScript, Next.js, React, Tailwind CSS, responsive UI" },
-    { category: "Backend & Database", items: "NestJS, REST API, PostgreSQL, Prisma, Supabase" },
-    { category: "DevOps & Tools", items: "Git/GitHub, Docker, Postman, Vercel, Render" },
+    {
+      category: "Frontend",
+      items: "TypeScript, Next.js, React, Tailwind CSS, responsive UI",
+    },
+    {
+      category: "Backend & Database",
+      items: "NestJS, FastAPI, PostgreSQL, Prisma, Supabase",
+    },
+    {
+      category: "DevOps & Tools",
+      items: "Git/GitHub, Docker, Postman, Vercel, Render, EC2",
+    },
+    {
+      category: "AI",
+      items: "Hybrid RAG, RRF, Reranking, Vector database",
+    },
   ],
   experience: [],
-  projects: [{
-    name: "Portfolio Platform",
-    role: "Solo Developer",
-    period: "2026",
-    techStack: "Next.js · TypeScript · NestJS · PostgreSQL",
-    repository: "github.com/your-name/portfolio",
-    highlights: "Designed a fullstack portfolio with a structured resume editor.\nBuilt reusable resume templates with print-ready HTML and CSS.\nPlanned a scalable backend architecture for projects, AI chat, and content management.",
-  }],
-  education: [{
-    institution: "Your University",
-    period: "2022 — 2026",
-    degree: "B.Sc. in Information Technology",
-    details: "Expected graduation: 2026",
-  }],
-  sectionOrder: [...DEFAULT_SECTION_ORDER],
+  projects: [
+    {
+      name: "TRIAM audiobook with Agent assistant",
+      role: "Capstone",
+      period: "3/2026 - 8/2026",
+      techStack:
+        "Flutter · FastAPI · Hybrid RAG · Voice realtime with Livekit and OpenAI realtime API · Supabase",
+      repository: "github.com/khoasinno",
+      highlights:
+        "Built a Vietnamese audiobook application with intelligent voice conversational AI assistant.\nIntegrated LiveKit WebRTC and OpenAI Realtime API for low-latency voice streaming.\nImplemented Hybrid RAG with Vector Search and RRF reranking for accurate content discovery.",
+    },
+    {
+      name: "Portfolio Platform",
+      role: "Personal project",
+      period: "5/2026 - 8/2026",
+      techStack: "Next.js · TypeScript · NestJS · PostgreSQL",
+      repository: "github.com/khoasinno/portfolio",
+      highlights:
+        "Designed a fullstack portfolio with a structured resume editor.\nBuilt reusable resume templates with print-ready HTML and CSS.\nPlanned a scalable backend architecture for projects, AI chat, and content management.",
+    },
+  ],
+  education: [
+    {
+      institution: "Can Tho University of Technology",
+      period: "2022 — Now",
+      degree: "Information Technology",
+      details: "Major in Software Engineering",
+    },
+  ],
+  sectionOrder: ["summary", "technicalSkills", "projects", "education"],
 };
 
 export const RESUME_DRAFT_KEY = "portfolio.resume.draft";

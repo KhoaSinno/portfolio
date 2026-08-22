@@ -22,6 +22,7 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [x] CV cũ được claim an toàn ở lần admin owner đầu tiên mở/lưu/publish, không phải nhập lại dữ liệu.
 - [x] Backend Render có health check `/api/health`, Prisma deploy khi khởi động, auto-deploy từ `main`.
 - [x] Frontend đã deploy Vercel; backend đã deploy Render; CORS đã cấu hình cho production Vercel URL.
+- [x] Public Landing Page hoàn chỉnh: Hero, Projects, Skills, Experience, Education, Contact, kết nối trực tiếp với Backend API `getPublishedResume()`.
 
 ### Đang triển khai / cần xác minh sau deploy mới nhất
 
@@ -32,7 +33,6 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 
 ### Chưa triển khai
 
-- [ ] Public landing page hoàn chỉnh: Hero, Projects, Skills, Education, Contact.
 - [ ] Project CMS, project cards, case study và CTA Live Demo / Demo Video / Source Code / Request Access.
 - [ ] Template CV `Minimal` / `Modern`; hiện chỉ dùng template kỹ thuật.
 - [ ] Avatar, certificates, file đính kèm và Supabase Storage.

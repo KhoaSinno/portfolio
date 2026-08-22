@@ -39,17 +39,20 @@ export function PublicResume({ slug }: { slug?: string }) {
       {/* Top Floating / Sticky Toolbar */}
       <header className="no-print sticky top-0 z-30 border-b border-zinc-200/80 bg-white/95 backdrop-blur-xs">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-3 py-2 sm:px-5">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <a
               href="/"
-              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white p-1 pl-2.5 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50 transition"
+              title="Return to Portfolio"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Portfolio</span>
+              <ArrowLeft className="h-3.5 w-3.5 text-zinc-500" />
+              <div className="flex items-center rounded-lg bg-[#090d16] px-2 py-1">
+                <img src="/logo.png" alt="Sinoo Hub" className="h-4 w-auto object-contain" />
+              </div>
             </a>
             <div className="hidden sm:flex sm:items-center sm:gap-2">
               <span className="text-xs text-zinc-400">/</span>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-800">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-800">
                 <FileText className="h-3.5 w-3.5 text-blue-600" />
                 {resume.basics.name}&apos;s CV
               </span>
