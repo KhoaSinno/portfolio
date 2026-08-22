@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useReactToPrint } from "react-to-print";
 import { ResumePreview } from "./ResumePreview";
 import { getDraftResume, publishResume, saveResumeDraft } from "./resume-api";
@@ -17,7 +17,7 @@ export function ResumeEditor() {
   const experience = useFieldArray({ control, name: "experience" });
   const projects = useFieldArray({ control, name: "projects" });
   const education = useFieldArray({ control, name: "education" });
-  const resume = form.watch();
+  const resume = useWatch({ control, defaultValue: defaultResume }) as ResumeData;
   const printResume = useReactToPrint({ contentRef, documentTitle: "resume" });
 
   useEffect(() => {

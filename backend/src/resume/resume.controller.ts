@@ -8,19 +8,34 @@ export class ResumeController {
 
   @Get('health')
   health() {
-    return { status: 'ok', service: 'portfolio-api', timestamp: new Date().toISOString() };
+    return {
+      status: 'ok',
+      service: 'portfolio-api',
+      timestamp: new Date().toISOString(),
+    };
   }
 
   @Get('resume')
   async getPublished() {
     const resume = await this.resumeService.getPublished();
-    return { content: resume.content, template: resume.template, publishedAt: resume.publishedAt };
+    return {
+      content: resume.content,
+      template: resume.template,
+      publishedAt: resume.publishedAt,
+    };
   }
 
   @Get('admin/resume')
   async getDraft() {
     const resume = await this.resumeService.getDraft();
-    return resume ? { content: resume.content, template: resume.template, status: resume.status, updatedAt: resume.updatedAt } : null;
+    return resume
+      ? {
+          content: resume.content,
+          template: resume.template,
+          status: resume.status,
+          updatedAt: resume.updatedAt,
+        }
+      : null;
   }
 
   @Put('admin/resume')
