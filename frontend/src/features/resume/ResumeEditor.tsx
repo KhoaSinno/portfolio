@@ -4,11 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useReactToPrint } from "react-to-print";
+import { useRouter } from "next/navigation";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { ResumePreview } from "./ResumePreview";
 import { getDraftResume, publishResume, saveResumeDraft } from "./resume-api";
 import { defaultResume, resumeSchema, type ResumeData } from "./resume-schema";
 
 export function ResumeEditor() {
+  const router = useRouter();
   const contentRef = useRef<HTMLDivElement>(null);
   const [notice, setNotice] = useState("Loading resume from the backend...");
   const form = useForm<ResumeData>({ resolver: zodResolver(resumeSchema), defaultValues: defaultResume, mode: "onBlur" });
@@ -37,9 +40,13 @@ export function ResumeEditor() {
     try { await publishResume(values); setNotice("Resume published to Supabase. Open /resume to verify it."); }
     catch { setNotice("Could not publish. Confirm the backend is running and retry."); }
   };
+  const signOut = async () => {
+    await getSupabaseBrowserClient().auth.signOut();
+    router.push("/admin/login");
+  };
 
   return <div className="min-h-screen bg-zinc-100 text-zinc-900">
-    <header className="no-print border-b border-zinc-200 bg-white"><div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-5 py-4 sm:px-8"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Portfolio CMS</p><h1 className="text-xl font-semibold tracking-tight">Resume Editor</h1></div><div className="flex flex-wrap justify-end gap-2"><a href="/resume" className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50">Public resume</a><button type="button" onClick={() => printResume()} className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50">Print / PDF</button><button type="button" onClick={handleSubmit(publish)} className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700">Publish</button></div></div></header>
+    <header className="no-print border-b border-zinc-200 bg-white"><div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-5 py-4 sm:px-8"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Portfolio CMS</p><h1 className="text-xl font-semibold tracking-tight">Resume Editor</h1></div><div className="flex flex-wrap justify-end gap-2"><a href="/resume" className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50">Public resume</a><button type="button" onClick={() => printResume()} className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50">Print / PDF</button><button type="button" onClick={signOut} className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-50">Sign out</button><button type="button" onClick={handleSubmit(publish)} className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-700">Publish</button></div></div></header>
     <main className="mx-auto grid max-w-[1600px] gap-6 px-5 py-6 lg:grid-cols-[minmax(390px,0.8fr)_minmax(0,1.2fr)] lg:px-8">
       <form onSubmit={handleSubmit(saveDraft)} className="no-print space-y-5 self-start rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between gap-4"><div><h2 className="font-semibold">Content</h2><p className="mt-1 text-sm text-zinc-500">{notice}</p></div><button type="submit" className="rounded-md bg-blue-700 px-3 py-2 text-sm font-medium text-white hover:bg-blue-600">Save draft</button></div>
         <Section title="Basic information"><div className="grid gap-3 sm:grid-cols-2"><Field label="Full name" error={errors.basics?.name?.message} {...register("basics.name")} /><Field label="Headline" error={errors.basics?.headline?.message} {...register("basics.headline")} /><Field label="Email" type="email" error={errors.basics?.email?.message} {...register("basics.email")} /><Field label="Location" error={errors.basics?.location?.message} {...register("basics.location")} /><Field label="Website" {...register("basics.website")} /><Field label="LinkedIn" {...register("basics.linkedin")} /><Field label="GitHub" {...register("basics.github")} /></div></Section>

@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
+import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { UpsertResumeDto } from './dto/upsert-resume.dto';
 import { ResumeService } from './resume.service';
 
@@ -26,6 +27,7 @@ export class ResumeController {
   }
 
   @Get('admin/resume')
+  @UseGuards(SupabaseAuthGuard)
   async getDraft() {
     const resume = await this.resumeService.getDraft();
     return resume
@@ -39,11 +41,13 @@ export class ResumeController {
   }
 
   @Put('admin/resume')
+  @UseGuards(SupabaseAuthGuard)
   saveDraft(@Body() dto: UpsertResumeDto) {
     return this.resumeService.saveDraft(dto);
   }
 
   @Post('admin/resume/publish')
+  @UseGuards(SupabaseAuthGuard)
   publish(@Body() dto: UpsertResumeDto) {
     return this.resumeService.publish(dto);
   }
