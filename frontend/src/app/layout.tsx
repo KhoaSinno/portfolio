@@ -13,8 +13,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Portfolio Resume",
-  description: "A fullstack developer portfolio and resume.",
+  title: "Sinoo Hub · Fullstack Portfolio & Resume",
+  description: "A modern fullstack developer portfolio and structured resume editor.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
