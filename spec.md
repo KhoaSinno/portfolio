@@ -4,6 +4,46 @@ FE: https://portfolio-frontend-rust-theta.vercel.app
 
 BE: https://portfolio-api-fna4.onrender.com/api/health
 
+## Trạng thái triển khai thực tế — 22/08/2026
+
+**Ký hiệu:** `[x]` hoàn thành trong source code · `[~]` đã có nền tảng nhưng còn thiếu/đang chờ xác minh production · `[ ]` chưa triển khai.
+
+### Đã hoàn thành
+
+- [x] Monorepo pnpm gồm `frontend` (Next.js + TypeScript) và `backend` (NestJS + Prisma).
+- [x] Supabase PostgreSQL được dùng cho dữ liệu CV; Prisma migration và generated client đã cấu hình.
+- [x] Đăng nhập admin bằng Supabase Auth; NestJS kiểm tra Bearer token và allowlist `ADMIN_EMAILS`.
+- [x] Route admin được bảo vệ: `GET/PUT /api/admin/resume`, `POST /api/admin/resume/publish`.
+- [x] Resume Editor có form structured data: thông tin cơ bản, summary, technical skills, experience (tùy chọn), projects, education và thứ tự section.
+- [x] Live preview CV React/HTML/CSS, responsive, in/trình duyệt lưu PDF, zoom và section reordering.
+- [x] Lưu draft, publish CV; `ResumeVersion` tạo snapshot mỗi lần publish.
+- [x] Public CV tại `/resume`; hỗ trợ CV riêng theo owner tại `/resume/[slug]`.
+- [x] Resume gắn với Supabase `user.id` (`ownerId`): admin khác không ghi đè CV của nhau.
+- [x] CV cũ được claim an toàn ở lần admin owner đầu tiên mở/lưu/publish, không phải nhập lại dữ liệu.
+- [x] Backend Render có health check `/api/health`, Prisma deploy khi khởi động, auto-deploy từ `main`.
+- [x] Frontend đã deploy Vercel; backend đã deploy Render; CORS đã cấu hình cho production Vercel URL.
+
+### Đang triển khai / cần xác minh sau deploy mới nhất
+
+- [~] Hai migration mới `add_resume_owner` và `add_resume_slug` đã commit/push. Render cần chạy xong `prisma migrate deploy`; sau đó đăng nhập `/admin/resume` một lần để claim CV cũ và tạo slug.
+- [~] Nút **Public resume** trong editor đã trỏ vào URL riêng của owner sau khi draft được tải. Cần kiểm tra lại trên production sau deploy.
+- [~] Version snapshot đã được tạo trong DB, nhưng chưa có giao diện xem lịch sử hoặc rollback.
+- [~] CI/CD deploy tự động qua GitHub → Vercel/Render đã có; chưa có workflow GitHub Actions chạy lint/test/build độc lập.
+
+### Chưa triển khai
+
+- [ ] Public landing page hoàn chỉnh: Hero, Projects, Skills, Education, Contact.
+- [ ] Project CMS, project cards, case study và CTA Live Demo / Demo Video / Source Code / Request Access.
+- [ ] Template CV `Minimal` / `Modern`; hiện chỉ dùng template kỹ thuật.
+- [ ] Avatar, certificates, file đính kèm và Supabase Storage.
+- [ ] Tự chọn public slug thân thiện (hiện slug ổn định được sinh từ user ID).
+- [ ] Global Search / Command Palette, Dark/Light mode, SEO metadata/sitemap và accessibility audit.
+- [ ] Contact form, email notification, rate limit.
+- [ ] Blog, newsletter.
+- [ ] RAG, pgvector, Gemini/OpenAI fallback.
+- [ ] Telegram Bot, webhook, SSE live chat.
+- [ ] Unit/integration/E2E tests cho flow Resume; monitoring/error tracking; GitHub Actions CI.
+
 ## 1. Mục tiêu dự án
 
 Xây dựng portfolio tiếng Anh, chuẩn production, thể hiện rõ năng lực Fullstack Developer Intern qua sản phẩm hoàn chỉnh, UX/UI tốt, backend thực tế, database, realtime và AI tích hợp có chủ đích.
@@ -45,18 +85,19 @@ Xây dựng portfolio tiếng Anh, chuẩn production, thể hiện rõ năng l�
 
 #### Public Resume
 
-* Trang `/resume` hiển thị CV rõ ràng, dễ đọc với recruiter và responsive.
-* Có nút `Download PDF` và `Print`.
-* Render CV từ template React/HTML/CSS; dùng print stylesheet, khổ A4, lề và page-break được kiểm soát.
+* [x] Trang `/resume` hiển thị CV rõ ràng, dễ đọc với recruiter và responsive.
+* [x] Có Print / browser PDF download.
+* [x] Render CV từ React/HTML/CSS, print stylesheet và khổ A4.
+* [x] `/resume/[slug]` hiển thị CV public riêng theo owner; `/resume` giữ tương thích cho portfolio chính.
 
 #### Admin Resume Editor
 
-* Trang `/admin/resume`, chỉ tài khoản owner được truy cập.
-* Form cập nhật: profile/contact, summary, experience, education, skills, projects, certificates và avatar.
-* Live preview cạnh form.
-* Chọn template `Minimal` hoặc `Modern`.
-* Lưu draft/publish, lịch sử version, `updatedAt` và khả năng rollback phiên bản gần nhất.
-* Asset như avatar hoặc file đính kèm được lưu ở Supabase Storage.
+* [x] Trang `/admin/resume` chỉ admin trong allowlist được truy cập.
+* [x] Form: profile/contact, summary, experience, education, skills, projects; experience có thể để trống.
+* [x] Live preview cạnh form.
+* [ ] Chọn template `Minimal` hoặc `Modern` (hiện chỉ `technical`).
+* [~] Lưu draft/publish, `updatedAt` và snapshot version đã có; UI history/rollback chưa có.
+* [ ] Avatar, certificates và Supabase Storage.
 
 #### Nguyên tắc dữ liệu và xuất PDF
 
@@ -165,17 +206,17 @@ Hệ thống chat có hai chế độ: AI RAG trả lời thông tin portfolio/C
 
 ### Phase 1 — Resume & Portfolio Core
 
-* Khởi tạo monorepo/frontend/backend, Supabase và CI cơ bản.
-* Xây public pages: Hero, Projects, Skills, Education, Contact, Resume.
-* Xây Resume Editor: structured data, draft/publish, 2 templates, preview, print/PDF browser.
-* Tạo case study và CTA linh hoạt cho project.
+* [x] Khởi tạo monorepo/frontend/backend, Supabase và deploy cơ bản.
+* [~] Resume public + editor: structured data, draft/publish, owner isolation, preview, print/PDF browser.
+* [ ] Hoàn thành public pages: Hero, Projects, Skills, Education, Contact.
+* [ ] Thêm template thứ hai, project case study và CTA linh hoạt.
 
 ### Phase 2 — Admin, Search & Polish
 
-* Supabase Auth + NestJS guard cho admin.
-* CRUD Projects/Resume; upload asset lên Supabase Storage.
-* Nút Search trên navbar + Command Palette/Fuse.js.
-* Dark/Light mode, SEO, accessibility và responsive polish.
+* [x] Supabase Auth + NestJS guard cho admin và owner-specific resume.
+* [~] Resume CRUD; Projects CRUD và Supabase Storage chưa làm.
+* [ ] Nút Search trên navbar + Command Palette/Fuse.js.
+* [ ] Dark/Light mode, SEO, accessibility và responsive polish.
 
 ### Phase 3 — Blog & RAG
 
