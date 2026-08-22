@@ -1,5 +1,9 @@
 # PROJECT SPECIFICATION: IT FULLSTACK INTERN PORTFOLIO
 
+FE: https://portfolio-frontend-rust-theta.vercel.app
+
+BE: https://portfolio-api-fna4.onrender.com/api/health
+
 ## 1. Mục tiêu dự án
 
 Xây dựng portfolio tiếng Anh, chuẩn production, thể hiện rõ năng lực Fullstack Developer Intern qua sản phẩm hoàn chỉnh, UX/UI tốt, backend thực tế, database, realtime và AI tích hợp có chủ đích.
