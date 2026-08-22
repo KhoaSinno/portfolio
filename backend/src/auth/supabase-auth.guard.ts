@@ -7,8 +7,14 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import {
+  createClient,
+  type SupabaseClient,
+  type User,
+} from '@supabase/supabase-js';
 import type { Request } from 'express';
+
+export type AuthenticatedRequest = Request & { user: User };
 
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
@@ -37,7 +43,7 @@ export class SupabaseAuthGuard implements CanActivate {
       );
     }
 
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = this.getBearerToken(request.headers.authorization);
     const { data, error } = await this.getClient().auth.getUser(token);
 
@@ -53,6 +59,8 @@ export class SupabaseAuthGuard implements CanActivate {
         'This user is not allowed to manage the portfolio.',
       );
     }
+
+    request.user = data.user;
 
     return true;
   }

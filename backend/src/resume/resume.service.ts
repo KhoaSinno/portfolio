@@ -5,43 +5,51 @@ import { UpsertResumeDto } from './dto/upsert-resume.dto';
 
 @Injectable()
 export class ResumeService {
-  private readonly resumeId = 'portfolio-resume';
+  private readonly legacyResumeId = 'portfolio-resume';
 
   constructor(private readonly prisma: PrismaService) {}
 
-  getDraft() {
-    return this.prisma.resume.findUnique({ where: { id: this.resumeId } });
+  getDraft(ownerId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      await this.claimLegacyResume(tx, ownerId);
+      return tx.resume.findUnique({ where: { ownerId } });
+    });
   }
 
   async getPublished() {
     const resume = await this.prisma.resume.findFirst({
       where: { status: ResumeStatus.PUBLISHED },
+      orderBy: { publishedAt: 'desc' },
     });
     if (!resume) throw new NotFoundException('No published resume exists yet.');
     return resume;
   }
 
-  saveDraft(dto: UpsertResumeDto) {
-    return this.prisma.resume.upsert({
-      where: { id: this.resumeId },
-      create: {
-        id: this.resumeId,
-        content: dto.content as Prisma.InputJsonValue,
-        template: dto.template ?? 'technical',
-      },
-      update: {
-        content: dto.content as Prisma.InputJsonValue,
-        template: dto.template ?? 'technical',
-      },
+  saveDraft(ownerId: string, dto: UpsertResumeDto) {
+    return this.prisma.$transaction(async (tx) => {
+      await this.claimLegacyResume(tx, ownerId);
+      return tx.resume.upsert({
+        where: { ownerId },
+        create: {
+          ownerId,
+          content: dto.content as Prisma.InputJsonValue,
+          template: dto.template ?? 'technical',
+        },
+        update: {
+          content: dto.content as Prisma.InputJsonValue,
+          template: dto.template ?? 'technical',
+        },
+      });
     });
   }
 
-  async publish(dto: UpsertResumeDto) {
+  async publish(ownerId: string, dto: UpsertResumeDto) {
     return this.prisma.$transaction(async (tx) => {
+      await this.claimLegacyResume(tx, ownerId);
       const resume = await tx.resume.upsert({
-        where: { id: this.resumeId },
+        where: { ownerId },
         create: {
-          id: this.resumeId,
+          ownerId,
           content: dto.content as Prisma.InputJsonValue,
           template: dto.template ?? 'technical',
           status: ResumeStatus.PUBLISHED,
@@ -68,5 +76,19 @@ export class ResumeService {
       });
       return resume;
     });
+  }
+
+  private async claimLegacyResume(
+    tx: Prisma.TransactionClient,
+    ownerId: string,
+  ) {
+    const existing = await tx.resume.findUnique({ where: { ownerId } });
+    if (existing) return existing;
+
+    await tx.resume.updateMany({
+      where: { id: this.legacyResumeId, ownerId: null },
+      data: { ownerId },
+    });
+    return tx.resume.findUnique({ where: { ownerId } });
   }
 }

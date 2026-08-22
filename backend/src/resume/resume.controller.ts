@@ -1,5 +1,16 @@
-import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
-import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  SupabaseAuthGuard,
+  type AuthenticatedRequest,
+} from '../auth/supabase-auth.guard';
 import { UpsertResumeDto } from './dto/upsert-resume.dto';
 import { ResumeService } from './resume.service';
 
@@ -28,8 +39,8 @@ export class ResumeController {
 
   @Get('admin/resume')
   @UseGuards(SupabaseAuthGuard)
-  async getDraft() {
-    const resume = await this.resumeService.getDraft();
+  async getDraft(@Req() request: AuthenticatedRequest) {
+    const resume = await this.resumeService.getDraft(request.user.id);
     return resume
       ? {
           content: resume.content,
@@ -42,13 +53,16 @@ export class ResumeController {
 
   @Put('admin/resume')
   @UseGuards(SupabaseAuthGuard)
-  saveDraft(@Body() dto: UpsertResumeDto) {
-    return this.resumeService.saveDraft(dto);
+  saveDraft(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: UpsertResumeDto,
+  ) {
+    return this.resumeService.saveDraft(request.user.id, dto);
   }
 
   @Post('admin/resume/publish')
   @UseGuards(SupabaseAuthGuard)
-  publish(@Body() dto: UpsertResumeDto) {
-    return this.resumeService.publish(dto);
+  publish(@Req() request: AuthenticatedRequest, @Body() dto: UpsertResumeDto) {
+    return this.resumeService.publish(request.user.id, dto);
   }
 }
