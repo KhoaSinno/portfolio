@@ -1,4 +1,4 @@
-import { resumeSchema, type ResumeData } from "./resume-schema";
+import { DEFAULT_SECTION_ORDER, resumeSchema, type ResumeData } from "./resume-schema";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
@@ -17,8 +17,12 @@ async function request(path: string, init?: RequestInit, requiresAuth = false) {
 }
 
 function validateContent(response: ResumeResponse): ResumeData | null {
-  if (!response) return null;
-  const parsed = resumeSchema.safeParse(response.content);
+  if (!response || !response.content) return null;
+  const raw = (typeof response.content === "object" ? { ...response.content } : {}) as Record<string, unknown>;
+  if (!raw.sectionOrder) {
+    raw.sectionOrder = [...DEFAULT_SECTION_ORDER];
+  }
+  const parsed = resumeSchema.safeParse(raw);
   return parsed.success ? parsed.data : null;
 }
 

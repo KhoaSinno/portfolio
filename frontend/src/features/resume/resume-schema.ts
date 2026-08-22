@@ -7,11 +7,37 @@ const datedRole = z.object({
   highlights: z.string(),
 });
 
+export const RESUME_SECTION_KEYS = [
+  "summary",
+  "technicalSkills",
+  "experience",
+  "projects",
+  "education",
+] as const;
+
+export type ResumeSectionKey = (typeof RESUME_SECTION_KEYS)[number];
+
+export const SECTION_LABELS: Record<ResumeSectionKey, string> = {
+  summary: "Professional Summary",
+  technicalSkills: "Technical Skills",
+  experience: "Professional Experience",
+  projects: "Featured Projects",
+  education: "Education",
+};
+
+export const DEFAULT_SECTION_ORDER: ResumeSectionKey[] = [
+  "summary",
+  "technicalSkills",
+  "experience",
+  "projects",
+  "education",
+];
+
 export const resumeSchema = z.object({
   basics: z.object({
     name: z.string().min(2, "Enter your full name."),
     headline: z.string().min(2, "Enter a professional headline."),
-    email: z.email("Enter a valid email address."),
+    email: z.string().email("Enter a valid email address."),
     location: z.string().min(2, "Enter your location."),
     website: z.string(),
     linkedin: z.string(),
@@ -37,6 +63,7 @@ export const resumeSchema = z.object({
     degree: z.string().min(1, "Degree is required."),
     details: z.string(),
   })).min(1, "Add at least one education entry."),
+  sectionOrder: z.array(z.enum(["summary", "technicalSkills", "experience", "projects", "education"])),
 });
 
 export type ResumeData = z.infer<typeof resumeSchema>;
@@ -72,6 +99,7 @@ export const defaultResume: ResumeData = {
     degree: "B.Sc. in Information Technology",
     details: "Expected graduation: 2026",
   }],
+  sectionOrder: [...DEFAULT_SECTION_ORDER],
 };
 
 export const RESUME_DRAFT_KEY = "portfolio.resume.draft";
@@ -80,7 +108,11 @@ export const RESUME_PUBLISHED_KEY = "portfolio.resume.published";
 export function parseStoredResume(value: string | null): ResumeData | null {
   if (!value) return null;
   try {
-    const parsed = resumeSchema.safeParse(JSON.parse(value));
+    const raw = JSON.parse(value);
+    if (raw && typeof raw === "object" && !raw.sectionOrder) {
+      raw.sectionOrder = [...DEFAULT_SECTION_ORDER];
+    }
+    const parsed = resumeSchema.safeParse(raw);
     return parsed.success ? parsed.data : null;
   } catch {
     return null;
