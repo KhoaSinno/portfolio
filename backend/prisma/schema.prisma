@@ -37,3 +37,16 @@ model ResumeVersion {
 
   @@unique([resumeId, version])
 }
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  email     String
+  jdLink    String?
+  fileName  String?
+  fileUrl   String?
+  fileSize  Int?
+  message   String?
+  ip        String?
+  status    String   @default("UNREAD")
+  createdAt DateTime @default(now())
+}

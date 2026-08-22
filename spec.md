@@ -24,6 +24,7 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [x] Frontend đã deploy Vercel; backend đã deploy Render; CORS đã cấu hình cho production Vercel URL.
 - [x] Public Landing Page hoàn chỉnh: Hero, Projects, Skills, Experience, Education, Contact, kết nối trực tiếp với Backend API `getPublishedResume()`.
 - [x] Resume Version History & Rollback UI: Xem lịch sử các bản snapshot đã publish, xem chi tiết và khôi phục (Rollback) bản cũ ngay trong Admin CMS.
+- [x] Contact Form & Send Mail API: Tích hợp tại `#contact` trên Landing Page với 3 trường (Work Email, JD Link, Message), lưu trữ PostgreSQL `ContactMessage`, Rate Limit chống spam, Toast notification và gửi email thông báo.
 
 ### Đang triển khai / cần xác minh sau deploy mới nhất
 
@@ -38,7 +39,6 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [ ] Avatar, certificates, file đính kèm và Supabase Storage.
 - [ ] Tự chọn public slug thân thiện (hiện slug ổn định được sinh từ user ID).
 - [ ] Global Search / Command Palette, Dark/Light mode, SEO metadata/sitemap và accessibility audit.
-- [ ] Contact form, email notification, rate limit.
 - [ ] Blog, newsletter.
 - [ ] RAG, pgvector, Gemini/OpenAI fallback.
 - [ ] Telegram Bot, webhook, SSE live chat.

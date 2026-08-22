@@ -21,6 +21,7 @@ import {
 import { getPublishedResume } from "@/features/resume/resume-api";
 import { defaultResume } from "@/features/resume/resume-schema";
 import { CopyEmailButton } from "@/features/home/HomeClientEnhancements";
+import { ContactForm } from "@/features/home/ContactForm";
 
 function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -558,69 +559,76 @@ export default async function Home() {
           id="contact"
           className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
         >
-          <div className="relative overflow-hidden rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-indigo-900/30 via-purple-900/20 to-pink-900/20 p-8 sm:p-14 shadow-2xl backdrop-blur-xl">
+          <div className="relative overflow-hidden rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 via-purple-950/30 to-slate-950/70 p-6 sm:p-12 shadow-2xl backdrop-blur-xl">
             {/* Ambient inner glow */}
-            <div className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-12 -left-12 h-64 w-64 rounded-full bg-pink-500/20 blur-3xl" />
+            <div className="pointer-events-none absolute -right-12 -top-12 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-12 -left-12 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl" />
 
-            <div className="relative z-10 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-md bg-indigo-500/20 px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
-                <Sparkles className="h-3.5 w-3.5" />
-                Let&apos;s Connect
+            <div className="relative z-10 grid gap-10 lg:grid-cols-12 lg:items-center">
+              {/* Left Column: Headline & Social Links */}
+              <div className="lg:col-span-6 space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-md bg-indigo-500/20 px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Let&apos;s Connect
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl leading-tight">
+                  Have a product problem worth solving?
+                </h2>
+                <p className="text-sm sm:text-base leading-relaxed text-slate-300">
+                  I am actively seeking Fullstack Developer Intern opportunities
+                  and high-impact software engineering challenges. Drop your JD or note, or connect directly through any platform below.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  {basics.email && <CopyEmailButton email={basics.email} />}
+
+                  {basics.github && (
+                    <a
+                      href={
+                        basics.github.startsWith("http")
+                          ? basics.github
+                          : `https://${basics.github}`
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
+                    >
+                      <GithubIcon className="h-4 w-4" />
+                      <span>GitHub</span>
+                      <ArrowUpRight className="h-3.5 w-3.5 opacity-60" />
+                    </a>
+                  )}
+
+                  {basics.linkedin && (
+                    <a
+                      href={
+                        basics.linkedin.startsWith("http")
+                          ? basics.linkedin
+                          : `https://${basics.linkedin}`
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-blue-400/40 hover:bg-white/10 hover:text-white"
+                    >
+                      <LinkedinIcon className="h-4 w-4 text-blue-400" />
+                      <span>LinkedIn</span>
+                      <ArrowUpRight className="h-3.5 w-3.5 opacity-60" />
+                    </a>
+                  )}
+
+                  <a
+                    href="/resume"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:shadow-indigo-500/40 hover:scale-105"
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span>Read Full CV (A4)</span>
+                  </a>
+                </div>
               </div>
-              <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
-                Have a product problem worth solving?
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-slate-300 sm:text-lg">
-                I am actively seeking Fullstack Developer Intern opportunities
-                and exciting software engineering challenges. Feel free to reach
-                out directly!
-              </p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3.5">
-                {basics.email && <CopyEmailButton email={basics.email} />}
-
-                {basics.github && (
-                  <a
-                    href={
-                      basics.github.startsWith("http")
-                        ? basics.github
-                        : `https://${basics.github}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-                  >
-                    <GithubIcon className="h-4 w-4" />
-                    <span>GitHub</span>
-                    <ArrowUpRight className="h-3.5 w-3.5 opacity-60" />
-                  </a>
-                )}
-
-                {basics.linkedin && (
-                  <a
-                    href={
-                      basics.linkedin.startsWith("http")
-                        ? basics.linkedin
-                        : `https://${basics.linkedin}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-blue-400/40 hover:bg-white/10 hover:text-white"
-                  >
-                    <LinkedinIcon className="h-4 w-4 text-blue-400" />
-                    <span>LinkedIn</span>
-                    <ArrowUpRight className="h-3.5 w-3.5 opacity-60" />
-                  </a>
-                )}
-
-                <a
-                  href="/resume"
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:shadow-indigo-500/40 hover:scale-105"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Read Full CV (A4)</span>
-                </a>
+              {/* Right Column: Interactive Direct Message & JD Drop Form */}
+              <div className="lg:col-span-6">
+                <ContactForm />
               </div>
             </div>
           </div>
