@@ -26,7 +26,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { ResumePreview } from "./ResumePreview";
+import { ResumePreview, type FieldSelectTarget } from "./ResumePreview";
 import { getDraftResume, publishResume, saveResumeDraft } from "./resume-api";
 import {
   DEFAULT_SECTION_ORDER,
@@ -43,8 +43,8 @@ export function ResumeEditor() {
   const [notice, setNotice] = useState("Loading resume from the backend...");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(90);
-  const [showPageGuide, setShowPageGuide] = useState(true);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const [showPageGuide, setShowPageGuide] = useState(false);
 
   // Accordion collapsed state IDs
   const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>({});
@@ -136,12 +136,54 @@ export function ResumeEditor() {
     setValue("sectionOrder", newOrder, { shouldDirty: true, shouldValidate: true });
   };
 
+  const handleSelectFieldFromPreview = (target: FieldSelectTarget) => {
+    // 1. Auto-expand if the target item is currently collapsed
+    if (target.section === "technicalSkills" && target.index !== undefined) {
+      const fieldId = skills.fields[target.index]?.id;
+      if (fieldId) setCollapsedItems((prev) => ({ ...prev, [fieldId]: false }));
+    } else if (target.section === "experience" && target.index !== undefined) {
+      const fieldId = experience.fields[target.index]?.id;
+      if (fieldId) setCollapsedItems((prev) => ({ ...prev, [fieldId]: false }));
+    } else if (target.section === "projects" && target.index !== undefined) {
+      const fieldId = projects.fields[target.index]?.id;
+      if (fieldId) setCollapsedItems((prev) => ({ ...prev, [fieldId]: false }));
+    } else if (target.section === "education" && target.index !== undefined) {
+      const fieldId = education.fields[target.index]?.id;
+      if (fieldId) setCollapsedItems((prev) => ({ ...prev, [fieldId]: false }));
+    }
+
+    // 2. Smooth scroll & focus with highlight flash animation after DOM renders
+    setTimeout(() => {
+      let element: HTMLElement | null = null;
+
+      if (target.field) {
+        element = document.querySelector(`[name="${target.field}"]`) as HTMLElement;
+      }
+
+      if (!element && target.section) {
+        element = document.getElementById(`section-${target.section}`) as HTMLElement;
+      }
+
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.focus();
+
+        // Flash highlight ring and subtle background
+        element.classList.add("!border-blue-600", "ring-4", "ring-blue-500/40", "bg-blue-50/70", "transition-all", "duration-300");
+        setTimeout(() => {
+          element?.classList.remove("!border-blue-600", "ring-4", "ring-blue-500/40", "bg-blue-50/70");
+        }, 1500);
+      }
+    }, 100);
+  };
+
   const renderSectionForm = (key: ResumeSectionKey, sectionIdx: number) => {
     switch (key) {
       case "summary":
         return (
           <SectionHeader
             key="summary"
+            id="section-summary"
             title="Professional summary"
             sectionIndex={sectionIdx}
             totalSections={sectionOrder.length}
@@ -164,6 +206,7 @@ export function ResumeEditor() {
         return (
           <SectionHeader
             key="technicalSkills"
+            id="section-technicalSkills"
             title="Technical skills"
             sectionIndex={sectionIdx}
             totalSections={sectionOrder.length}
@@ -216,6 +259,7 @@ export function ResumeEditor() {
         return (
           <SectionHeader
             key="experience"
+            id="section-experience"
             title="Professional experience"
             sectionIndex={sectionIdx}
             totalSections={sectionOrder.length}
@@ -287,6 +331,7 @@ export function ResumeEditor() {
         return (
           <SectionHeader
             key="projects"
+            id="section-projects"
             title="Featured projects"
             sectionIndex={sectionIdx}
             totalSections={sectionOrder.length}
@@ -370,6 +415,7 @@ export function ResumeEditor() {
         return (
           <SectionHeader
             key="education"
+            id="section-education"
             title="Education"
             sectionIndex={sectionIdx}
             totalSections={sectionOrder.length}
@@ -447,7 +493,7 @@ export function ResumeEditor() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-sm font-bold tracking-tight sm:text-base">
-                  Resume Editor & CMS
+                  Sinoo Hub
                 </h1>
                 {isDirty ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">
@@ -574,7 +620,7 @@ export function ResumeEditor() {
           </div>
 
           {/* Basics (Fixed at top) */}
-          <fieldset className="border-t border-zinc-200 pt-4">
+          <fieldset id="section-basics" className="border-t border-zinc-200 pt-4 scroll-mt-20">
             <legend className="text-xs font-bold uppercase tracking-wider text-zinc-800">
               Basic information
             </legend>
@@ -693,6 +739,7 @@ export function ResumeEditor() {
               resume={resume}
               contentRef={contentRef}
               showPageGuide={showPageGuide}
+              onSelectField={handleSelectFieldFromPreview}
             />
           </div>
         </section>
@@ -702,6 +749,7 @@ export function ResumeEditor() {
 }
 
 function SectionHeader({
+  id,
   title,
   children,
   action,
@@ -711,6 +759,7 @@ function SectionHeader({
   onMoveUp,
   onMoveDown,
 }: {
+  id?: string;
   title: string;
   children: React.ReactNode;
   action?: string;
@@ -721,7 +770,7 @@ function SectionHeader({
   onMoveDown: () => void;
 }) {
   return (
-    <fieldset className="border-t border-zinc-200 pt-4">
+    <fieldset id={id} className="border-t border-zinc-200 pt-4 scroll-mt-20">
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <legend className="text-xs font-bold uppercase tracking-wider text-zinc-800">

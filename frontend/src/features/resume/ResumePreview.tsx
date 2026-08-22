@@ -31,20 +31,29 @@ function LinkedinIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   );
 }
 
+export type FieldSelectTarget = {
+  section: "basics" | "summary" | "technicalSkills" | "experience" | "projects" | "education";
+  field?: string;
+  index?: number;
+};
+
 type ResumePreviewProps = {
   resume: ResumeData;
   contentRef?: RefObject<HTMLDivElement | null>;
   showPageGuide?: boolean;
+  onSelectField?: (target: FieldSelectTarget) => void;
 };
 
 function CleanLink({
   href,
   children,
   icon,
+  onClick,
 }: {
   href: string;
   children: string;
   icon?: ReactNode;
+  onClick?: (e: React.MouseEvent) => void;
 }) {
   if (!href) return null;
   const safeHref = href.startsWith("http") ? href : `https://${href}`;
@@ -54,6 +63,7 @@ function CleanLink({
       href={safeHref}
       target="_blank"
       rel="noreferrer"
+      onClick={onClick}
     >
       {icon}
       <span>{children}</span>
@@ -81,13 +91,22 @@ function Bullets({ value }: { value: string }) {
 function ResumeSection({
   title,
   children,
+  onClick,
+  isInteractive,
 }: {
   title: string;
   children: ReactNode;
+  onClick?: () => void;
+  isInteractive?: boolean;
 }) {
   return (
     <section className="mt-4 first:mt-3">
-      <h2 className="mb-2 border-b border-slate-300 pb-0.5 text-[13px] font-bold uppercase tracking-wider text-slate-900">
+      <h2
+        onClick={onClick}
+        className={`mb-2 border-b border-slate-300 pb-0.5 text-[13px] font-bold uppercase tracking-wider text-slate-900 ${
+          isInteractive ? "cursor-pointer hover:text-blue-700 hover:border-blue-400 transition-colors" : ""
+        }`}
+      >
         {title}
       </h2>
       {children}
@@ -99,7 +118,14 @@ export function ResumePreview({
   resume,
   contentRef,
   showPageGuide = false,
+  onSelectField,
 }: ResumePreviewProps) {
+  const isInteractive = Boolean(onSelectField);
+
+  const interactiveClass = isInteractive
+    ? "cursor-pointer rounded hover:bg-blue-50/80 hover:outline-1 hover:outline-dashed hover:outline-blue-400 transition-colors"
+    : "";
+
   const sectionOrder: ResumeSectionKey[] =
     resume.sectionOrder && resume.sectionOrder.length > 0
       ? resume.sectionOrder
@@ -110,8 +136,22 @@ export function ResumePreview({
       case "summary":
         if (!resume.summary) return null;
         return (
-          <ResumeSection key="summary" title="Professional Summary">
-            <p className="text-[12.5px] leading-relaxed text-slate-700 text-justify">
+          <ResumeSection
+            key="summary"
+            title="Professional Summary"
+            onClick={() => onSelectField?.({ section: "summary", field: "summary" })}
+            isInteractive={isInteractive}
+          >
+            <p
+              onClick={(e) => {
+                if (isInteractive) {
+                  e.stopPropagation();
+                  onSelectField?.({ section: "summary", field: "summary" });
+                }
+              }}
+              className={`text-[12.5px] leading-relaxed text-slate-700 text-justify ${interactiveClass}`}
+              title={isInteractive ? "Click to edit Professional Summary" : undefined}
+            >
               {resume.summary}
             </p>
           </ResumeSection>
@@ -121,17 +161,47 @@ export function ResumePreview({
         if (!resume.technicalSkills || resume.technicalSkills.length === 0)
           return null;
         return (
-          <ResumeSection key="technicalSkills" title="Technical Skills">
+          <ResumeSection
+            key="technicalSkills"
+            title="Technical Skills"
+            onClick={() => onSelectField?.({ section: "technicalSkills", index: 0, field: "technicalSkills.0.category" })}
+            isInteractive={isInteractive}
+          >
             <div className="space-y-1 text-[12.5px] leading-snug text-slate-700">
               {resume.technicalSkills.map((skill, index) => (
-                <div
-                  key={`${skill.category}-${index}`}
-                  className="flex items-baseline gap-1"
-                >
-                  <strong className="min-w-fit font-semibold text-slate-950">
+                <div key={`${skill.category}-${index}`} className="flex items-baseline gap-1">
+                  <strong
+                    onClick={(e) => {
+                      if (isInteractive) {
+                        e.stopPropagation();
+                        onSelectField?.({
+                          section: "technicalSkills",
+                          index,
+                          field: `technicalSkills.${index}.category`,
+                        });
+                      }
+                    }}
+                    className={`min-w-fit font-semibold text-slate-950 ${interactiveClass}`}
+                    title={isInteractive ? `Click to edit Category name: "${skill.category}"` : undefined}
+                  >
                     {skill.category}:
-                  </strong>
-                  <span>{skill.items}</span>
+                  </strong>{" "}
+                  <span
+                    onClick={(e) => {
+                      if (isInteractive) {
+                        e.stopPropagation();
+                        onSelectField?.({
+                          section: "technicalSkills",
+                          index,
+                          field: `technicalSkills.${index}.items`,
+                        });
+                      }
+                    }}
+                    className={interactiveClass}
+                    title={isInteractive ? `Click to edit Skills in "${skill.category}"` : undefined}
+                  >
+                    {skill.items}
+                  </span>
                 </div>
               ))}
             </div>
@@ -141,25 +211,92 @@ export function ResumePreview({
       case "experience":
         if (!resume.experience || resume.experience.length === 0) return null;
         return (
-          <ResumeSection key="experience" title="Professional Experience">
-            <div className="space-y-3.5">
+          <ResumeSection
+            key="experience"
+            title="Professional Experience"
+            onClick={() => onSelectField?.({ section: "experience", index: 0, field: "experience.0.role" })}
+            isInteractive={isInteractive}
+          >
+            <div className="space-y-3">
               {resume.experience.map((item, index) => (
-                <article
-                  key={`${item.company}-${index}`}
-                  className="break-inside-avoid"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                <article key={`${item.company}-${index}`} className="break-inside-avoid">
+                  <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[13px] font-bold text-slate-950">
-                      {item.role}{" "}
-                      <span className="font-normal text-slate-700">
-                        — {item.company}
+                      <span
+                        onClick={(e) => {
+                          if (isInteractive) {
+                            e.stopPropagation();
+                            onSelectField?.({
+                              section: "experience",
+                              index,
+                              field: `experience.${index}.role`,
+                            });
+                          }
+                        }}
+                        className={interactiveClass}
+                        title={isInteractive ? "Click to edit Role" : undefined}
+                      >
+                        {item.role}
                       </span>
+                      {item.company && (
+                        <span className="font-normal text-slate-700">
+                          {" "}—{" "}
+                          <span
+                            onClick={(e) => {
+                              if (isInteractive) {
+                                e.stopPropagation();
+                                onSelectField?.({
+                                  section: "experience",
+                                  index,
+                                  field: `experience.${index}.company`,
+                                });
+                              }
+                            }}
+                            className={interactiveClass}
+                            title={isInteractive ? "Click to edit Company" : undefined}
+                          >
+                            {item.company}
+                          </span>
+                        </span>
+                      )}
                     </h3>
-                    <span className="text-[11.5px] font-medium text-slate-500">
-                      {item.period}
-                    </span>
+                    {item.period && (
+                      <span
+                        onClick={(e) => {
+                          if (isInteractive) {
+                            e.stopPropagation();
+                            onSelectField?.({
+                              section: "experience",
+                              index,
+                              field: `experience.${index}.period`,
+                            });
+                          }
+                        }}
+                        className={`shrink-0 whitespace-nowrap text-[11.5px] font-medium text-slate-500 ${interactiveClass}`}
+                        title={isInteractive ? "Click to edit Period" : undefined}
+                      >
+                        {item.period}
+                      </span>
+                    )}
                   </div>
-                  <Bullets value={item.highlights} />
+                  {item.highlights && (
+                    <div
+                      onClick={(e) => {
+                        if (isInteractive) {
+                          e.stopPropagation();
+                          onSelectField?.({
+                            section: "experience",
+                            index,
+                            field: `experience.${index}.highlights`,
+                          });
+                        }
+                      }}
+                      className={interactiveClass}
+                      title={isInteractive ? "Click to edit Highlights bullets" : undefined}
+                    >
+                      <Bullets value={item.highlights} />
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
@@ -169,31 +306,89 @@ export function ResumePreview({
       case "projects":
         if (!resume.projects || resume.projects.length === 0) return null;
         return (
-          <ResumeSection key="projects" title="Featured Projects">
-            <div className="space-y-3.5">
+          <ResumeSection
+            key="projects"
+            title="Featured Projects"
+            onClick={() => onSelectField?.({ section: "projects", index: 0, field: "projects.0.name" })}
+            isInteractive={isInteractive}
+          >
+            <div className="space-y-3">
               {resume.projects.map((project, index) => (
-                <article
-                  key={`${project.name}-${index}`}
-                  className="break-inside-avoid"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                <article key={`${project.name}-${index}`} className="break-inside-avoid">
+                  <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[13px] font-bold text-slate-950">
-                      {project.name}
+                      <span
+                        onClick={(e) => {
+                          if (isInteractive) {
+                            e.stopPropagation();
+                            onSelectField?.({
+                              section: "projects",
+                              index,
+                              field: `projects.${index}.name`,
+                            });
+                          }
+                        }}
+                        className={interactiveClass}
+                        title={isInteractive ? "Click to edit Project Name" : undefined}
+                      >
+                        {project.name}
+                      </span>
                       {project.role && (
                         <span className="font-normal text-slate-700">
-                          {" "}
-                          · {project.role}
+                          {" "}·{" "}
+                          <span
+                            onClick={(e) => {
+                              if (isInteractive) {
+                                e.stopPropagation();
+                                onSelectField?.({
+                                  section: "projects",
+                                  index,
+                                  field: `projects.${index}.role`,
+                                });
+                              }
+                            }}
+                            className={interactiveClass}
+                            title={isInteractive ? "Click to edit Project Role" : undefined}
+                          >
+                            {project.role}
+                          </span>
                         </span>
                       )}
                     </h3>
                     {project.period && (
-                      <span className="text-[11.5px] font-medium text-slate-500">
+                      <span
+                        onClick={(e) => {
+                          if (isInteractive) {
+                            e.stopPropagation();
+                            onSelectField?.({
+                              section: "projects",
+                              index,
+                              field: `projects.${index}.period`,
+                            });
+                          }
+                        }}
+                        className={`shrink-0 whitespace-nowrap text-[11.5px] font-medium text-slate-500 ${interactiveClass}`}
+                        title={isInteractive ? "Click to edit Period" : undefined}
+                      >
                         {project.period}
                       </span>
                     )}
                   </div>
                   {project.techStack && (
-                    <p className="mt-0.5 text-[12px] text-slate-600">
+                    <p
+                      onClick={(e) => {
+                        if (isInteractive) {
+                          e.stopPropagation();
+                          onSelectField?.({
+                            section: "projects",
+                            index,
+                            field: `projects.${index}.techStack`,
+                          });
+                        }
+                      }}
+                      className={`mt-0.5 text-[12px] text-slate-600 ${interactiveClass}`}
+                      title={isInteractive ? "Click to edit Tech Stack" : undefined}
+                    >
                       <strong className="font-semibold text-slate-800">
                         Tech Stack:
                       </strong>{" "}
@@ -202,15 +397,48 @@ export function ResumePreview({
                   )}
                   {project.repository && (
                     <div className="mt-0.5 text-[12px]">
-                      <CleanLink
-                        href={project.repository}
-                        icon={<ExternalLink className="h-3 w-3" />}
+                      <span
+                        onClick={(e) => {
+                          if (isInteractive) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onSelectField?.({
+                              section: "projects",
+                              index,
+                              field: `projects.${index}.repository`,
+                            });
+                          }
+                        }}
+                        className={interactiveClass}
+                        title={isInteractive ? "Click to edit Repository URL" : undefined}
                       >
-                        {project.repository}
-                      </CleanLink>
+                        <CleanLink
+                          href={project.repository}
+                          icon={<ExternalLink className="h-3 w-3" />}
+                        >
+                          {project.repository}
+                        </CleanLink>
+                      </span>
                     </div>
                   )}
-                  <Bullets value={project.highlights} />
+                  {project.highlights && (
+                    <div
+                      onClick={(e) => {
+                        if (isInteractive) {
+                          e.stopPropagation();
+                          onSelectField?.({
+                            section: "projects",
+                            index,
+                            field: `projects.${index}.highlights`,
+                          });
+                        }
+                      }}
+                      className={interactiveClass}
+                      title={isInteractive ? "Click to edit Highlights bullets" : undefined}
+                    >
+                      <Bullets value={project.highlights} />
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
@@ -220,29 +448,94 @@ export function ResumePreview({
       case "education":
         if (!resume.education || resume.education.length === 0) return null;
         return (
-          <ResumeSection key="education" title="Education">
-            <div className="space-y-2.5">
+          <ResumeSection
+            key="education"
+            title="Education"
+            onClick={() => onSelectField?.({ section: "education", index: 0, field: "education.0.institution" })}
+            isInteractive={isInteractive}
+          >
+            <div className="space-y-2">
               {resume.education.map((item, index) => (
-                <article
-                  key={`${item.institution}-${index}`}
-                  className="break-inside-avoid"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                <article key={`${item.institution}-${index}`} className="break-inside-avoid">
+                  <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[13px] font-bold text-slate-950">
-                      {item.institution}
+                      <span
+                        onClick={(e) => {
+                          if (isInteractive) {
+                            e.stopPropagation();
+                            onSelectField?.({
+                              section: "education",
+                              index,
+                              field: `education.${index}.institution`,
+                            });
+                          }
+                        }}
+                        className={interactiveClass}
+                        title={isInteractive ? "Click to edit Institution" : undefined}
+                      >
+                        {item.institution}
+                      </span>
+                      {item.degree && (
+                        <span className="font-medium text-slate-800">
+                          {" "}·{" "}
+                          <span
+                            onClick={(e) => {
+                              if (isInteractive) {
+                                e.stopPropagation();
+                                onSelectField?.({
+                                  section: "education",
+                                  index,
+                                  field: `education.${index}.degree`,
+                                });
+                              }
+                            }}
+                            className={interactiveClass}
+                            title={isInteractive ? "Click to edit Degree" : undefined}
+                          >
+                            {item.degree}
+                          </span>
+                        </span>
+                      )}
                     </h3>
-                    <span className="text-[11.5px] font-medium text-slate-500">
-                      {item.period}
-                    </span>
-                  </div>
-                  <p className="text-[12.5px] text-slate-700">
-                    <span className="font-medium text-slate-900">
-                      {item.degree}
-                    </span>
-                    {item.details && (
-                      <span className="text-slate-600"> · {item.details}</span>
+                    {item.period && (
+                      <span
+                        onClick={(e) => {
+                          if (isInteractive) {
+                            e.stopPropagation();
+                            onSelectField?.({
+                              section: "education",
+                              index,
+                              field: `education.${index}.period`,
+                            });
+                          }
+                        }}
+                        className={`shrink-0 whitespace-nowrap text-[11.5px] font-medium text-slate-500 ${interactiveClass}`}
+                        title={isInteractive ? "Click to edit Period" : undefined}
+                      >
+                        {item.period}
+                      </span>
                     )}
-                  </p>
+                  </div>
+                  {item.details && (
+                    <p className="text-[12px] text-slate-600">
+                      <span
+                        onClick={(e) => {
+                          if (isInteractive) {
+                            e.stopPropagation();
+                            onSelectField?.({
+                              section: "education",
+                              index,
+                              field: `education.${index}.details`,
+                            });
+                          }
+                        }}
+                        className={interactiveClass}
+                        title={isInteractive ? "Click to edit Additional details" : undefined}
+                      >
+                        {item.details}
+                      </span>
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
@@ -265,10 +558,18 @@ export function ResumePreview({
         <header className="border-b-2 border-slate-800 pb-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+              <h1
+                onClick={() => onSelectField?.({ section: "basics", field: "basics.name" })}
+                className={`text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl ${interactiveClass}`}
+                title={isInteractive ? "Click to edit Full name" : undefined}
+              >
                 {resume.basics.name}
               </h1>
-              <p className="mt-0.5 text-sm font-semibold text-slate-700">
+              <p
+                onClick={() => onSelectField?.({ section: "basics", field: "basics.headline" })}
+                className={`mt-0.5 text-sm font-semibold text-slate-700 ${interactiveClass}`}
+                title={isInteractive ? "Click to edit Headline" : undefined}
+              >
                 {resume.basics.headline}
               </p>
             </div>
@@ -276,43 +577,86 @@ export function ResumePreview({
 
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600">
             {resume.basics.location && (
-              <span className="inline-flex items-center gap-1">
+              <span
+                onClick={() => onSelectField?.({ section: "basics", field: "basics.location" })}
+                className={`inline-flex items-center gap-1 ${interactiveClass}`}
+                title={isInteractive ? "Click to edit Location" : undefined}
+              >
                 <MapPin className="h-3.5 w-3.5 text-slate-400" />
                 <span>{resume.basics.location}</span>
               </span>
             )}
             {resume.basics.email && (
-              <a
-                href={`mailto:${resume.basics.email}`}
-                className="inline-flex items-center gap-1 hover:text-slate-950"
+              <span
+                onClick={(e) => {
+                  if (isInteractive) {
+                    e.preventDefault();
+                    onSelectField?.({ section: "basics", field: "basics.email" });
+                  }
+                }}
+                className={`inline-flex items-center gap-1 hover:text-slate-950 ${interactiveClass}`}
+                title={isInteractive ? "Click to edit Email" : undefined}
               >
                 <Mail className="h-3.5 w-3.5 text-slate-400" />
                 <span>{resume.basics.email}</span>
-              </a>
+              </span>
             )}
             {resume.basics.website && (
-              <CleanLink
-                href={resume.basics.website}
-                icon={<Globe className="h-3.5 w-3.5 text-slate-400" />}
+              <span
+                onClick={(e) => {
+                  if (isInteractive) {
+                    e.preventDefault();
+                    onSelectField?.({ section: "basics", field: "basics.website" });
+                  }
+                }}
+                className={interactiveClass}
+                title={isInteractive ? "Click to edit Website" : undefined}
               >
-                {resume.basics.website}
-              </CleanLink>
+                <CleanLink
+                  href={resume.basics.website}
+                  icon={<Globe className="h-3.5 w-3.5 text-slate-400" />}
+                >
+                  {resume.basics.website}
+                </CleanLink>
+              </span>
             )}
             {resume.basics.linkedin && (
-              <CleanLink
-                href={resume.basics.linkedin}
-                icon={<LinkedinIcon className="h-3.5 w-3.5 text-slate-400" />}
+              <span
+                onClick={(e) => {
+                  if (isInteractive) {
+                    e.preventDefault();
+                    onSelectField?.({ section: "basics", field: "basics.linkedin" });
+                  }
+                }}
+                className={interactiveClass}
+                title={isInteractive ? "Click to edit LinkedIn" : undefined}
               >
-                {resume.basics.linkedin}
-              </CleanLink>
+                <CleanLink
+                  href={resume.basics.linkedin}
+                  icon={<LinkedinIcon className="h-3.5 w-3.5 text-slate-400" />}
+                >
+                  {resume.basics.linkedin}
+                </CleanLink>
+              </span>
             )}
             {resume.basics.github && (
-              <CleanLink
-                href={resume.basics.github}
-                icon={<GithubIcon className="h-3.5 w-3.5 text-slate-400" />}
+              <span
+                onClick={(e) => {
+                  if (isInteractive) {
+                    e.preventDefault();
+                    onSelectField?.({ section: "basics", field: "basics.github" });
+                  }
+                }}
+                className={interactiveClass}
+                title={isInteractive ? "Click to edit GitHub" : undefined}
               >
-                {resume.basics.github}
-              </CleanLink>
+                <CleanLink
+                  href={resume.basics.github}
+                  icon={<GithubIcon className="h-3.5 w-3.5 text-slate-400" />}
+                >
+                  {resume.basics.github}
+                </CleanLink>
+              </span>
             )}
           </div>
         </header>
