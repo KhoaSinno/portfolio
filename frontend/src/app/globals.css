@@ -1,9 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0f172a;
+  --foreground: #f8fafc;
 }
+
+.skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 50; background: white; color: #0f172a; padding: .75rem 1rem; font-weight: 700; }
+.skip-link:focus { top: 1rem; outline: 3px solid #22c55e; }
+.contact-link { display: inline-flex; min-height: 44px; align-items: center; gap: .5rem; border: 1px solid #64748b; border-radius: .375rem; padding: .65rem .9rem; font-weight: 600; transition: .2s ease; }
+.contact-link:hover { border-color: #86efac; background: rgb(255 255 255 / .06); }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
 
 @theme inline {
   --color-background: var(--background);
