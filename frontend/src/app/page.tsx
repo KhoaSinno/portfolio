@@ -359,22 +359,40 @@ export default async function Home() {
                       </div>
                     )}
 
-                    {project.repository && (
-                      <div className="mt-4 flex items-center justify-between">
-                        <a
-                          href={
-                            project.repository.startsWith("http")
-                              ? project.repository
-                              : `https://${project.repository}`
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
-                        >
-                          <GithubIcon className="h-3.5 w-3.5" />
-                          <span>Source / Demo</span>
-                          <ArrowUpRight className="h-3.5 w-3.5" />
-                        </a>
+                    {(project.repository || project.demoUrl) && (
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        {project.repository && (
+                          <a
+                            href={
+                              project.repository.startsWith("http")
+                                ? project.repository
+                                : `https://${project.repository}`
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                          >
+                            <GithubIcon className="h-3.5 w-3.5" />
+                            <span>Source Code</span>
+                            <ArrowUpRight className="h-3 w-3 text-slate-400" />
+                          </a>
+                        )}
+                        {project.demoUrl && (
+                          <a
+                            href={
+                              project.demoUrl.startsWith("http")
+                                ? project.demoUrl
+                                : `https://${project.demoUrl}`
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-300 transition hover:border-indigo-500/50 hover:bg-indigo-500/20 hover:text-white"
+                          >
+                            <Globe className="h-3.5 w-3.5 text-indigo-400" />
+                            <span>Live Demo</span>
+                            <ExternalLink className="h-3 w-3 text-indigo-400" />
+                          </a>
+                        )}
                       </div>
                     )}
                   </div>
@@ -544,9 +562,21 @@ export default async function Home() {
                     {edu.degree}
                   </p>
                   {edu.details && (
-                    <p className="mt-2 text-xs text-slate-400 leading-relaxed">
-                      {edu.details}
-                    </p>
+                    <div className="mt-3 space-y-1.5">
+                      {edu.details
+                        .split("\n")
+                        .map((line) => line.trim().replace(/^[-•*]\s*/, ""))
+                        .filter(Boolean)
+                        .map((bullet, bIdx) => (
+                          <div
+                            key={bIdx}
+                            className="flex items-start gap-2 text-xs text-slate-400 leading-relaxed"
+                          >
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400/80" />
+                            <span>{bullet}</span>
+                          </div>
+                        ))}
+                    </div>
                   )}
                 </div>
               </div>

@@ -51,17 +51,18 @@ export const resumeSchema = z.object({
   experience: z.array(datedRole),
   projects: z.array(z.object({
     name: z.string().min(1, "Project name is required."),
-    role: z.string(),
-    period: z.string(),
-    techStack: z.string(),
-    repository: z.string(),
-    highlights: z.string(),
+    role: z.string().optional(),
+    period: z.string().optional(),
+    techStack: z.string().optional(),
+    repository: z.string().optional(),
+    demoUrl: z.string().optional(),
+    highlights: z.string().optional(),
   })).min(1, "Add at least one featured project."),
   education: z.array(z.object({
     institution: z.string().min(1, "Institution is required."),
     period: z.string().min(1, "Period is required."),
     degree: z.string().min(1, "Degree is required."),
-    details: z.string(),
+    details: z.string().optional(),
   })).min(1, "Add at least one education entry."),
   sectionOrder: z.array(z.enum(["summary", "technicalSkills", "experience", "projects", "education"])),
 });
@@ -107,6 +108,7 @@ export const defaultResume: ResumeData = {
       techStack:
         "Flutter · FastAPI · Hybrid RAG · Voice realtime with Livekit and OpenAI realtime API · Supabase",
       repository: "github.com/khoasinno",
+      demoUrl: "",
       highlights:
         "Built a Vietnamese audiobook application with intelligent voice conversational AI assistant.\nIntegrated LiveKit WebRTC and OpenAI Realtime API for low-latency voice streaming.\nImplemented Hybrid RAG with Vector Search and RRF reranking for accurate content discovery.",
     },
@@ -116,6 +118,7 @@ export const defaultResume: ResumeData = {
       period: "5/2026 - 8/2026",
       techStack: "Next.js · TypeScript · NestJS · PostgreSQL",
       repository: "github.com/khoasinno/portfolio",
+      demoUrl: "https://www.nguyentrananhkhoa.id.vn",
       highlights:
         "Designed a fullstack portfolio with a structured resume editor.\nBuilt reusable resume templates with print-ready HTML and CSS.\nPlanned a scalable backend architecture for projects, AI chat, and content management.",
     },
@@ -125,7 +128,7 @@ export const defaultResume: ResumeData = {
       institution: "Can Tho University of Technology",
       period: "2022 — Now",
       degree: "Information Technology",
-      details: "Major in Software Engineering",
+      details: "Major in Software Engineering · GPA: 3.6/4.0\nCapstone Project: Triam Audiobook with AI Voice Agent",
     },
   ],
   sectionOrder: ["summary", "technicalSkills", "projects", "education"],

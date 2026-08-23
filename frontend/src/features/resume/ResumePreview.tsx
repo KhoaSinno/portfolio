@@ -395,30 +395,56 @@ export function ResumePreview({
                       <span className="italic">{project.techStack}</span>
                     </p>
                   )}
-                  {project.repository && (
-                    <div className="mt-0.5 text-[12px]">
-                      <span
-                        onClick={(e) => {
-                          if (isInteractive) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onSelectField?.({
-                              section: "projects",
-                              index,
-                              field: `projects.${index}.repository`,
-                            });
-                          }
-                        }}
-                        className={interactiveClass}
-                        title={isInteractive ? "Click to edit Repository URL" : undefined}
-                      >
-                        <CleanLink
-                          href={project.repository}
-                          icon={<ExternalLink className="h-3 w-3" />}
+                  {(project.repository || project.demoUrl) && (
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
+                      {project.repository && (
+                        <span
+                          onClick={(e) => {
+                            if (isInteractive) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onSelectField?.({
+                                section: "projects",
+                                index,
+                                field: `projects.${index}.repository`,
+                              });
+                            }
+                          }}
+                          className={interactiveClass}
+                          title={isInteractive ? "Click to edit Repository URL" : undefined}
                         >
-                          {project.repository}
-                        </CleanLink>
-                      </span>
+                          <CleanLink
+                            href={project.repository}
+                            icon={<GithubIcon className="h-3 w-3" />}
+                          >
+                            {project.repository}
+                          </CleanLink>
+                        </span>
+                      )}
+                      {project.demoUrl && (
+                        <span
+                          onClick={(e) => {
+                            if (isInteractive) {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onSelectField?.({
+                                section: "projects",
+                                index,
+                                field: `projects.${index}.demoUrl`,
+                              });
+                            }
+                          }}
+                          className={interactiveClass}
+                          title={isInteractive ? "Click to edit Live Demo URL" : undefined}
+                        >
+                          <CleanLink
+                            href={project.demoUrl}
+                            icon={<ExternalLink className="h-3 w-3" />}
+                          >
+                            {project.demoUrl}
+                          </CleanLink>
+                        </span>
+                      )}
                     </div>
                   )}
                   {project.highlights && (
@@ -517,24 +543,28 @@ export function ResumePreview({
                     )}
                   </div>
                   {item.details && (
-                    <p className="text-[12px] text-slate-600">
-                      <span
-                        onClick={(e) => {
-                          if (isInteractive) {
-                            e.stopPropagation();
-                            onSelectField?.({
-                              section: "education",
-                              index,
-                              field: `education.${index}.details`,
-                            });
-                          }
-                        }}
-                        className={interactiveClass}
-                        title={isInteractive ? "Click to edit Additional details" : undefined}
-                      >
-                        {item.details}
-                      </span>
-                    </p>
+                    <div
+                      onClick={(e) => {
+                        if (isInteractive) {
+                          e.stopPropagation();
+                          onSelectField?.({
+                            section: "education",
+                            index,
+                            field: `education.${index}.details`,
+                          });
+                        }
+                      }}
+                      className={interactiveClass}
+                      title={isInteractive ? "Click to edit Additional details" : undefined}
+                    >
+                      {item.details.includes("\n") || item.details.trim().startsWith("•") || item.details.trim().startsWith("-") ? (
+                        <Bullets value={item.details} />
+                      ) : (
+                        <p className="mt-0.5 text-[12px] text-slate-600">
+                          {item.details}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </article>
               ))}

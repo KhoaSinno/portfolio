@@ -447,6 +447,7 @@ export function ResumeEditor() {
                 period: "",
                 techStack: "",
                 repository: "",
+                demoUrl: "",
                 highlights: "",
               })
             }
@@ -488,17 +489,21 @@ export function ResumeEditor() {
                       {...register(`projects.${index}.period`)}
                     />
                     <Field
-                      label="Repository / Demo URL"
+                      label="Tech stack"
+                      placeholder="Next.js · TypeScript · NestJS · PostgreSQL"
+                      {...register(`projects.${index}.techStack`)}
+                    />
+                    <Field
+                      label="Repository (GitHub)"
                       placeholder="github.com/name/project"
                       {...register(`projects.${index}.repository`)}
                     />
+                    <Field
+                      label="Live Demo URL"
+                      placeholder="myproject.vercel.app"
+                      {...register(`projects.${index}.demoUrl`)}
+                    />
                   </div>
-                  <Field
-                    className="mt-3"
-                    label="Tech stack"
-                    placeholder="Next.js · TypeScript · NestJS · PostgreSQL"
-                    {...register(`projects.${index}.techStack`)}
-                  />
                   <label className="mt-3 block text-xs font-medium text-zinc-700">
                     Key Highlights <span className="font-normal text-zinc-500">(one bullet per line)</span>
                   </label>
@@ -560,18 +565,22 @@ export function ResumeEditor() {
                       error={errors.education?.[index]?.period?.message}
                       {...register(`education.${index}.period`)}
                     />
-                    <Field
-                      label="Degree"
-                      placeholder="B.Sc. in Information Technology"
-                      error={errors.education?.[index]?.degree?.message}
-                      {...register(`education.${index}.degree`)}
-                    />
-                    <Field
-                      label="Additional details"
-                      placeholder="GPA: 3.6/4.0 · Major in Software Engineering"
-                      {...register(`education.${index}.details`)}
-                    />
                   </div>
+                  <Field
+                    className="mt-3"
+                    label="Degree / Major"
+                    placeholder="B.Sc. in Information Technology"
+                    error={errors.education?.[index]?.degree?.message}
+                    {...register(`education.${index}.degree`)}
+                  />
+                  <label className="mt-3 block text-xs font-medium text-zinc-700">
+                    Additional details <span className="font-normal text-zinc-500">(GPA, Capstone, Scholarships — one bullet per line)</span>
+                  </label>
+                  <textarea
+                    className="field mt-1 min-h-20"
+                    placeholder="Major in Software Engineering · GPA: 3.6/4.0&#10;Capstone Project: Triam Audiobook with AI Voice Agent&#10;Academic Excellence Scholarship 2024"
+                    {...register(`education.${index}.details`)}
+                  />
                 </CollapsibleCard>
               );
             })}
