@@ -21,6 +21,7 @@ export function PublicResume({ slug }: { slug?: string }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [resume, setResume] = useState<ResumeData>(defaultResume);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(100);
   const [exportingImage, setExportingImage] = useState(false);
 
@@ -102,10 +103,15 @@ export function PublicResume({ slug }: { slug?: string }) {
   useEffect(() => {
     void getPublishedResume(slug)
       .then((published) => {
-        if (published) setResume(published);
+        if (published) {
+          setResume(published);
+          setNotFound(false);
+        } else {
+          setNotFound(true);
+        }
       })
       .catch(() => {
-        setResume(defaultResume);
+        setNotFound(true);
       })
       .finally(() => setLoading(false));
   }, [slug]);
@@ -217,6 +223,13 @@ export function PublicResume({ slug }: { slug?: string }) {
                 <span>Loading CV document...</span>
               </div>
             </div>
+          ) : notFound ? (
+            <section className="flex min-h-[60vh] w-full max-w-2xl flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-white p-10 text-center shadow-xl">
+              <FileText className="h-10 w-10 text-zinc-400" aria-hidden="true" />
+              <h1 className="mt-5 text-2xl font-bold tracking-tight text-zinc-900">This CV is not available</h1>
+              <p className="mt-3 max-w-md leading-7 text-zinc-600">The link may be incorrect, or this CV has not been published yet.</p>
+              <a href="/resume" className="mt-7 inline-flex min-h-11 items-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800">View primary CV</a>
+            </section>
           ) : (
             <ResumePreview resume={resume} contentRef={contentRef} />
           )}

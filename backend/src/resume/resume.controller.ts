@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -13,6 +14,10 @@ import {
   type AuthenticatedRequest,
 } from '../auth/supabase-auth.guard';
 import { UpsertResumeDto } from './dto/upsert-resume.dto';
+import {
+  CreateResumeProfileDto,
+  UpdateResumeMetaDto,
+} from './dto/create-resume-profile.dto';
 import { ResumeService } from './resume.service';
 
 @Controller('api')
@@ -28,10 +33,16 @@ export class ResumeController {
     };
   }
 
+  // --- Public Resume Endpoints ---
+
   @Get('resume')
   async getPublished() {
     const resume = await this.resumeService.getPublished();
     return {
+      id: resume.id,
+      title: resume.title,
+      slug: resume.slug,
+      isPrimary: resume.isPrimary,
       content: resume.content,
       template: resume.template,
       publishedAt: resume.publishedAt,
@@ -42,11 +53,110 @@ export class ResumeController {
   async getPublishedBySlug(@Param('slug') slug: string) {
     const resume = await this.resumeService.getPublishedBySlug(slug);
     return {
+      id: resume.id,
+      title: resume.title,
+      slug: resume.slug,
+      isPrimary: resume.isPrimary,
       content: resume.content,
       template: resume.template,
       publishedAt: resume.publishedAt,
     };
   }
+
+  // --- Multi-CV Admin Management Endpoints ---
+
+  @Get('admin/resumes')
+  @UseGuards(SupabaseAuthGuard)
+  listResumes(@Req() request: AuthenticatedRequest) {
+    return this.resumeService.listResumes(request.user.id);
+  }
+
+  @Post('admin/resumes')
+  @UseGuards(SupabaseAuthGuard)
+  createResume(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: CreateResumeProfileDto,
+  ) {
+    return this.resumeService.createOrDuplicate(request.user.id, dto);
+  }
+
+  @Get('admin/resumes/:id')
+  @UseGuards(SupabaseAuthGuard)
+  getResumeById(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.resumeService.getResumeById(request.user.id, id);
+  }
+
+  @Put('admin/resumes/:id/meta')
+  @UseGuards(SupabaseAuthGuard)
+  updateResumeMeta(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateResumeMetaDto,
+  ) {
+    return this.resumeService.updateMeta(request.user.id, id, dto);
+  }
+
+  @Put('admin/resumes/:id')
+  @UseGuards(SupabaseAuthGuard)
+  saveDraftById(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: UpsertResumeDto,
+  ) {
+    return this.resumeService.saveDraftById(request.user.id, id, dto);
+  }
+
+  @Post('admin/resumes/:id/publish')
+  @UseGuards(SupabaseAuthGuard)
+  publishById(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: UpsertResumeDto,
+  ) {
+    return this.resumeService.publishById(request.user.id, id, dto);
+  }
+
+  @Post('admin/resumes/:id/set-primary')
+  @UseGuards(SupabaseAuthGuard)
+  setPrimary(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.resumeService.setPrimary(request.user.id, id);
+  }
+
+  @Delete('admin/resumes/:id')
+  @UseGuards(SupabaseAuthGuard)
+  deleteResume(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.resumeService.deleteResume(request.user.id, id);
+  }
+
+  @Get('admin/resumes/:id/versions')
+  @UseGuards(SupabaseAuthGuard)
+  getResumeVersions(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.resumeService.getVersions(id, request.user.id);
+  }
+
+  @Post('admin/resumes/:id/rollback/:versionId')
+  @UseGuards(SupabaseAuthGuard)
+  rollbackResumeVersion(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
+    return this.resumeService.rollbackVersion(id, versionId, request.user.id);
+  }
+
+  // --- Backward-Compatible Endpoints for Default Resume ---
 
   @Get('admin/resume')
   @UseGuards(SupabaseAuthGuard)
@@ -54,6 +164,9 @@ export class ResumeController {
     const resume = await this.resumeService.getDraft(request.user.id);
     return resume
       ? {
+          id: resume.id,
+          title: resume.title,
+          isPrimary: resume.isPrimary,
           content: resume.content,
           slug: resume.slug,
           template: resume.template,
@@ -65,31 +178,46 @@ export class ResumeController {
 
   @Put('admin/resume')
   @UseGuards(SupabaseAuthGuard)
-  saveDraft(
+  async saveDraft(
     @Req() request: AuthenticatedRequest,
     @Body() dto: UpsertResumeDto,
   ) {
-    return this.resumeService.saveDraft(request.user.id, dto);
+    const primary = await this.resumeService.getDraft(request.user.id);
+    if (!primary) return null;
+    return this.resumeService.saveDraftById(request.user.id, primary.id, dto);
   }
 
   @Post('admin/resume/publish')
   @UseGuards(SupabaseAuthGuard)
-  publish(@Req() request: AuthenticatedRequest, @Body() dto: UpsertResumeDto) {
-    return this.resumeService.publish(request.user.id, dto);
+  async publish(
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: UpsertResumeDto,
+  ) {
+    const primary = await this.resumeService.getDraft(request.user.id);
+    if (!primary) return null;
+    return this.resumeService.publishById(request.user.id, primary.id, dto);
   }
 
   @Get('admin/resume/versions')
   @UseGuards(SupabaseAuthGuard)
-  getVersions(@Req() request: AuthenticatedRequest) {
-    return this.resumeService.getVersions(request.user.id);
+  async getVersions(@Req() request: AuthenticatedRequest) {
+    const primary = await this.resumeService.getDraft(request.user.id);
+    if (!primary) return [];
+    return this.resumeService.getVersions(primary.id, request.user.id);
   }
 
   @Post('admin/resume/rollback/:versionId')
   @UseGuards(SupabaseAuthGuard)
-  rollback(
+  async rollback(
     @Req() request: AuthenticatedRequest,
     @Param('versionId') versionId: string,
   ) {
-    return this.resumeService.rollbackVersion(request.user.id, versionId);
+    const primary = await this.resumeService.getDraft(request.user.id);
+    if (!primary) return null;
+    return this.resumeService.rollbackVersion(
+      primary.id,
+      versionId,
+      request.user.id,
+    );
   }
 }

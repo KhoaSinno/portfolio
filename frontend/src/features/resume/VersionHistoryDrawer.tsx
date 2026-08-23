@@ -22,14 +22,16 @@ interface VersionHistoryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onRollback: (version: ResumeVersionItem) => Promise<void>;
-  currentVersionNumber?: number;
+  resumeId?: string;
+  resumeTitle?: string;
 }
 
 export function VersionHistoryDrawer({
   isOpen,
   onClose,
   onRollback,
-  currentVersionNumber,
+  resumeId,
+  resumeTitle,
 }: VersionHistoryDrawerProps) {
   const [versions, setVersions] = useState<ResumeVersionItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,7 +44,7 @@ export function VersionHistoryDrawer({
     if (isOpen) {
       setLoading(true);
       setError(null);
-      getResumeVersions()
+      getResumeVersions(resumeId)
         .then((data) => {
           setVersions(data);
           if (data.length > 0) {
@@ -57,7 +59,7 @@ export function VersionHistoryDrawer({
       setConfirmVersion(null);
       setRestoringId(null);
     }
-  }, [isOpen]);
+  }, [isOpen, resumeId]);
 
   if (!isOpen) return null;
 

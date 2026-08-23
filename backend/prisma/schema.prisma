@@ -14,16 +14,20 @@ enum ResumeStatus {
 }
 
 model Resume {
-  id          String         @id @default(cuid())
-  ownerId     String?        @unique
-  slug        String?        @unique
-  content     Json
-  template    String         @default("technical")
-  status      ResumeStatus   @default(DRAFT)
-  publishedAt DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  versions    ResumeVersion[]
+  id           String         @id @default(cuid())
+  ownerId      String?
+  title        String         @default("Main Resume")
+  slug         String?        @unique
+  isPrimary    Boolean        @default(false)
+  viewsCount   Int            @default(0)
+  lastViewedAt DateTime?
+  content      Json
+  template     String         @default("technical")
+  status       ResumeStatus   @default(DRAFT)
+  publishedAt  DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  versions     ResumeVersion[]
 }
 
 model ResumeVersion {

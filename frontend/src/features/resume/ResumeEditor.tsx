@@ -7,14 +7,18 @@ import { useReactToPrint } from "react-to-print";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpDown,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   ChevronUp,
   ChevronsUpDown,
   CircleAlert,
+  Copy,
+  CopyPlus,
   ExternalLink,
   Eye,
+  Files,
   History,
   Image as ImageIcon,
   LogOut,
@@ -23,6 +27,7 @@ import {
   Save,
   Send,
   Sparkles,
+  Star,
   Trash2,
   ZoomIn,
   ZoomOut,
@@ -31,13 +36,20 @@ import { toPng } from "html-to-image";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { ResumePreview, type FieldSelectTarget } from "./ResumePreview";
 import {
-  getDraftResume,
-  publishResume,
+  createResumeProfile,
+  deleteResumeProfile,
+  getResumeProfile,
+  getResumeVersions,
+  listResumes,
+  publishResumeById,
   rollbackResumeVersion,
-  saveResumeDraft,
+  saveResumeDraftById,
+  setResumePrimary,
+  type ResumeProfileItem,
   type ResumeVersionItem,
 } from "./resume-api";
 import { VersionHistoryDrawer } from "./VersionHistoryDrawer";
+import { CvManagerDrawer } from "./CvManagerDrawer";
 import {
   DEFAULT_SECTION_ORDER,
   defaultResume,
@@ -57,6 +69,13 @@ export function ResumeEditor() {
   const [showPageGuide, setShowPageGuide] = useState(false);
   const [publicSlug, setPublicSlug] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isCvManagerOpen, setIsCvManagerOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [resumes, setResumes] = useState<ResumeProfileItem[]>([]);
+  const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
+  const [activeResumeTitle, setActiveResumeTitle] = useState("Main Resume");
+  const [activeResumeIsPrimary, setActiveResumeIsPrimary] = useState(true);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Accordion collapsed state IDs
   const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>({});
@@ -169,30 +188,90 @@ export function ResumeEditor() {
       ? resume.sectionOrder
       : DEFAULT_SECTION_ORDER;
 
+  const fetchResumesList = async () => {
+    try {
+      const list = await listResumes();
+      setResumes(list);
+      return list;
+    } catch (err) {
+      console.error("Failed to load resumes list:", err);
+      return [];
+    }
+  };
+
+  const handleSelectResume = async (id: string) => {
+    try {
+      setNotice("Loading CV profile...");
+      const profile = await getResumeProfile(id);
+      if (profile) {
+        setActiveResumeId(profile.id);
+        setActiveResumeTitle(profile.title);
+        setActiveResumeIsPrimary(profile.isPrimary);
+        setPublicSlug(profile.slug ?? null);
+        reset(profile.content);
+        setNotice(`Loaded CV profile "${profile.title}".`);
+      }
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Failed to load CV profile.");
+    }
+  };
+
   useEffect(() => {
-    void getDraftResume()
-      .then((draft) => {
-        if (draft) {
-          reset(draft.content);
-          setPublicSlug(draft.slug ?? null);
-        }
-        setNotice(
-          draft
-            ? "Loaded backend draft successfully."
-            : "Professional Experience is optional — add it only when you have relevant experience."
-        );
-      })
-      .catch(() =>
-        setNotice("Backend is unavailable. Start both frontend and backend, then refresh.")
-      );
+    void fetchResumesList().then(async (list) => {
+      if (list && list.length > 0) {
+        const primary = list.find((item) => item.isPrimary) || list[0];
+        await handleSelectResume(primary.id);
+      }
+    });
   }, [reset]);
+
+  const handleCreateOrDuplicate = async (dto: {
+    title: string;
+    slug?: string;
+    sourceResumeId?: string;
+  }) => {
+    const created = await createResumeProfile(dto);
+    await fetchResumesList();
+    if (created?.id) {
+      await handleSelectResume(created.id);
+      setIsCvManagerOpen(false);
+      setNotice(`Created and switched to "${created.title}".`);
+    }
+  };
+
+  const handleSetPrimary = async (id: string) => {
+    await setResumePrimary(id);
+    const updatedList = await fetchResumesList();
+    if (activeResumeId === id) {
+      setActiveResumeIsPrimary(true);
+    } else {
+      const active = updatedList.find((r) => r.id === activeResumeId);
+      if (active) setActiveResumeIsPrimary(active.isPrimary);
+    }
+    setNotice("Updated Primary CV successfully.");
+  };
+
+  const handleDeleteResume = async (id: string) => {
+    await deleteResumeProfile(id);
+    const updatedList = await fetchResumesList();
+    if (activeResumeId === id) {
+      const primary = updatedList.find((r) => r.isPrimary) || updatedList[0];
+      if (primary) {
+        await handleSelectResume(primary.id);
+      }
+    }
+    setNotice("CV profile deleted successfully.");
+  };
 
   const saveDraft = async (values: ResumeData) => {
     setSaving(true);
     try {
-      await saveResumeDraft(values);
-      setNotice("Draft saved to Supabase.");
+      if (activeResumeId) {
+        await saveResumeDraftById(activeResumeId, values);
+      }
+      setNotice(`Draft saved to Supabase (${activeResumeTitle}).`);
       reset(values);
+      void fetchResumesList();
     } catch {
       setNotice("Could not save. Confirm the backend is running and retry.");
     } finally {
@@ -203,9 +282,12 @@ export function ResumeEditor() {
   const publish = async (values: ResumeData) => {
     setPublishing(true);
     try {
-      await publishResume(values);
-      setNotice("Resume published to Supabase. Open /resume to verify it.");
+      if (activeResumeId) {
+        await publishResumeById(activeResumeId, values);
+      }
+      setNotice(`CV "${activeResumeTitle}" published! Ready to share.`);
       reset(values);
+      void fetchResumesList();
     } catch {
       setNotice("Could not publish. Confirm the backend is running and retry.");
     } finally {
@@ -215,13 +297,24 @@ export function ResumeEditor() {
 
   const handleRollback = async (version: ResumeVersionItem) => {
     try {
-      const restored = await rollbackResumeVersion(version.id);
+      const restored = await rollbackResumeVersion(version.id, activeResumeId || undefined);
       reset(restored);
       setNotice(`Restored successfully from Snapshot v${version.version}.`);
+      void fetchResumesList();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to restore version.";
       setNotice(msg);
     }
+  };
+
+  const copyShareableLink = () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = activeResumeIsPrimary
+      ? `${origin}/resume`
+      : `${origin}/resume/${publicSlug || activeResumeId}`;
+    void navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
   };
 
   const signOut = async () => {
@@ -607,7 +700,85 @@ export function ResumeEditor() {
                 />
               </div>
             </a>
-            <div className="flex items-center gap-2 border-l border-zinc-200 pl-3">
+
+            {/* CV Profile Switcher Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsProfileDropdownOpen((prev) => !prev)}
+                className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-semibold text-zinc-800 shadow-2xs hover:bg-zinc-100 hover:border-zinc-300 transition"
+                title="Switch active CV or manage profiles"
+              >
+                <Files className="h-3.5 w-3.5 text-indigo-600" />
+                <span className="max-w-[110px] sm:max-w-[180px] truncate">{activeResumeTitle}</span>
+                {activeResumeIsPrimary && (
+                  <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold">
+                    <Star className="h-2 w-2 fill-emerald-600 text-emerald-600" />
+                    Primary
+                  </span>
+                )}
+                <ChevronDown className="h-3 w-3 text-zinc-400" />
+              </button>
+
+              {isProfileDropdownOpen && (
+                <div
+                  className="absolute left-0 top-full mt-1.5 z-50 w-72 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2"
+                >
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    Switch CV Profile ({resumes.length})
+                  </div>
+                  <div className="max-h-56 overflow-y-auto space-y-1">
+                    {resumes.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          void handleSelectResume(item.id);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-xs transition ${
+                          item.id === activeResumeId
+                            ? "bg-indigo-50 font-bold text-indigo-900 ring-1 ring-indigo-200"
+                            : "text-zinc-700 hover:bg-zinc-100"
+                        }`}
+                      >
+                        <div className="min-w-0 pr-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate">{item.title}</span>
+                            {item.isPrimary && (
+                              <Star className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500 shrink-0" />
+                            )}
+                          </div>
+                          <span className="font-mono text-[10px] text-zinc-400 truncate block">
+                            {item.isPrimary ? "/resume" : `/resume/${item.slug || item.id}`}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-zinc-400 shrink-0 flex items-center gap-0.5">
+                          <Eye className="h-2.5 w-2.5 text-zinc-400" />
+                          {item.viewsCount}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-1.5 border-t border-zinc-100 pt-1.5 space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileDropdownOpen(false);
+                        setIsCvManagerOpen(true);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Manage All CVs / New Profile...</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="hidden xl:flex items-center gap-2 border-l border-zinc-200 pl-3">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-zinc-600">
@@ -625,12 +796,45 @@ export function ResumeEditor() {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-zinc-500">{notice}</p>
+                <p className="text-[11px] text-zinc-500 truncate max-w-xs">{notice}</p>
               </div>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
+            {/* 1-Click Copy Public URL Button */}
+            <button
+              type="button"
+              onClick={copyShareableLink}
+              className="hidden md:inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50/80 px-2.5 py-1 text-xs font-mono text-zinc-600 hover:bg-zinc-100 transition"
+              title="Copy shareable public link for this CV profile"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="text-emerald-700 font-semibold font-sans text-[11px]">Copied URL!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5 text-zinc-400" />
+                  <span className="text-[11px] text-zinc-500">
+                    {activeResumeIsPrimary ? "/resume" : `/resume/${publicSlug || "custom"}`}
+                  </span>
+                </>
+              )}
+            </button>
+
+            {/* Manage CVs Button */}
+            <button
+              type="button"
+              onClick={() => setIsCvManagerOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50/60 px-2.5 py-1 text-xs font-medium text-indigo-700 shadow-2xs hover:bg-indigo-100 active:scale-95 transition"
+              title="Open CV Manager Drawer"
+            >
+              <Files className="h-3.5 w-3.5 text-indigo-600" />
+              <span>CVs ({resumes.length})</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setIsHistoryOpen(true)}
@@ -641,7 +845,7 @@ export function ResumeEditor() {
               <span>History</span>
             </button>
             <a
-              href={publicSlug ? `/resume/${publicSlug}` : "/resume"}
+              href={activeResumeIsPrimary ? "/resume" : `/resume/${publicSlug || activeResumeId}`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50"
@@ -888,6 +1092,19 @@ export function ResumeEditor() {
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         onRollback={handleRollback}
+        resumeId={activeResumeId || undefined}
+        resumeTitle={activeResumeTitle}
+      />
+
+      <CvManagerDrawer
+        isOpen={isCvManagerOpen}
+        onClose={() => setIsCvManagerOpen(false)}
+        resumes={resumes}
+        activeResumeId={activeResumeId}
+        onSelectResume={handleSelectResume}
+        onCreateOrDuplicate={handleCreateOrDuplicate}
+        onSetPrimary={handleSetPrimary}
+        onDeleteResume={handleDeleteResume}
       />
     </div>
   );
