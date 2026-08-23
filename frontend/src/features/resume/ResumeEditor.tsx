@@ -101,6 +101,7 @@ export function ResumeEditor() {
           box-sizing: border-box !important;
         }
         html, body {
+          width: 210mm !important;
           margin: 0mm !important;
           padding: 0mm !important;
           background: #ffffff !important;
@@ -113,14 +114,23 @@ export function ResumeEditor() {
         }
         .resume-paper {
           width: 210mm !important;
+          max-width: 210mm !important;
           min-height: 297mm !important;
-          max-width: none !important;
           margin: 0 auto !important;
-          padding: 12mm 14mm !important;
+          padding: 6mm 8mm !important;
           box-shadow: none !important;
           border: none !important;
           border-radius: 0 !important;
           background: #ffffff !important;
+          overflow: visible !important;
+        }
+        section, article {
+          break-inside: avoid-page !important;
+          page-break-inside: avoid !important;
+        }
+        h1, h2, h3 {
+          break-after: avoid !important;
+          page-break-after: avoid !important;
         }
         .page-break-line {
           display: none !important;
