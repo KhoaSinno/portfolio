@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
+import { toPng } from "html-to-image";
 import {
   ArrowLeft,
   FileText,
+  Image as ImageIcon,
   Lock,
   Printer,
   Sparkles,
@@ -20,8 +22,72 @@ export function PublicResume({ slug }: { slug?: string }) {
   const [resume, setResume] = useState<ResumeData>(defaultResume);
   const [loading, setLoading] = useState(true);
   const [zoomLevel, setZoomLevel] = useState(100);
+  const [exportingImage, setExportingImage] = useState(false);
 
-  const printResume = useReactToPrint({ contentRef, documentTitle: `${resume.basics.name.replace(/\s+/g, "_")}_Resume` });
+  const printResume = useReactToPrint({
+    contentRef,
+    documentTitle: `${(resume.basics.name || "Resume").replace(/\s+/g, "_")}_CV`,
+    pageStyle: `
+      @page {
+        size: A4 portrait;
+        margin: 0mm !important;
+      }
+      @media print {
+        *, *::before, *::after {
+          box-sizing: border-box !important;
+        }
+        html, body {
+          margin: 0mm !important;
+          padding: 0mm !important;
+          background: #ffffff !important;
+          color: #000000 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .resume-paper {
+          width: 210mm !important;
+          min-height: 297mm !important;
+          max-width: none !important;
+          margin: 0 auto !important;
+          padding: 12mm 14mm !important;
+          box-shadow: none !important;
+          border: none !important;
+          border-radius: 0 !important;
+          background: #ffffff !important;
+        }
+        .page-break-line {
+          display: none !important;
+        }
+        a {
+          text-decoration: none !important;
+          color: inherit !important;
+        }
+      }
+    `,
+  });
+
+  const exportAsImage = async () => {
+    if (!contentRef.current) return;
+    try {
+      setExportingImage(true);
+      const dataUrl = await toPng(contentRef.current, {
+        quality: 1,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+      });
+      const link = document.createElement("a");
+      link.download = `${(resume.basics.name || "Resume").replace(/\s+/g, "_")}_CV.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to export image:", err);
+    } finally {
+      setExportingImage(false);
+    }
+  };
 
   useEffect(() => {
     void getPublishedResume(slug)
@@ -102,14 +168,27 @@ export function PublicResume({ slug }: { slug?: string }) {
               <span className="hidden sm:inline">Editor</span>
             </a>
 
+            {/* Export PNG Image Button */}
+            <button
+              type="button"
+              disabled={exportingImage}
+              onClick={() => void exportAsImage()}
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-50 active:scale-95 transition disabled:opacity-50"
+              title="Download high-resolution PNG image"
+            >
+              <ImageIcon className="h-3.5 w-3.5 text-zinc-500" />
+              <span>{exportingImage ? "Exporting..." : "Export PNG"}</span>
+            </button>
+
             {/* Print / Download Button */}
             <button
               type="button"
               onClick={() => printResume()}
-              className="inline-flex items-center gap-1.5 rounded-md bg-zinc-950 px-3 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-zinc-800"
+              className="inline-flex items-center gap-1.5 rounded-md bg-zinc-950 px-3 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-zinc-800 transition active:scale-95"
+              title="Print or Save Clean A4 PDF"
             >
               <Printer className="h-3.5 w-3.5" />
-              <span>Print / Download PDF</span>
+              <span>Print / PDF</span>
             </button>
           </div>
         </div>

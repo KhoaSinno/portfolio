@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Eye,
   History,
+  Image as ImageIcon,
   LogOut,
   Plus,
   Printer,
@@ -26,6 +27,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { toPng } from "html-to-image";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { ResumePreview, type FieldSelectTarget } from "./ResumePreview";
 import {
@@ -84,7 +86,73 @@ export function ResumeEditor() {
   const education = useFieldArray({ control, name: "education" });
 
   const resume = useWatch({ control, defaultValue: defaultResume }) as ResumeData;
-  const printResume = useReactToPrint({ contentRef, documentTitle: "resume" });
+  const [exportingImage, setExportingImage] = useState(false);
+
+  const printResume = useReactToPrint({
+    contentRef,
+    documentTitle: `${(resume.basics.name || "Resume").replace(/\s+/g, "_")}_CV`,
+    pageStyle: `
+      @page {
+        size: A4 portrait;
+        margin: 0mm !important;
+      }
+      @media print {
+        *, *::before, *::after {
+          box-sizing: border-box !important;
+        }
+        html, body {
+          margin: 0mm !important;
+          padding: 0mm !important;
+          background: #ffffff !important;
+          color: #000000 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .resume-paper {
+          width: 210mm !important;
+          min-height: 297mm !important;
+          max-width: none !important;
+          margin: 0 auto !important;
+          padding: 12mm 14mm !important;
+          box-shadow: none !important;
+          border: none !important;
+          border-radius: 0 !important;
+          background: #ffffff !important;
+        }
+        .page-break-line {
+          display: none !important;
+        }
+        a {
+          text-decoration: none !important;
+          color: inherit !important;
+        }
+      }
+    `,
+  });
+
+  const exportAsImage = async () => {
+    if (!contentRef.current) return;
+    try {
+      setExportingImage(true);
+      const dataUrl = await toPng(contentRef.current, {
+        quality: 1,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+      });
+      const link = document.createElement("a");
+      link.download = `${(resume.basics.name || "Resume").replace(/\s+/g, "_")}_CV.png`;
+      link.href = dataUrl;
+      link.click();
+      setNotice("Exported resume PNG image successfully.");
+    } catch {
+      setNotice("Failed to export image. Please try again.");
+    } finally {
+      setExportingImage(false);
+    }
+  };
 
   const sectionOrder: ResumeSectionKey[] =
     resume.sectionOrder && resume.sectionOrder.length > 0
@@ -565,10 +633,21 @@ export function ResumeEditor() {
             <button
               type="button"
               onClick={() => printResume()}
-              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50 transition"
+              title="Print or Save Clean PDF (Without browser headers/footers)"
             >
-              <Printer className="h-3.5 w-3.5 text-zinc-400" />
+              <Printer className="h-3.5 w-3.5 text-zinc-500" />
               <span>Print / PDF</span>
+            </button>
+            <button
+              type="button"
+              disabled={exportingImage}
+              onClick={() => void exportAsImage()}
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50 active:scale-95 transition disabled:opacity-50"
+              title="Export high-resolution PNG image of the resume"
+            >
+              <ImageIcon className="h-3.5 w-3.5 text-zinc-500" />
+              <span>{exportingImage ? "Exporting..." : "Export PNG"}</span>
             </button>
             <button
               type="button"

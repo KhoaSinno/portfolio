@@ -55,15 +55,18 @@ body {
 
 @page {
   size: A4 portrait;
-  margin: 10mm;
+  margin: 0mm !important;
 }
 
 @media print {
+  *, *::before, *::after {
+    box-sizing: border-box !important;
+  }
   html, body {
     background: #ffffff !important;
     color: #000000 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0mm !important;
+    padding: 0mm !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -71,13 +74,15 @@ body {
     display: none !important;
   }
   .resume-paper {
-    width: 100% !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
     max-width: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
+    padding: 12mm 14mm !important;
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
+    background: #ffffff !important;
   }
   .page-break-line {
     display: none !important;
