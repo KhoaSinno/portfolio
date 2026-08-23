@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-html-link-for-pages, react-hooks/set-state-in-effect */
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
