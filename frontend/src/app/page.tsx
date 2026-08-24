@@ -2,6 +2,7 @@
 import {
   ArrowRight,
   ArrowUpRight,
+  Award,
   Briefcase,
   Code2,
   Cpu,
@@ -28,6 +29,7 @@ import { SpotlightCard } from "@/components/ui/SpotlightCard";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
 import { TextShimmer } from "@/components/ui/TextShimmer";
 import { TechStackMarquee } from "@/components/ui/TechStackMarquee";
+import { getTechMeta } from "@/lib/tech-meta";
 
 function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -417,8 +419,8 @@ export default async function Home() {
             <TechStackMarquee skills={technicalSkills} />
           </div>
 
-          {/* Bento Grid Categorized Skills */}
-          <StaggerContainer className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Bento Grid Categorized Skills (Balanced 2x2 Grid) */}
+          <StaggerContainer className="mt-10 grid gap-6 grid-cols-1 md:grid-cols-2 items-stretch">
             {technicalSkills.map((skillGroup, idx) => {
               const items = skillGroup.items
                 .split(",")
@@ -426,26 +428,38 @@ export default async function Home() {
                 .filter(Boolean);
 
               return (
-                <StaggerItem key={`${skillGroup.category}-${idx}`}>
-                  <SpotlightCard className="h-full">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 shadow-inner">
-                        {getSkillCategoryIcon(skillGroup.category)}
-                      </div>
-                      <h3 className="font-bold text-white text-base">
-                        {skillGroup.category}
-                      </h3>
-                    </div>
-
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {items.map((skill, sIdx) => (
-                        <span
-                          key={sIdx}
-                          className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-medium text-slate-300 transition hover:border-purple-400/50 hover:bg-purple-500/10 hover:text-white"
-                        >
-                          {skill}
+                <StaggerItem key={`${skillGroup.category}-${idx}`} className="h-full">
+                  <SpotlightCard className="h-full flex flex-col justify-between p-6 sm:p-7 border border-white/10 hover:border-white/20 transition-all duration-300">
+                    <div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/5 border border-white/10 shadow-sm">
+                            {getSkillCategoryIcon(skillGroup.category)}
+                          </div>
+                          <h3 className="font-bold text-white text-base tracking-tight">
+                            {skillGroup.category}
+                          </h3>
+                        </div>
+                        <span className="font-mono text-xs text-slate-400 bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full">
+                          {items.length} skills
                         </span>
-                      ))}
+                      </div>
+
+                      <div className="mt-6 flex flex-wrap gap-2.5">
+                        {items.map((skill, sIdx) => {
+                          const meta = getTechMeta(skill);
+                          const Icon = meta.icon;
+                          return (
+                            <span
+                              key={sIdx}
+                              className={`inline-flex items-center gap-2 rounded-xl border ${meta.borderColor} ${meta.badgeBg} px-3 py-1.5 text-xs font-semibold text-slate-200 shadow-sm transition-all duration-200 hover:scale-105`}
+                            >
+                              <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
+                              <span>{skill}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
                     </div>
                   </SpotlightCard>
                 </StaggerItem>
@@ -535,29 +549,74 @@ export default async function Home() {
             </div>
           </ScrollReveal>
 
-          <StaggerContainer className="mt-10 grid gap-6 md:grid-cols-2">
-            {education.map((edu, idx) => (
-              <StaggerItem key={`${edu.institution}-${idx}`}>
-                <SpotlightCard className="flex gap-4 p-6">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                    <GraduationCap className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-                      <h3 className="font-bold text-white text-base">
+          <StaggerContainer className="mt-10 grid gap-6 md:grid-cols-2 items-stretch">
+            {education.map((edu, idx) => {
+              const isCertificate =
+                edu.institution.toLowerCase().includes("vstep") ||
+                edu.institution.toLowerCase().includes("ielts") ||
+                edu.institution.toLowerCase().includes("toeic") ||
+                edu.institution.toLowerCase().includes("certificate") ||
+                edu.degree.toLowerCase().includes("b1") ||
+                edu.degree.toLowerCase().includes("b2") ||
+                edu.degree.toLowerCase().includes("cefr") ||
+                edu.degree.toLowerCase().includes("certificate") ||
+                edu.degree.toLowerCase().includes("chứng chỉ") ||
+                edu.degree.toLowerCase().includes("proficiency") ||
+                edu.degree.toLowerCase().includes("english");
+
+              const Icon = isCertificate ? Award : GraduationCap;
+              const badgeLabel = isCertificate ? "Language Certificate" : "University Degree";
+              const accentBg = isCertificate
+                ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
+              const tagBg = isCertificate
+                ? "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                : "bg-emerald-500/10 text-emerald-300 border-emerald-500/20";
+              const dotBg = isCertificate ? "bg-amber-400" : "bg-emerald-400";
+
+              return (
+                <StaggerItem key={`${edu.institution}-${idx}`} className="h-full">
+                  <SpotlightCard className="h-full flex flex-col justify-between p-6 sm:p-7 border border-white/10 hover:border-white/20 transition-all duration-300">
+                    <div>
+                      {/* Top Header Row: Icon + Type Badge + Period */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${accentBg} shadow-sm`}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <span
+                            className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-mono font-medium ${tagBg}`}
+                          >
+                            {badgeLabel}
+                          </span>
+                        </div>
+                        {edu.period && (
+                          <span className="font-mono text-xs text-slate-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full shrink-0">
+                            {edu.period}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Institution / University */}
+                      <h3 className="mt-5 text-lg font-bold text-white tracking-tight">
                         {edu.institution}
                       </h3>
-                      {edu.period && (
-                        <span className="font-mono text-xs text-slate-400">
-                          {edu.period}
-                        </span>
-                      )}
+
+                      {/* Degree / Program */}
+                      <p
+                        className={`mt-1 text-sm font-semibold ${
+                          isCertificate ? "text-amber-300" : "text-emerald-300"
+                        }`}
+                      >
+                        {edu.degree}
+                      </p>
                     </div>
-                    <p className="mt-1 text-sm font-medium text-emerald-300">
-                      {edu.degree}
-                    </p>
+
+                    {/* Details / Bullets */}
                     {edu.details && (
-                      <div className="mt-3 space-y-1.5">
+                      <div className="mt-5 pt-4 border-t border-white/5 space-y-2">
                         {edu.details
                           .split("\n")
                           .map((line) => line.trim().replace(/^[-•*]\s*/, ""))
@@ -565,18 +624,20 @@ export default async function Home() {
                           .map((bullet, bIdx) => (
                             <div
                               key={bIdx}
-                              className="flex items-start gap-2 text-xs text-slate-400 leading-relaxed"
+                              className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300 leading-relaxed"
                             >
-                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400/80" />
+                              <span
+                                className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${dotBg}`}
+                              />
                               <span>{bullet}</span>
                             </div>
                           ))}
                       </div>
                     )}
-                  </div>
-                </SpotlightCard>
-              </StaggerItem>
-            ))}
+                  </SpotlightCard>
+                </StaggerItem>
+              );
+            })}
           </StaggerContainer>
         </section>
 
