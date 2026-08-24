@@ -94,8 +94,7 @@ function getSkillCategoryIcon(category: string) {
   return <Cpu className="h-5 w-5 text-blue-400" />;
 }
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 30;
 
 export default async function Home() {
   let resume = defaultResume;

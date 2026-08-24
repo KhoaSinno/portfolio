@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element -- Markdown and HTML images are hosted on arbitrary GitHub repositories. */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Code2, Copy, ExternalLink, FileText, Globe, LoaderCircle, Sparkles } from "lucide-react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -78,8 +79,18 @@ function preprocessMarkdown(markdown: string, baseUrl: string): string {
 }
 
 export function ProjectCaseStudy({ slug }: { slug: string }) {
+  const router = useRouter();
   const [state, setState] = useState<{ data?: CaseStudy; error?: string }>({});
   const [copied, setCopied] = useState(false);
+
+  const handleBack = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/#projects");
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -115,9 +126,13 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">Case study unavailable</p>
         <h1 className="mt-3 text-3xl font-bold text-white">This project README cannot be displayed.</h1>
         <p className="mt-4 text-sm text-slate-400 max-w-md mx-auto">{state.error}</p>
-        <Link href="/#projects" className="mx-auto mt-8 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:bg-white/10">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="mx-auto mt-8 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:bg-white/10 active:scale-95"
+        >
           <ArrowLeft className="h-4 w-4" /> Back to projects
-        </Link>
+        </button>
       </main>
     );
   }
@@ -135,22 +150,23 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
   const processedMarkdown = preprocessMarkdown(data.markdown, data.baseUrl);
 
   return (
-    <main className="min-h-screen bg-[#060913] px-3 py-8 text-slate-200 sm:px-6 md:py-12">
+    <main className="min-h-screen bg-[#060913] px-4 py-8 text-slate-200 sm:px-8 lg:px-12 md:py-12">
       {/* Background ambient lighting */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute -top-[10%] left-[25%] h-[500px] w-[500px] rounded-full bg-indigo-600/15 blur-[140px]" />
         <div className="absolute top-[40%] right-[10%] h-[500px] w-[500px] rounded-full bg-violet-600/10 blur-[150px]" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-4xl">
+      <div className="relative z-10 mx-auto max-w-6xl">
         {/* Navigation Bar */}
         <div className="flex items-center justify-between gap-4 pb-6">
-          <Link
-            href="/#projects"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-300 backdrop-blur-md transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-300 backdrop-blur-md transition hover:border-white/20 hover:bg-white/10 hover:text-white active:scale-95 cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to projects
-          </Link>
+          </button>
 
           <button
             type="button"
@@ -351,12 +367,13 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
 
         {/* Bottom Back Button */}
         <div className="mt-8 text-center pb-12">
-          <Link
-            href="/#projects"
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 text-sm font-semibold text-white transition hover:bg-white/10 active:scale-95"
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 text-sm font-semibold text-white transition hover:bg-white/10 active:scale-95 cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" /> Back to all projects
-          </Link>
+          </button>
         </div>
       </div>
     </main>
