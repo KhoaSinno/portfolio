@@ -542,6 +542,9 @@ export function ResumeEditor() {
                 techStack: "",
                 repository: "",
                 demoUrl: "",
+                projectSlug: "",
+                thumbnailUrl: "",
+                thumbnailAlt: "",
                 highlights: "",
               })
             }
@@ -597,7 +600,25 @@ export function ResumeEditor() {
                       placeholder="myproject.vercel.app"
                       {...register(`projects.${index}.demoUrl`)}
                     />
+                    <Field
+                      label="Case study slug"
+                      placeholder="portfolio-platform"
+                      error={errors.projects?.[index]?.projectSlug?.message}
+                      {...register(`projects.${index}.projectSlug`)}
+                    />
+                    <Field
+                      label="Thumbnail image URL"
+                      placeholder="https://.../project-cover.webp"
+                      error={errors.projects?.[index]?.thumbnailUrl?.message}
+                      {...register(`projects.${index}.thumbnailUrl`)}
+                    />
                   </div>
+                  <Field
+                    className="mt-3"
+                    label="Thumbnail alt text"
+                    placeholder="Briefly describe the project cover image"
+                    {...register(`projects.${index}.thumbnailAlt`)}
+                  />
                   <label className="mt-3 block text-xs font-medium text-zinc-700">
                     Key Highlights <span className="font-normal text-zinc-500">(one bullet per line)</span>
                   </label>

@@ -56,6 +56,9 @@ export const resumeSchema = z.object({
     techStack: z.string().optional(),
     repository: z.string().optional(),
     demoUrl: z.string().optional(),
+    projectSlug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional().or(z.literal("")),
+    thumbnailUrl: z.string().url().optional().or(z.literal("")),
+    thumbnailAlt: z.string().max(160).optional(),
     highlights: z.string().optional(),
   })).min(1, "Add at least one featured project."),
   education: z.array(z.object({
@@ -109,6 +112,9 @@ export const defaultResume: ResumeData = {
         "Flutter · FastAPI · Hybrid RAG · Voice realtime with Livekit and OpenAI realtime API · Supabase",
       repository: "github.com/khoasinno",
       demoUrl: "",
+      projectSlug: "triam-audiobook",
+      thumbnailUrl: "",
+      thumbnailAlt: "TRIAM audiobook application preview",
       highlights:
         "Built a Vietnamese audiobook application with intelligent voice conversational AI assistant.\nIntegrated LiveKit WebRTC and OpenAI Realtime API for low-latency voice streaming.\nImplemented Hybrid RAG with Vector Search and RRF reranking for accurate content discovery.",
     },
@@ -119,6 +125,9 @@ export const defaultResume: ResumeData = {
       techStack: "Next.js · TypeScript · NestJS · PostgreSQL",
       repository: "github.com/khoasinno/portfolio",
       demoUrl: "https://www.nguyentrananhkhoa.id.vn",
+      projectSlug: "portfolio-platform",
+      thumbnailUrl: "",
+      thumbnailAlt: "Portfolio Platform preview",
       highlights:
         "Designed a fullstack portfolio with a structured resume editor.\nBuilt reusable resume templates with print-ready HTML and CSS.\nPlanned a scalable backend architecture for projects, AI chat, and content management.",
     },

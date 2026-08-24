@@ -34,7 +34,7 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 
 ### Chưa triển khai
 
-- [ ] Project CMS, project cards, case study và CTA Live Demo / Demo Video / Source Code / Request Access.
+- [~] Project cards đã có thumbnail 16:9 (kèm fallback), độ cao đồng đều, Source Code / Live Demo / Case Study. Case Study render README public GitHub an toàn qua backend; Project CMS độc lập, Demo Video và Request Access chưa làm.
 - [ ] Template CV `Minimal` / `Modern`; hiện chỉ dùng template kỹ thuật.
 - [ ] Avatar, certificates, file đính kèm và Supabase Storage.
 - [ ] Tự chọn public slug thân thiện (hiện slug ổn định được sinh từ user ID).
@@ -209,7 +209,7 @@ Hệ thống chat có hai chế độ: AI RAG trả lời thông tin portfolio/C
 * [x] Khởi tạo monorepo/frontend/backend, Supabase và deploy cơ bản.
 * [~] Resume public + editor: structured data, draft/publish, owner isolation, preview, print/PDF browser.
 * [ ] Hoàn thành public pages: Hero, Projects, Skills, Education, Contact.
-* [ ] Thêm template thứ hai, project case study và CTA linh hoạt.
+* [~] Thêm template thứ hai; project case study README GitHub và CTA Source Code / Live Demo đã làm. Demo Video / Request Access chưa làm.
 
 ### Phase 2 — Admin, Search & Polish
 

@@ -19,6 +19,7 @@ import {
   Terminal,
   Wrench,
 } from "lucide-react";
+import Link from "next/link";
 import { getPublishedResume } from "@/features/resume/resume-api";
 import { defaultResume } from "@/features/resume/resume-schema";
 import { CopyEmailButton } from "@/features/home/HomeClientEnhancements";
@@ -310,9 +311,26 @@ export default async function Home() {
               return (
                 <article
                   key={`${project.name}-${idx}`}
-                  className="group relative flex flex-col justify-between rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10"
+                  className="group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10"
                 >
                   <div>
+                    <div className="-mx-6 -mt-6 mb-5 aspect-video overflow-hidden border-b border-white/10 bg-gradient-to-br from-indigo-500/30 via-violet-500/15 to-slate-950">
+                      {project.thumbnailUrl ? (
+                        // Native image keeps user-provided image hosts configurable without a Next.js rebuild.
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={project.thumbnailUrl}
+                          alt={project.thumbnailAlt || `${project.name} project preview`}
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="flex h-full items-end justify-between p-5">
+                          <Code2 className="h-10 w-10 text-indigo-200/80" aria-hidden="true" />
+                          <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-indigo-100/70">Case study</span>
+                        </div>
+                      )}
+                    </div>
                     {/* Role & Period Badges */}
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                       {project.role && (
@@ -362,6 +380,14 @@ export default async function Home() {
 
                     {(project.repository || project.demoUrl) && (
                       <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <Link
+                          href={`/projects/${encodeURIComponent(project.projectSlug || project.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-violet-400/35 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200 transition hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          <span>Case study</span>
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
                         {project.repository && (
                           <a
                             href={

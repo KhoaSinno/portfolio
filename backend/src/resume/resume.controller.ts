@@ -63,6 +63,11 @@ export class ResumeController {
     };
   }
 
+  @Get('projects/:slug/case-study')
+  getProjectCaseStudy(@Param('slug') slug: string) {
+    return this.resumeService.getProjectCaseStudy(slug);
+  }
+
   // --- Multi-CV Admin Management Endpoints ---
 
   @Get('admin/resumes')
