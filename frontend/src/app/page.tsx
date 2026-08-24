@@ -102,6 +102,8 @@ function getSkillCategoryIcon(category: string) {
   return <Cpu className="h-5 w-5 text-blue-400" />;
 }
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nguyentrananhkhoa.id.vn";
+
 export const revalidate = 30;
 
 export default async function Home() {
@@ -116,8 +118,88 @@ export default async function Home() {
   const { basics, summary, projects, technicalSkills, experience, education } =
     resume;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": `${siteUrl}/#person`,
+        name: basics?.name || "Nguyen Tran Anh Khoa",
+        alternateName: ["KhoaSinno", "Sinoo"],
+        jobTitle: basics?.headline || "Software Engineer & Fullstack Developer",
+        description:
+          summary ||
+          "Fullstack Software Engineer specializing in Next.js, FastAPI, NestJS, Flutter, PostgreSQL, and AI Hybrid RAG Systems.",
+        url: siteUrl,
+        sameAs: [
+          basics?.github
+            ? basics.github.startsWith("http")
+              ? basics.github
+              : `https://${basics.github}`
+            : "https://github.com/KhoaSinno",
+          basics?.linkedin
+            ? basics.linkedin.startsWith("http")
+              ? basics.linkedin
+              : `https://${basics.linkedin}`
+            : undefined,
+        ].filter(Boolean),
+        alumniOf: {
+          "@type": "CollegeOrUniversity",
+          name: "Can Tho University of Technology",
+        },
+        knowsAbout: [
+          "Next.js",
+          "React",
+          "TypeScript",
+          "FastAPI",
+          "Python",
+          "NestJS",
+          "Node.js",
+          "Flutter",
+          "PostgreSQL",
+          "Supabase",
+          "Prisma",
+          "Docker",
+          "Hybrid RAG",
+          "Artificial Intelligence",
+        ],
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${siteUrl}/#website`,
+        url: siteUrl,
+        name: "Nguyen Tran Anh Khoa Portfolio",
+        description: "Official engineering portfolio of Nguyen Tran Anh Khoa",
+        publisher: {
+          "@id": `${siteUrl}/#person`,
+        },
+      },
+      {
+        "@type": "ProfilePage",
+        "@id": `${siteUrl}/#profilepage`,
+        url: siteUrl,
+        name: `${basics?.name || "Nguyen Tran Anh Khoa"} - Profile`,
+        isPartOf: {
+          "@id": `${siteUrl}/#website`,
+        },
+        about: {
+          "@id": `${siteUrl}/#person`,
+        },
+        mainEntity: {
+          "@id": `${siteUrl}/#person`,
+        },
+      },
+    ],
+  };
+
   return (
     <div className="relative min-h-screen bg-[#030712] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans">
+      {/* Schema.org Structured Data for Google Rich Snippets */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Background Ambient Glows & Aurora Mesh Gradients */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute -top-[15%] left-[20%] h-[500px] w-[500px] rounded-full bg-gradient-to-br from-indigo-600/25 via-blue-600/20 to-purple-600/10 blur-[130px]" />
