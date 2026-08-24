@@ -116,3 +116,38 @@ body {
 .hljs-function, .hljs-title.function_ { color: #d2a8ff; }
 .hljs-attr { color: #79c0ff; }
 
+/* GPU Acceleration and Motion Utilities */
+.transform-gpu {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Gradient Mask Utilities for Smooth Marquee Fade */
+.mask-gradient-x {
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
+
+/* Text Shimmer Sweep Animation */
+@keyframes text-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-text-shimmer {
+  background-size: 200% auto;
+  animation: text-shimmer 4s linear infinite;
+}
+
+/* Border Beam Rotation Animation */
+@keyframes border-beam {
+  100% {
+    offset-distance: 100%;
+  }
+}
+

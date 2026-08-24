@@ -11,8 +11,6 @@ import {
   Globe,
   GraduationCap,
   Layers,
-  Lock,
-  Mail,
   MapPin,
   Server,
   Sparkles,
@@ -25,6 +23,11 @@ import { defaultResume } from "@/features/resume/resume-schema";
 import { CopyEmailButton } from "@/features/home/HomeClientEnhancements";
 import { ContactForm } from "@/features/home/ContactForm";
 import { normalizeImageUrl } from "@/lib/image-url";
+import { FloatingNavbar } from "@/components/ui/FloatingNavbar";
+import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
+import { TextShimmer } from "@/components/ui/TextShimmer";
+import { TechStackMarquee } from "@/components/ui/TechStackMarquee";
 
 function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -118,182 +121,125 @@ export default async function Home() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293d08_1px,transparent_1px),linear-gradient(to_bottom,#1f293d08_1px,transparent_1px)] bg-[size:4rem_4rem]" />
       </div>
 
-      {/* Sticky Glass Navbar */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#030712]/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
-          <a
-            href="#top"
-            className="group flex items-center transition hover:opacity-90 active:scale-95"
-            title="Sinoo Hub Portfolio"
-          >
-            <img
-              src="/logo.png"
-              alt="Sinoo Hub"
-              className="h-9 w-auto rounded-xl object-contain shadow-lg shadow-indigo-500/20 transition-transform duration-200 group-hover:scale-105"
-            />
-          </a>
-
-          {/* Nav Links */}
-          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-300 md:flex">
-            <a href="#about" className="transition hover:text-white">
-              About
-            </a>
-            <a href="#projects" className="transition hover:text-white">
-              Projects
-            </a>
-            <a href="#skills" className="transition hover:text-white">
-              Skills
-            </a>
-            {experience && experience.length > 0 && (
-              <a href="#experience" className="transition hover:text-white">
-                Experience
-              </a>
-            )}
-            <a href="#education" className="transition hover:text-white">
-              Education
-            </a>
-            <a href="#contact" className="transition hover:text-white">
-              Contact
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            {/* Admin Login Link */}
-            <a
-              href="/admin/resume"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
-              title="Admin Resume CMS"
-            >
-              <Lock className="h-3.5 w-3.5 text-slate-400" />
-              <span className="hidden sm:inline">CMS</span>
-            </a>
-
-            {/* View Full A4 CV CTA */}
-            <a
-              href="/resume"
-              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] text-xs font-semibold text-white shadow-md shadow-indigo-500/20 transition-all duration-300 hover:shadow-indigo-500/40 hover:scale-[1.02]"
-            >
-              <span className="flex items-center gap-1.5 rounded-[7px] bg-[#030712] px-3.5 py-1.5 transition duration-300 group-hover:bg-opacity-0">
-                <FileText className="h-3.5 w-3.5 text-indigo-300 group-hover:text-white" />
-                <span>View CV (A4)</span>
-              </span>
-            </a>
-          </div>
-        </div>
-      </header>
+      {/* Floating Glassmorphism Navbar */}
+      <FloatingNavbar hasExperience={Boolean(experience && experience.length > 0)} />
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        {/* Hero Section */}
-        <section id="top" className="pt-20 pb-16 sm:pt-28 sm:pb-24">
-          {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-medium text-emerald-300 shadow-lg shadow-emerald-500/10 backdrop-blur-md">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            </span>
-            <span>Available for Fullstack Internships & Engineering Roles</span>
-          </div>
-
-          {/* Main Title & Headline */}
-          <h1 className="mt-8 text-balance text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
-            Hi, I&apos;m{" "}
-            <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
-              {basics.name}
-            </span>
-          </h1>
-
-          <p className="mt-4 text-xl font-semibold text-slate-300 sm:text-2xl">
-            {basics.headline}
-          </p>
-
-          {basics.location && (
-            <div className="mt-3 flex items-center gap-1.5 text-sm font-medium text-slate-400">
-              <MapPin className="h-4 w-4 text-indigo-400" />
-              <span>{basics.location}</span>
+        {/* Hero / About Section */}
+        <ScrollReveal direction="up" delay={0.05}>
+          <section id="about" className="pt-20 pb-16 sm:pt-28 sm:pb-24 scroll-mt-24">
+            {/* Live Status Badge */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-medium text-emerald-300 shadow-lg shadow-emerald-500/10 backdrop-blur-md">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              <span>Available for Fullstack Internships & Engineering Roles</span>
             </div>
-          )}
 
-          {/* Professional Summary */}
-          {summary && (
-            <p className="mt-6 max-w-3xl text-balance text-base leading-relaxed text-slate-300 sm:text-lg sm:leading-8">
-              {summary}
+            {/* Main Title & Headline */}
+            <h1 className="mt-8 text-balance text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
+              Hi, I&apos;m{" "}
+              <span className="bg-gradient-to-r from-amber-100 via-amber-200 to-amber-400 bg-clip-text text-transparent font-extrabold">
+                {basics.name}
+              </span>
+            </h1>
+
+            <p className="mt-4 text-xl font-semibold text-slate-300 sm:text-2xl">
+              {basics.headline}
             </p>
-          )}
 
-          {/* Hero CTAs */}
-          <div className="mt-9 flex flex-wrap items-center gap-3.5">
-            <a
-              href="#projects"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition duration-200 hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
-            >
-              <span>Explore Selected Work</span>
-              <ArrowRight className="h-4 w-4" />
-            </a>
-
-            <a
-              href="/resume"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-200 backdrop-blur-md transition duration-200 hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-95"
-            >
-              <FileText className="h-4 w-4 text-indigo-400" />
-              <span>Open Printable CV</span>
-            </a>
-
-            {basics.github && (
-              <a
-                href={
-                  basics.github.startsWith("http")
-                    ? basics.github
-                    : `https://${basics.github}`
-                }
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-                title="GitHub Profile"
-              >
-                <GithubIcon className="h-5 w-5" />
-              </a>
+            {basics.location && (
+              <div className="mt-3 flex items-center gap-1.5 text-sm font-medium text-slate-400">
+                <MapPin className="h-4 w-4 text-indigo-400" />
+                <span>{basics.location}</span>
+              </div>
             )}
 
-            {basics.linkedin && (
-              <a
-                href={
-                  basics.linkedin.startsWith("http")
-                    ? basics.linkedin
-                    : `https://${basics.linkedin}`
-                }
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-                title="LinkedIn Profile"
-              >
-                <LinkedinIcon className="h-5 w-5 text-blue-400" />
-              </a>
+            {/* Professional Summary */}
+            {summary && (
+              <p className="mt-6 max-w-3xl text-balance text-base leading-relaxed text-slate-300 sm:text-lg sm:leading-8">
+                {summary}
+              </p>
             )}
-          </div>
-        </section>
 
-        {/* Selected Work / Featured Projects */}
+            {/* Hero CTAs with Spring Feedback */}
+            <div className="mt-9 flex flex-wrap items-center gap-3.5">
+              <a
+                href="#projects"
+                className="group relative inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
+              >
+                <span>Explore Selected Work</span>
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+              </a>
+
+              <a
+                href="/resume"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-200 backdrop-blur-md transition-all duration-200 hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-95"
+              >
+                <FileText className="h-4 w-4 text-indigo-400" />
+                <span>Open Printable CV</span>
+              </a>
+
+              {basics.github && (
+                <a
+                  href={
+                    basics.github.startsWith("http")
+                      ? basics.github
+                      : `https://${basics.github}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 backdrop-blur-md transition-all duration-200 hover:border-white/30 hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95"
+                  title="GitHub Profile"
+                >
+                  <GithubIcon className="h-5 w-5" />
+                </a>
+              )}
+
+              {basics.linkedin && (
+                <a
+                  href={
+                    basics.linkedin.startsWith("http")
+                      ? basics.linkedin
+                      : `https://${basics.linkedin}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 backdrop-blur-md transition-all duration-200 hover:border-white/30 hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95"
+                  title="LinkedIn Profile"
+                >
+                  <LinkedinIcon className="h-5 w-5 text-blue-400" />
+                </a>
+              )}
+            </div>
+          </section>
+        </ScrollReveal>
+
+        {/* Selected Work / Featured Projects with Spotlight Cards */}
         <section
           id="projects"
           className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
         >
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-md bg-indigo-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 border border-indigo-500/20">
-                <Terminal className="h-3.5 w-3.5" />
-                Featured Projects
+          <ScrollReveal direction="up">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-md bg-indigo-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 border border-indigo-500/20">
+                  <Terminal className="h-3.5 w-3.5" />
+                  Featured Projects
+                </div>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                  Systems & Applications I&apos;ve Built
+                </h2>
               </div>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Systems & Applications I&apos;ve Built
-              </h2>
+              <p className="max-w-md text-sm text-slate-400">
+                Hands-on engineering projects showcasing fullstack architecture,
+                AI integrations, and responsive UX.
+              </p>
             </div>
-            <p className="max-w-md text-sm text-slate-400">
-              Hands-on engineering projects showcasing fullstack architecture,
-              AI integrations, and responsive UX.
-            </p>
-          </div>
+          </ScrollReveal>
 
-          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <StaggerContainer className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project, idx) => {
               const techList = project.techStack
                 ? project.techStack
@@ -309,162 +255,170 @@ export default async function Home() {
                 : [];
 
               return (
-                <article
-                  key={`${project.name}-${idx}`}
-                  className="group relative flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-6 backdrop-blur-md transition-all duration-300 hover:-translate-y-1.5 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10"
-                >
-                  <div>
-                    <div className="-mx-6 -mt-6 mb-5 aspect-video overflow-hidden border-b border-white/10 bg-gradient-to-br from-indigo-500/30 via-violet-500/15 to-slate-950">
-                      {project.thumbnailUrl ? (
-                        // Native image keeps user-provided image hosts configurable without a Next.js rebuild.
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={normalizeImageUrl(project.thumbnailUrl)}
-                          alt={project.thumbnailAlt || `${project.name} project preview`}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="flex h-full items-end justify-between p-5">
-                          <Code2 className="h-10 w-10 text-indigo-200/80" aria-hidden="true" />
-                          <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-indigo-100/70">Case study</span>
+                <StaggerItem key={`${project.name}-${idx}`} className="h-full">
+                  <SpotlightCard className="flex h-full flex-col justify-between">
+                    <div>
+                      {/* 16:9 Thumbnail Preview */}
+                      <div className="-mx-6 -mt-6 mb-5 aspect-video overflow-hidden border-b border-white/10 bg-gradient-to-br from-indigo-500/30 via-violet-500/15 to-slate-950">
+                        {project.thumbnailUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={normalizeImageUrl(project.thumbnailUrl)}
+                            alt={project.thumbnailAlt || `${project.name} project preview`}
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="flex h-full items-end justify-between p-5">
+                            <Code2 className="h-10 w-10 text-indigo-200/80" aria-hidden="true" />
+                            <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-indigo-100/70">Case study</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Role & Period Badges */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        {project.role && (
+                          <span className="rounded-full bg-indigo-500/20 px-2.5 py-0.5 font-medium text-indigo-300 border border-indigo-500/30">
+                            {project.role}
+                          </span>
+                        )}
+                        {project.period && (
+                          <span className="font-mono text-slate-400 text-[11.5px]">
+                            {project.period}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Project Title */}
+                      <h3 className="mt-4 text-xl font-bold text-white group-hover:text-indigo-300 transition-colors">
+                        {project.name}
+                      </h3>
+
+                      {/* Highlights / Description */}
+                      {highlightLines.length > 0 && (
+                        <ul className="mt-4 space-y-2 text-sm leading-relaxed text-slate-300">
+                          {highlightLines.slice(0, 3).map((line, hIdx) => (
+                            <li key={hIdx} className="flex items-start gap-2">
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                              <span>{line}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    {/* Tech Stack & Repository Links */}
+                    <div className="mt-6 border-t border-white/10 pt-4">
+                      {techList.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {techList.map((tech, tIdx) => (
+                            <span
+                              key={tIdx}
+                              className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-mono text-slate-300"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {(project.repository || project.demoUrl) && (
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                          {project.repository && (
+                            <Link
+                              href={`/projects/${encodeURIComponent(
+                                project.projectSlug ||
+                                  project.repository
+                                    .replace(/\.git$/i, "")
+                                    .split("/")
+                                    .filter(Boolean)
+                                    .pop() ||
+                                  project.name
+                                    .toLowerCase()
+                                    .trim()
+                                    .replace(/[^a-z0-9]+/g, "-")
+                                    .replace(/^-|-$/g, "")
+                              )}`}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-400/35 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200 transition hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              <span>Case study</span>
+                              <ArrowRight className="h-3 w-3" />
+                            </Link>
+                          )}
+                          {project.repository && (
+                            <a
+                              href={
+                                project.repository.startsWith("http")
+                                  ? project.repository
+                                  : `https://${project.repository}`
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                            >
+                              <GithubIcon className="h-3.5 w-3.5" />
+                              <span>Source Code</span>
+                              <ArrowUpRight className="h-3 w-3 text-slate-400" />
+                            </a>
+                          )}
+                          {project.demoUrl && (
+                            <a
+                              href={
+                                project.demoUrl.startsWith("http")
+                                  ? project.demoUrl
+                                  : `https://${project.demoUrl}`
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-300 transition hover:border-indigo-500/50 hover:bg-indigo-500/20 hover:text-white"
+                            >
+                              <Globe className="h-3.5 w-3.5 text-indigo-400" />
+                              <span>Live Demo</span>
+                              <ExternalLink className="h-3 w-3 text-indigo-400" />
+                            </a>
+                          )}
                         </div>
                       )}
                     </div>
-                    {/* Role & Period Badges */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                      {project.role && (
-                        <span className="rounded-full bg-indigo-500/20 px-2.5 py-0.5 font-medium text-indigo-300 border border-indigo-500/30">
-                          {project.role}
-                        </span>
-                      )}
-                      {project.period && (
-                        <span className="font-mono text-slate-400 text-[11.5px]">
-                          {project.period}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Project Title */}
-                    <h3 className="mt-4 text-xl font-bold text-white group-hover:text-indigo-300 transition-colors">
-                      {project.name}
-                    </h3>
-
-                    {/* Highlights / Description */}
-                    {highlightLines.length > 0 && (
-                      <ul className="mt-4 space-y-2 text-sm leading-relaxed text-slate-300">
-                        {highlightLines.slice(0, 3).map((line, hIdx) => (
-                          <li key={hIdx} className="flex items-start gap-2">
-                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
-                            <span>{line}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  {/* Tech Stack & Repository Links */}
-                  <div className="mt-6 border-t border-white/10 pt-4">
-                    {techList.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {techList.map((tech, tIdx) => (
-                          <span
-                            key={tIdx}
-                            className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-mono text-slate-300"
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {(project.repository || project.demoUrl) && (
-                      <div className="mt-4 flex flex-wrap items-center gap-3">
-                        {project.repository && (
-                          <Link
-                            href={`/projects/${encodeURIComponent(
-                              project.projectSlug ||
-                                project.repository
-                                  .replace(/\.git$/i, "")
-                                  .split("/")
-                                  .filter(Boolean)
-                                  .pop() ||
-                                project.name
-                                  .toLowerCase()
-                                  .trim()
-                                  .replace(/[^a-z0-9]+/g, "-")
-                                  .replace(/^-|-$/g, "")
-                            )}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-violet-400/35 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200 transition hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white"
-                          >
-                            <FileText className="h-3.5 w-3.5" />
-                            <span>Case study</span>
-                            <ArrowRight className="h-3 w-3" />
-                          </Link>
-                        )}
-                        {project.repository && (
-                          <a
-                            href={
-                              project.repository.startsWith("http")
-                                ? project.repository
-                                : `https://${project.repository}`
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
-                          >
-                            <GithubIcon className="h-3.5 w-3.5" />
-                            <span>Source Code</span>
-                            <ArrowUpRight className="h-3 w-3 text-slate-400" />
-                          </a>
-                        )}
-                        {project.demoUrl && (
-                          <a
-                            href={
-                              project.demoUrl.startsWith("http")
-                                ? project.demoUrl
-                                : `https://${project.demoUrl}`
-                            }
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-300 transition hover:border-indigo-500/50 hover:bg-indigo-500/20 hover:text-white"
-                          >
-                            <Globe className="h-3.5 w-3.5 text-indigo-400" />
-                            <span>Live Demo</span>
-                            <ExternalLink className="h-3 w-3 text-indigo-400" />
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </article>
+                  </SpotlightCard>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerContainer>
         </section>
 
-        {/* Technical Toolkit / Skills */}
+        {/* Technical Toolkit & Infinite Marquee */}
         <section
           id="skills"
           className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
         >
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-md bg-purple-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-purple-400 border border-purple-500/20">
-                <Layers className="h-3.5 w-3.5" />
-                Technical Toolkit
+          <ScrollReveal direction="up">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-md bg-purple-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-purple-400 border border-purple-500/20">
+                  <Layers className="h-3.5 w-3.5" />
+                  Technical Toolkit
+                </div>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                  Skills & Technologies
+                </h2>
               </div>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Skills & Technologies
-              </h2>
+              <p className="max-w-md text-sm text-slate-400">
+                Modern frontend frameworks, scalable backend APIs, database
+                design, and generative AI toolchains.
+              </p>
             </div>
-            <p className="max-w-md text-sm text-slate-400">
-              Modern frontend frameworks, scalable backend APIs, database
-              design, and generative AI toolchains.
-            </p>
+          </ScrollReveal>
+
+          {/* Dual-Direction Infinite Tech Marquee */}
+          <div className="mt-8">
+            <TechStackMarquee skills={technicalSkills} />
           </div>
 
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Bento Grid Categorized Skills */}
+          <StaggerContainer className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {technicalSkills.map((skillGroup, idx) => {
               const items = skillGroup.items
                 .split(",")
@@ -472,33 +426,32 @@ export default async function Home() {
                 .filter(Boolean);
 
               return (
-                <div
-                  key={`${skillGroup.category}-${idx}`}
-                  className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6 backdrop-blur-md transition duration-300 hover:border-purple-500/40 hover:shadow-xl hover:shadow-purple-500/5"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 shadow-inner">
-                      {getSkillCategoryIcon(skillGroup.category)}
+                <StaggerItem key={`${skillGroup.category}-${idx}`}>
+                  <SpotlightCard className="h-full">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10 shadow-inner">
+                        {getSkillCategoryIcon(skillGroup.category)}
+                      </div>
+                      <h3 className="font-bold text-white text-base">
+                        {skillGroup.category}
+                      </h3>
                     </div>
-                    <h3 className="font-bold text-white text-base">
-                      {skillGroup.category}
-                    </h3>
-                  </div>
 
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {items.map((skill, sIdx) => (
-                      <span
-                        key={sIdx}
-                        className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-medium text-slate-300 transition hover:border-purple-400/50 hover:bg-purple-500/10 hover:text-white"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {items.map((skill, sIdx) => (
+                        <span
+                          key={sIdx}
+                          className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-xs font-medium text-slate-300 transition hover:border-purple-400/50 hover:bg-purple-500/10 hover:text-white"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </SpotlightCard>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerContainer>
         </section>
 
         {/* Experience Section (Conditionally rendered) */}
@@ -507,17 +460,19 @@ export default async function Home() {
             id="experience"
             className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
           >
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-md bg-blue-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-blue-400 border border-blue-500/20">
-                <Briefcase className="h-3.5 w-3.5" />
-                Work History
+            <ScrollReveal direction="up">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-md bg-blue-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-blue-400 border border-blue-500/20">
+                  <Briefcase className="h-3.5 w-3.5" />
+                  Work History
+                </div>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                  Professional Experience
+                </h2>
               </div>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Professional Experience
-              </h2>
-            </div>
+            </ScrollReveal>
 
-            <div className="mt-10 space-y-6">
+            <StaggerContainer className="mt-10 space-y-6">
               {experience.map((exp, idx) => {
                 const bullets = exp.highlights
                   ? exp.highlights
@@ -527,40 +482,39 @@ export default async function Home() {
                   : [];
 
                 return (
-                  <div
-                    key={`${exp.company}-${idx}`}
-                    className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-8 backdrop-blur-md transition hover:border-blue-500/40"
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <div>
-                        <h3 className="text-xl font-bold text-white">
-                          {exp.role}
-                        </h3>
-                        <p className="text-sm font-semibold text-indigo-400">
-                          {exp.company}
-                        </p>
+                  <StaggerItem key={`${exp.company}-${idx}`}>
+                    <SpotlightCard className="p-6 sm:p-8">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <div>
+                          <h3 className="text-xl font-bold text-white">
+                            {exp.role}
+                          </h3>
+                          <p className="text-sm font-semibold text-indigo-400">
+                            {exp.company}
+                          </p>
+                        </div>
+                        {exp.period && (
+                          <span className="font-mono text-xs font-medium text-slate-400">
+                            {exp.period}
+                          </span>
+                        )}
                       </div>
-                      {exp.period && (
-                        <span className="font-mono text-xs font-medium text-slate-400">
-                          {exp.period}
-                        </span>
-                      )}
-                    </div>
 
-                    {bullets.length > 0 && (
-                      <ul className="mt-5 space-y-2 text-sm text-slate-300">
-                        {bullets.map((bullet, bIdx) => (
-                          <li key={bIdx} className="flex items-start gap-2">
-                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
-                            <span>{bullet}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                      {bullets.length > 0 && (
+                        <ul className="mt-5 space-y-2 text-sm text-slate-300">
+                          {bullets.map((bullet, bIdx) => (
+                            <li key={bIdx} className="flex items-start gap-2">
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                              <span>{bullet}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </SpotlightCard>
+                  </StaggerItem>
                 );
               })}
-            </div>
+            </StaggerContainer>
           </section>
         )}
 
@@ -569,60 +523,61 @@ export default async function Home() {
           id="education"
           className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
         >
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-emerald-400 border border-emerald-500/20">
-              <GraduationCap className="h-3.5 w-3.5" />
-              Academic Background
+          <ScrollReveal direction="up">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-emerald-400 border border-emerald-500/20">
+                <GraduationCap className="h-3.5 w-3.5" />
+                Academic Background
+              </div>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                Education & Degrees
+              </h2>
             </div>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Education & Degrees
-            </h2>
-          </div>
+          </ScrollReveal>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
+          <StaggerContainer className="mt-10 grid gap-6 md:grid-cols-2">
             {education.map((edu, idx) => (
-              <div
-                key={`${edu.institution}-${idx}`}
-                className="flex gap-4 rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6 backdrop-blur-md transition hover:border-emerald-500/40"
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                  <GraduationCap className="h-6 w-6" />
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-                    <h3 className="font-bold text-white text-base">
-                      {edu.institution}
-                    </h3>
-                    {edu.period && (
-                      <span className="font-mono text-xs text-slate-400">
-                        {edu.period}
-                      </span>
+              <StaggerItem key={`${edu.institution}-${idx}`}>
+                <SpotlightCard className="flex gap-4 p-6">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                    <GraduationCap className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-2">
+                      <h3 className="font-bold text-white text-base">
+                        {edu.institution}
+                      </h3>
+                      {edu.period && (
+                        <span className="font-mono text-xs text-slate-400">
+                          {edu.period}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm font-medium text-emerald-300">
+                      {edu.degree}
+                    </p>
+                    {edu.details && (
+                      <div className="mt-3 space-y-1.5">
+                        {edu.details
+                          .split("\n")
+                          .map((line) => line.trim().replace(/^[-•*]\s*/, ""))
+                          .filter(Boolean)
+                          .map((bullet, bIdx) => (
+                            <div
+                              key={bIdx}
+                              className="flex items-start gap-2 text-xs text-slate-400 leading-relaxed"
+                            >
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400/80" />
+                              <span>{bullet}</span>
+                            </div>
+                          ))}
+                      </div>
                     )}
                   </div>
-                  <p className="mt-1 text-sm font-medium text-emerald-300">
-                    {edu.degree}
-                  </p>
-                  {edu.details && (
-                    <div className="mt-3 space-y-1.5">
-                      {edu.details
-                        .split("\n")
-                        .map((line) => line.trim().replace(/^[-•*]\s*/, ""))
-                        .filter(Boolean)
-                        .map((bullet, bIdx) => (
-                          <div
-                            key={bIdx}
-                            className="flex items-start gap-2 text-xs text-slate-400 leading-relaxed"
-                          >
-                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400/80" />
-                            <span>{bullet}</span>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+                </SpotlightCard>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </section>
 
         {/* Contact & Connect Section */}
@@ -630,79 +585,81 @@ export default async function Home() {
           id="contact"
           className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
         >
-          <div className="relative overflow-hidden rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 via-purple-950/30 to-slate-950/70 p-6 sm:p-12 shadow-2xl backdrop-blur-xl">
-            {/* Ambient inner glow */}
-            <div className="pointer-events-none absolute -right-12 -top-12 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-12 -left-12 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl" />
+          <ScrollReveal direction="up">
+            <div className="relative overflow-hidden rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 via-purple-950/30 to-slate-950/70 p-6 sm:p-12 shadow-2xl backdrop-blur-xl">
+              {/* Ambient inner glow */}
+              <div className="pointer-events-none absolute -right-12 -top-12 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-12 -left-12 h-72 w-72 rounded-full bg-pink-500/20 blur-3xl" />
 
-            <div className="relative z-10 grid gap-10 lg:grid-cols-12 lg:items-center">
-              {/* Left Column: Headline & Social Links */}
-              <div className="lg:col-span-6 space-y-6">
-                <div className="inline-flex items-center gap-2 rounded-md bg-indigo-500/20 px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Let&apos;s Connect
-                </div>
-                <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl leading-tight">
-                  Have a product problem worth solving?
-                </h2>
-                <p className="text-sm sm:text-base leading-relaxed text-slate-300">
-                  I am actively seeking Fullstack Developer Intern opportunities
-                  and high-impact software engineering challenges. Drop your JD or note, or connect directly through any platform below.
-                </p>
+              <div className="relative z-10 grid gap-10 lg:grid-cols-12 lg:items-center">
+                {/* Left Column: Headline & Social Links */}
+                <div className="lg:col-span-6 space-y-6">
+                  <div className="inline-flex items-center gap-2 rounded-md bg-indigo-500/20 px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/30">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Let&apos;s Connect
+                  </div>
+                  <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl leading-tight">
+                    Have a product problem worth solving?
+                  </h2>
+                  <p className="text-sm sm:text-base leading-relaxed text-slate-300">
+                    I am actively seeking Fullstack Developer Intern opportunities
+                    and high-impact software engineering challenges. Drop your JD or note, or connect directly through any platform below.
+                  </p>
 
-                <div className="flex flex-wrap items-center gap-3 pt-2">
-                  {basics.email && <CopyEmailButton email={basics.email} />}
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    {basics.email && <CopyEmailButton email={basics.email} />}
 
-                  {basics.github && (
+                    {basics.github && (
+                      <a
+                        href={
+                          basics.github.startsWith("http")
+                            ? basics.github
+                            : `https://${basics.github}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
+                      >
+                        <GithubIcon className="h-4 w-4" />
+                        <span>GitHub</span>
+                        <ArrowUpRight className="h-3.5 w-3.5 opacity-60" />
+                      </a>
+                    )}
+
+                    {basics.linkedin && (
+                      <a
+                        href={
+                          basics.linkedin.startsWith("http")
+                            ? basics.linkedin
+                            : `https://${basics.linkedin}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-blue-400/40 hover:bg-white/10 hover:text-white"
+                      >
+                        <LinkedinIcon className="h-4 w-4 text-blue-400" />
+                        <span>LinkedIn</span>
+                        <ArrowUpRight className="h-3.5 w-3.5 opacity-60" />
+                      </a>
+                    )}
+
                     <a
-                      href={
-                        basics.github.startsWith("http")
-                          ? basics.github
-                          : `https://${basics.github}`
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
+                      href="/resume"
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
                     >
-                      <GithubIcon className="h-4 w-4" />
-                      <span>GitHub</span>
-                      <ArrowUpRight className="h-3.5 w-3.5 opacity-60" />
+                      <FileText className="h-4 w-4" />
+                      <span>Read Full CV (A4)</span>
                     </a>
-                  )}
-
-                  {basics.linkedin && (
-                    <a
-                      href={
-                        basics.linkedin.startsWith("http")
-                          ? basics.linkedin
-                          : `https://${basics.linkedin}`
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-200 backdrop-blur-md transition hover:border-blue-400/40 hover:bg-white/10 hover:text-white"
-                    >
-                      <LinkedinIcon className="h-4 w-4 text-blue-400" />
-                      <span>LinkedIn</span>
-                      <ArrowUpRight className="h-3.5 w-3.5 opacity-60" />
-                    </a>
-                  )}
-
-                  <a
-                    href="/resume"
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:shadow-indigo-500/40 hover:scale-105"
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>Read Full CV (A4)</span>
-                  </a>
+                  </div>
                 </div>
-              </div>
 
-              {/* Right Column: Interactive Direct Message & JD Drop Form */}
-              <div className="lg:col-span-6">
-                <ContactForm />
+                {/* Right Column: Interactive Direct Message & JD Drop Form */}
+                <div className="lg:col-span-6">
+                  <ContactForm />
+                </div>
               </div>
             </div>
-          </div>
+          </ScrollReveal>
         </section>
       </main>
 
