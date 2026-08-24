@@ -8,3 +8,5 @@ coverage/
 *.log
 .codegraph/
 backend/src/generated/
+*.prompt.md
+supabase_prompt.md
