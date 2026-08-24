@@ -1,0 +1,22 @@
+# Nguyen Tran Anh Khoa - Software Engineer & Fullstack Developer
+
+> Official portfolio and curriculum vitae of Nguyen Tran Anh Khoa (KhoaSinno).
+
+- **Full Name**: Nguyen Tran Anh Khoa
+- **Role**: Software Engineer / Fullstack Developer / AI Systems
+- **Location**: Can Tho City, Vietnam
+- **Education**: Can Tho University of Technology (Information Technology)
+- **Domain**: https://www.nguyentrananhkhoa.id.vn
+- **GitHub**: https://github.com/KhoaSinno
+
+## Core Technical Skills
+- **Frontend**: Next.js (App Router), React 19, TypeScript, Tailwind CSS, State Management.
+- **Backend & Database**: FastAPI, Python, NestJS, Node.js, PostgreSQL, Supabase, Prisma, Redis.
+- **Mobile**: Flutter, Riverpod, Android, iOS.
+- **AI & Integrations**: Hybrid RAG, pgvector, Reciprocal Rank Fusion (RRF), Cohere Rerank, OpenAI Realtime API, LiveKit WebRTC, Gemini LLM.
+- **DevOps & Cloud**: Docker, Git/GitHub Actions, Postman, Vercel, Render, AWS EC2.
+
+## Key Projects
+1. **TRIAM - Ebook with Agent Assistant**: High-performance backend with Flutter mobile client, LiveKit WebRTC audio streaming, and Hybrid RAG.
+2. **SinooHub - Fullstack Portfolio Platform**: Monorepo platform featuring JSONB resume management, live preview, version control, and A4 print export.
+3. **SafeNews - AI-Powered News Aggregator**: Automated RSS crawler pipeline with Gemini LLM content moderation and sentiment analysis.

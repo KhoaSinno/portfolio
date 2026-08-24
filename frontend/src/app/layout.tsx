@@ -24,11 +24,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Nguyen Tran Anh Khoa · Software Engineer & Fullstack Developer",
+    default: "Nguyen Tran Anh Khoa · Software Engineer",
     template: "%s | Nguyen Tran Anh Khoa",
   },
   description:
-    "Official portfolio of Nguyen Tran Anh Khoa (KhoaSinno). Specialized in Fullstack Web & Mobile Development, Next.js, FastAPI, NestJS, Flutter, PostgreSQL, and AI/Hybrid RAG Systems.",
+    "Official portfolio of Nguyen Tran Anh Khoa (KhoaSinno). Specialized in Fullstack Web & Mobile Development, Next.js, FastAPI, NestJS, Flutter, and AI Systems.",
   keywords: [
     "Nguyen Tran Anh Khoa",
     "KhoaSinno",
@@ -60,25 +60,25 @@ export const metadata: Metadata = {
     alternateLocale: "vi_VN",
     url: siteUrl,
     siteName: "Nguyen Tran Anh Khoa Portfolio",
-    title: "Nguyen Tran Anh Khoa · Software Engineer & Fullstack Developer",
+    title: "Nguyen Tran Anh Khoa · Software Engineer",
     description:
       "Explore high-performance fullstack systems, AI-powered applications, and engineering projects built by Nguyen Tran Anh Khoa.",
     images: [
       {
-        url: "/icon.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Nguyen Tran Anh Khoa - Software Engineer & Fullstack Developer",
+        alt: "Nguyen Tran Anh Khoa - Software Engineer",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nguyen Tran Anh Khoa · Software Engineer & Fullstack Developer",
+    title: "Nguyen Tran Anh Khoa · Software Engineer",
     description:
       "Explore high-performance fullstack systems, AI-powered applications, and engineering projects built by Nguyen Tran Anh Khoa.",
     creator: "@KhoaSinno",
-    images: ["/icon.png"],
+    images: ["/opengraph-image"],
   },
   robots: {
     index: true,
