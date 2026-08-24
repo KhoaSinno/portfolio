@@ -527,20 +527,42 @@ export class ResumeService {
 
     let matchedProject: Record<string, unknown> | null = null;
 
+    // Helper to generate full normalized slug without cutting length
+    const toFullSlug = (str: string) =>
+      str
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
     for (const res of allResumes) {
       const content = res.content as { projects?: unknown };
       const projects = Array.isArray(content?.projects) ? content.projects : [];
       for (const item of projects) {
         if (!item || typeof item !== 'object') continue;
         const candidate = item as Record<string, unknown>;
-        const pSlug = typeof candidate.projectSlug === 'string'
-          ? candidate.projectSlug.toLowerCase().trim()
-          : '';
-        const nameSlug = typeof candidate.name === 'string'
-          ? this.slugify(candidate.name).toLowerCase().trim()
-          : '';
 
-        if (pSlug === targetSlug || nameSlug === targetSlug || this.slugify(pSlug) === targetSlug) {
+        const pSlug = typeof candidate.projectSlug === 'string' ? candidate.projectSlug.toLowerCase().trim() : '';
+        const name = typeof candidate.name === 'string' ? candidate.name : '';
+        const fullNameSlug = toFullSlug(name);
+        const shortNameSlug = this.slugify(name);
+        const repo = typeof candidate.repository === 'string' ? candidate.repository.trim() : '';
+        const repoName = repo.split('/').filter(Boolean).pop()?.toLowerCase() || '';
+        const repoSlug = toFullSlug(repoName);
+
+        // Check all possible slug representations
+        const isMatch =
+          (pSlug && pSlug === targetSlug) ||
+          (pSlug && toFullSlug(pSlug) === targetSlug) ||
+          fullNameSlug === targetSlug ||
+          shortNameSlug === targetSlug ||
+          repoName === targetSlug ||
+          repoSlug === targetSlug ||
+          (targetSlug.length >= 10 && (fullNameSlug.startsWith(targetSlug) || targetSlug.startsWith(fullNameSlug))) ||
+          (targetSlug.length >= 10 && (shortNameSlug.startsWith(targetSlug) || targetSlug.startsWith(shortNameSlug)));
+
+        if (isMatch) {
           matchedProject = candidate;
           break;
         }

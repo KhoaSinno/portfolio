@@ -381,14 +381,28 @@ export default async function Home() {
 
                     {(project.repository || project.demoUrl) && (
                       <div className="mt-4 flex flex-wrap items-center gap-3">
-                        <Link
-                          href={`/projects/${encodeURIComponent(project.projectSlug || project.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""))}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-violet-400/35 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200 transition hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          <span>Case study</span>
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
+                        {project.repository && (
+                          <Link
+                            href={`/projects/${encodeURIComponent(
+                              project.projectSlug ||
+                                project.repository
+                                  .replace(/\.git$/i, "")
+                                  .split("/")
+                                  .filter(Boolean)
+                                  .pop() ||
+                                project.name
+                                  .toLowerCase()
+                                  .trim()
+                                  .replace(/[^a-z0-9]+/g, "-")
+                                  .replace(/^-|-$/g, "")
+                            )}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-violet-400/35 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200 transition hover:border-violet-300/60 hover:bg-violet-500/20 hover:text-white"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            <span>Case study</span>
+                            <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        )}
                         {project.repository && (
                           <a
                             href={
