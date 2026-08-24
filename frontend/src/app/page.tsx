@@ -3,6 +3,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Award,
+  Battery,
   Briefcase,
   Code2,
   Cpu,
@@ -14,8 +15,10 @@ import {
   Layers,
   MapPin,
   Server,
+  Smartphone,
   Sparkles,
   Terminal,
+  Wifi,
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
@@ -256,6 +259,14 @@ export default async function Home() {
                     .filter(Boolean)
                 : [];
 
+              const isMobileApp =
+                project.techStack?.toLowerCase().includes("flutter") ||
+                project.techStack?.toLowerCase().includes("react native") ||
+                project.techStack?.toLowerCase().includes("riverpod") ||
+                project.techStack?.toLowerCase().includes("mobile") ||
+                project.role?.toLowerCase().includes("flutter") ||
+                project.role?.toLowerCase().includes("mobile");
+
               const caseStudySlug = encodeURIComponent(
                 project.projectSlug ||
                   project.repository
@@ -281,17 +292,32 @@ export default async function Home() {
                       {/* Left Column: Visual Mockup / Architecture Frame (5 cols) */}
                       <div className="lg:col-span-5">
                         <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-slate-950/80 shadow-2xl shadow-black/60 group-hover:border-violet-500/30 transition-all duration-500">
-                          {/* Top Window Bar Dots */}
-                          <div className="flex items-center gap-1.5 border-b border-white/10 bg-white/[0.03] px-3.5 py-2.5">
-                            <span className="h-2.5 w-2.5 rounded-full bg-rose-500/80" />
-                            <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
-                            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
-                            <span className="ml-2 font-mono text-[10px] text-slate-400 truncate">
-                              {project.name
-                                .toLowerCase()
-                                .replace(/[^a-z0-9]+/g, "-")}.app
-                            </span>
-                          </div>
+                          {/* Top Device Bar (Dynamic for Mobile App vs Web Platform) */}
+                          {isMobileApp ? (
+                            <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.03] px-3.5 py-2">
+                              <span className="font-mono text-[10px] text-sky-400 font-semibold tracking-wider uppercase">
+                                Mobile App
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="h-2 w-10 rounded-full bg-white/20" />
+                              </div>
+                              <div className="flex items-center gap-1.5 text-slate-400">
+                                <Wifi className="h-3 w-3" />
+                                <Battery className="h-3 w-3" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 border-b border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+                              <span className="h-2.5 w-2.5 rounded-full bg-rose-500/80" />
+                              <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
+                              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+                              <span className="ml-2 font-mono text-[10px] text-slate-400 truncate">
+                                {project.name
+                                  .toLowerCase()
+                                  .replace(/[^a-z0-9]+/g, "-")}.app
+                              </span>
+                            </div>
+                          )}
 
                           {/* Image or High-Tech Placeholder */}
                           <div className="aspect-[16/10] overflow-hidden bg-gradient-to-br from-indigo-950/50 via-slate-950 to-slate-900 flex items-center justify-center">
@@ -308,11 +334,29 @@ export default async function Home() {
                               />
                             ) : (
                               <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 shadow-inner group-hover:scale-110 transition-transform duration-500">
-                                  <Code2 className="h-7 w-7" />
+                                <div
+                                  className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
+                                    isMobileApp
+                                      ? "bg-sky-500/10 border-sky-500/20 text-sky-300"
+                                      : "bg-indigo-500/10 border-indigo-500/20 text-indigo-300"
+                                  } border shadow-inner group-hover:scale-110 transition-transform duration-500`}
+                                >
+                                  {isMobileApp ? (
+                                    <Smartphone className="h-7 w-7" />
+                                  ) : (
+                                    <Code2 className="h-7 w-7" />
+                                  )}
                                 </div>
-                                <span className="font-mono text-xs font-semibold text-indigo-300 uppercase tracking-widest">
-                                  System Architecture
+                                <span
+                                  className={`font-mono text-xs font-semibold uppercase tracking-widest ${
+                                    isMobileApp
+                                      ? "text-sky-300"
+                                      : "text-indigo-300"
+                                  }`}
+                                >
+                                  {isMobileApp
+                                    ? "Mobile Application"
+                                    : "System Architecture"}
                                 </span>
                                 <span className="text-[11px] text-slate-400 max-w-[200px] line-clamp-1">
                                   Interactive Case Study
