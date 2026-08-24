@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FileText, Lock, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,6 +17,7 @@ interface FloatingNavbarProps {
 export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
   const [activeSection, setActiveSection] = useState("about");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isScrollingRef = useRef(false);
 
   const navItems: NavItem[] = [
     { label: "About", href: "#about", id: "about" },
@@ -29,6 +30,9 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
 
   useEffect(() => {
     const handleScroll = () => {
+      // Don't fight programmatic smooth scrolling animation
+      if (isScrollingRef.current) return;
+
       // 1. Top of page is always About
       if (window.scrollY < 120) {
         setActiveSection("about");
@@ -54,24 +58,56 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll(); // Initial check on mount
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, [navItems]);
+
+  /**
+   * Smooth physics-based cubic scroll to section without browser jitter
+   */
+  const smoothScrollTo = (targetY: number, duration = 650) => {
+    const startY = window.scrollY;
+    const difference = targetY - startY;
+    const startTime = performance.now();
+
+    // easeInOutCubic curve for smooth slow start & slow finish
+    const easeInOutCubic = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+
+    isScrollingRef.current = true;
+
+    const step = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = easeInOutCubic(progress);
+
+      window.scrollTo(0, startY + difference * easeProgress);
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 80);
+      }
+    };
+
+    requestAnimationFrame(step);
+  };
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     const targetId = href.replace("#", "");
     const targetEl = document.getElementById(targetId);
+
+    setActiveSection(targetId);
+
     if (targetEl) {
       const topOffset = 80;
       const elementPosition = targetEl.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.scrollY - topOffset;
+      const targetY = Math.max(0, elementPosition + window.scrollY - topOffset);
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
-      setActiveSection(targetId);
+      smoothScrollTo(targetY, 700);
     }
   };
 
@@ -82,7 +118,7 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
         <a
           href="#about"
           onClick={(e) => handleNavClick(e, "#about")}
-          className="pointer-events-auto group flex items-center transition hover:opacity-90 active:scale-95"
+          className="pointer-events-auto group flex items-center transition hover:opacity-90 active:scale-95 cursor-pointer"
           title="Sinoo Hub Portfolio"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -110,7 +146,7 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
                   <motion.div
                     layoutId="active-pill"
                     className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-600/50 via-indigo-600/50 to-purple-600/50 border border-violet-400/40 shadow-md shadow-violet-500/20"
-                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
                   />
                 )}
                 <span className="relative z-10">{item.label}</span>
