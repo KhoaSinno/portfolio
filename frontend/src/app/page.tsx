@@ -112,7 +112,7 @@ export default async function Home() {
     resume;
 
   return (
-    <div className="relative min-h-screen bg-[#030712] text-slate-100 selection:bg-indigo-500 selection:text-white overflow-x-hidden font-sans">
+    <div className="relative min-h-screen bg-[#030712] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans">
       {/* Background Ambient Glows & Aurora Mesh Gradients */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute -top-[15%] left-[20%] h-[500px] w-[500px] rounded-full bg-gradient-to-br from-indigo-600/25 via-blue-600/20 to-purple-600/10 blur-[130px]" />
@@ -124,10 +124,10 @@ export default async function Home() {
       {/* Floating Glassmorphism Navbar */}
       <FloatingNavbar hasExperience={Boolean(experience && experience.length > 0)} />
 
-      <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
+      <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8 pt-4 sm:pt-6">
         {/* Hero / About Section */}
         <ScrollReveal direction="up" delay={0.05}>
-          <section id="about" className="pt-20 pb-16 sm:pt-28 sm:pb-24 scroll-mt-24">
+          <section id="about" className="pt-16 pb-16 sm:pt-24 sm:pb-24 scroll-mt-24">
             {/* Live Status Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-medium text-emerald-300 shadow-lg shadow-emerald-500/10 backdrop-blur-md">
               <span className="relative flex h-2 w-2">

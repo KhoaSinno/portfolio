@@ -30,19 +30,19 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
   useEffect(() => {
     const handleScroll = () => {
       // 1. Top of page is always About
-      if (window.scrollY < 150) {
+      if (window.scrollY < 120) {
         setActiveSection("about");
         return;
       }
 
       // 2. Check if near bottom of page -> Contact
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 80) {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 90) {
         setActiveSection("contact");
         return;
       }
 
       // 3. Find current section by vertical offset
-      const checkPosition = window.scrollY + 220;
+      const checkPosition = window.scrollY + 200;
       for (let i = navItems.length - 1; i >= 0; i--) {
         const item = navItems[i];
         const el = document.getElementById(item.id);
@@ -58,13 +58,31 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [navItems]);
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const targetId = href.replace("#", "");
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+      const topOffset = 80;
+      const elementPosition = targetEl.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - topOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
+      setActiveSection(targetId);
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-transparent border-none py-3 sm:py-4 transition-all duration-300">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full py-3 sm:py-4 pointer-events-none transition-all duration-300">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 sm:px-8">
         {/* Brand Logo (Transparent Floating) */}
         <a
           href="#about"
-          className="group flex items-center transition hover:opacity-90 active:scale-95"
+          onClick={(e) => handleNavClick(e, "#about")}
+          className="pointer-events-auto group flex items-center transition hover:opacity-90 active:scale-95"
           title="Sinoo Hub Portfolio"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -76,14 +94,15 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
         </a>
 
         {/* Center Floating Capsule Pill with Smooth Sliding Active Indicator */}
-        <nav className="hidden items-center gap-1 rounded-full border border-white/15 bg-black/40 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl md:flex">
+        <nav className="pointer-events-auto hidden items-center gap-1 rounded-full border border-white/15 bg-black/40 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl md:flex">
           {navItems.map((item) => {
             const isActive = activeSection === item.id;
             return (
               <a
                 key={item.href}
                 href={item.href}
-                className={`relative px-4 py-1.5 text-xs font-semibold transition-colors duration-200 ${
+                onClick={(e) => handleNavClick(e, item.href)}
+                className={`relative px-4 py-1.5 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
                   isActive ? "text-white" : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -101,7 +120,7 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
         </nav>
 
         {/* Action Buttons (Transparent Floating) */}
-        <div className="flex items-center gap-3">
+        <div className="pointer-events-auto flex items-center gap-3">
           {/* Admin CMS */}
           <a
             href="/admin/resume"
@@ -142,14 +161,17 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mx-5 mt-3 rounded-2xl border border-white/15 bg-black/80 p-4 shadow-2xl backdrop-blur-2xl md:hidden"
+            className="pointer-events-auto mx-5 mt-3 rounded-2xl border border-white/15 bg-black/85 p-4 shadow-2xl backdrop-blur-2xl md:hidden"
           >
             <nav className="flex flex-col gap-1.5">
               {navItems.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    setMobileMenuOpen(false);
+                    handleNavClick(e, item.href);
+                  }}
                   className={`rounded-xl px-3.5 py-2 text-sm font-medium transition ${
                     activeSection === item.id
                       ? "bg-violet-600/30 text-white font-semibold border border-violet-500/30"
