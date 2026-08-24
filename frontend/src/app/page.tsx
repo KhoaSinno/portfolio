@@ -24,6 +24,7 @@ import { getPublishedResume } from "@/features/resume/resume-api";
 import { defaultResume } from "@/features/resume/resume-schema";
 import { CopyEmailButton } from "@/features/home/HomeClientEnhancements";
 import { ContactForm } from "@/features/home/ContactForm";
+import { normalizeImageUrl } from "@/lib/image-url";
 
 function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -319,7 +320,7 @@ export default async function Home() {
                         // Native image keeps user-provided image hosts configurable without a Next.js rebuild.
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={project.thumbnailUrl}
+                          src={normalizeImageUrl(project.thumbnailUrl)}
                           alt={project.thumbnailAlt || `${project.name} project preview`}
                           className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                           loading="lazy"

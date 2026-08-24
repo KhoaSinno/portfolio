@@ -511,68 +511,131 @@ export class ResumeService {
   }
 
   /**
-   * Public: load the README for a project listed on the primary published CV.
-   * GitHub is queried server-side so the browser never needs a GitHub token.
+   * Public: load the README for a project across resumes.
+   * GitHub is queried server-side with multi-branch and raw content fallbacks.
    */
   async getProjectCaseStudy(slug: string) {
-    const resume = await this.prisma.resume.findFirst({
-      where: { isPrimary: true, status: ResumeStatus.PUBLISHED },
-    });
-    if (!resume) throw new NotFoundException('No published resume exists yet.');
+    const targetSlug = slug.toLowerCase().trim();
 
-    const content = resume.content as { projects?: unknown };
-    const projects = Array.isArray(content.projects) ? content.projects : [];
-    const project = projects.find((item): item is Record<string, unknown> => {
-      if (!item || typeof item !== 'object') return false;
-      const candidate = item as Record<string, unknown>;
-      const projectSlug = typeof candidate.projectSlug === 'string'
-        ? candidate.projectSlug
-        : typeof candidate.name === 'string'
-          ? this.slugify(candidate.name)
+    // 1. Search across primary published, then any published, then any resume
+    const allResumes = await this.prisma.resume.findMany({
+      orderBy: [{ isPrimary: 'desc' }, { publishedAt: 'desc' }, { updatedAt: 'desc' }],
+    });
+    if (!allResumes || allResumes.length === 0) {
+      throw new NotFoundException('No resume data found in the system.');
+    }
+
+    let matchedProject: Record<string, unknown> | null = null;
+
+    for (const res of allResumes) {
+      const content = res.content as { projects?: unknown };
+      const projects = Array.isArray(content?.projects) ? content.projects : [];
+      for (const item of projects) {
+        if (!item || typeof item !== 'object') continue;
+        const candidate = item as Record<string, unknown>;
+        const pSlug = typeof candidate.projectSlug === 'string'
+          ? candidate.projectSlug.toLowerCase().trim()
           : '';
-      return projectSlug === slug;
-    });
-    if (!project) throw new NotFoundException('Project case study not found.');
+        const nameSlug = typeof candidate.name === 'string'
+          ? this.slugify(candidate.name).toLowerCase().trim()
+          : '';
 
-    const repository = typeof project.repository === 'string' ? project.repository.trim() : '';
-    const match = repository.match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([\w.-]+)\/([\w.-]+)\/?$/i);
+        if (pSlug === targetSlug || nameSlug === targetSlug || this.slugify(pSlug) === targetSlug) {
+          matchedProject = candidate;
+          break;
+        }
+      }
+      if (matchedProject) break;
+    }
+
+    if (!matchedProject) {
+      throw new NotFoundException(`Project case study for '${slug}' was not found in any CV profile.`);
+    }
+
+    const repository = typeof matchedProject.repository === 'string' ? matchedProject.repository.trim() : '';
+    const cleanRepo = repository
+      .replace(/^git\+/, '')
+      .replace(/\.git$/i, '')
+      .trim();
+
+    // Extract owner and repo from various URL formats
+    const match = cleanRepo.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)/i);
     if (!match) {
-      throw new BadRequestException('This project needs a public GitHub repository URL to show its README.');
+      throw new BadRequestException(
+        `This project needs a valid GitHub repository URL (e.g. github.com/username/project), but got '${repository}'.`,
+      );
     }
 
-    const [, owner, repo] = match;
-    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'portfolio-case-study',
-      },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (response.status === 404) {
-      throw new NotFoundException('GitHub README was not found or the repository is private.');
-    }
-    if (!response.ok) {
-      throw new BadRequestException('GitHub could not load this project README right now.');
+    const owner = match[1];
+    const repo = match[2];
+
+    let markdown = '';
+    let baseUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/`;
+
+    // Attempt 1: Call GitHub API
+    try {
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'portfolio-case-study',
+        },
+        signal: AbortSignal.timeout(8_000),
+      });
+
+      if (response.ok) {
+        const readme = (await response.json()) as {
+          content?: string;
+          encoding?: string;
+          download_url?: string;
+        };
+        if (readme.encoding === 'base64' && readme.content) {
+          markdown = Buffer.from(readme.content, 'base64').toString('utf8');
+          if (readme.download_url) {
+            baseUrl = readme.download_url.replace(/[^/]+$/, '');
+          }
+        }
+      }
+    } catch {
+      // Fallback will be triggered below
     }
 
-    const readme = (await response.json()) as {
-      content?: string;
-      encoding?: string;
-      download_url?: string;
-      html_url?: string;
-    };
-    if (readme.encoding !== 'base64' || !readme.content) {
-      throw new NotFoundException('GitHub README content is empty.');
+    // Attempt 2: Fallback to Raw GitHub Content URLs if API failed or rate-limited
+    if (!markdown) {
+      const rawCandidates = [
+        `https://raw.githubusercontent.com/${owner}/${repo}/main/README.md`,
+        `https://raw.githubusercontent.com/${owner}/${repo}/main/readme.md`,
+        `https://raw.githubusercontent.com/${owner}/${repo}/master/README.md`,
+        `https://raw.githubusercontent.com/${owner}/${repo}/master/readme.md`,
+        `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/README.md`,
+        `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/readme.md`,
+      ];
+
+      for (const rawUrl of rawCandidates) {
+        try {
+          const rawRes = await fetch(rawUrl, {
+            signal: AbortSignal.timeout(5_000),
+          });
+          if (rawRes.ok) {
+            markdown = await rawRes.text();
+            baseUrl = rawUrl.replace(/[^/]+$/, '');
+            break;
+          }
+        } catch {
+          // Continue to next candidate
+        }
+      }
     }
-    const markdown = Buffer.from(readme.content, 'base64').toString('utf8');
-    const baseUrl = readme.download_url
-      ? readme.download_url.replace(/[^/]+$/, '')
-      : `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/`;
+
+    if (!markdown) {
+      throw new NotFoundException(
+        `Could not retrieve README from GitHub repository '${owner}/${repo}'. Please ensure the repository is public and contains a README.md file.`,
+      );
+    }
 
     return {
-      title: typeof project.name === 'string' ? project.name : 'Project case study',
+      title: typeof matchedProject.name === 'string' ? matchedProject.name : 'Project case study',
       repositoryUrl: `https://github.com/${owner}/${repo}`,
-      demoUrl: typeof project.demoUrl === 'string' ? project.demoUrl : '',
+      demoUrl: typeof matchedProject.demoUrl === 'string' ? matchedProject.demoUrl : '',
       markdown,
       baseUrl,
     };
