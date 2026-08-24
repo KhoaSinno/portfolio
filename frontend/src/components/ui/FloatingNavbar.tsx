@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Lock, Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 interface NavItem {
   label: string;
@@ -17,35 +17,38 @@ interface FloatingNavbarProps {
 export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
   const [activeSection, setActiveSection] = useState("about");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isScrollingRef = useRef(false);
+  const lockScrollUntil = useRef<number>(0);
 
-  const navItems: NavItem[] = [
-    { label: "About", href: "#about", id: "about" },
-    { label: "Projects", href: "#projects", id: "projects" },
-    { label: "Skills", href: "#skills", id: "skills" },
-    ...(hasExperience ? [{ label: "Experience", href: "#experience", id: "experience" }] : []),
-    { label: "Education", href: "#education", id: "education" },
-    { label: "Contact", href: "#contact", id: "contact" },
-  ];
+  const navItems: NavItem[] = useMemo(
+    () => [
+      { label: "About", href: "#about", id: "about" },
+      { label: "Projects", href: "#projects", id: "projects" },
+      { label: "Skills", href: "#skills", id: "skills" },
+      ...(hasExperience ? [{ label: "Experience", href: "#experience", id: "experience" }] : []),
+      { label: "Education", href: "#education", id: "education" },
+      { label: "Contact", href: "#contact", id: "contact" },
+    ],
+    [hasExperience]
+  );
 
   useEffect(() => {
     const handleScroll = () => {
-      // Don't fight programmatic smooth scrolling animation
-      if (isScrollingRef.current) return;
+      // 1. Ignore scroll events while tab-click animation is in progress
+      if (Date.now() < lockScrollUntil.current) return;
 
-      // 1. Top of page is always About
+      // 2. Top of page is always About
       if (window.scrollY < 120) {
         setActiveSection("about");
         return;
       }
 
-      // 2. Check if near bottom of page -> Contact
+      // 3. Check if near bottom of page -> Contact
       if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 90) {
         setActiveSection("contact");
         return;
       }
 
-      // 3. Find current section by vertical offset
+      // 4. Find current section by vertical offset
       const checkPosition = window.scrollY + 200;
       for (let i = navItems.length - 1; i >= 0; i--) {
         const item = navItems[i];
@@ -65,7 +68,7 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
   /**
    * Smooth physics-based cubic scroll to section without browser jitter
    */
-  const smoothScrollTo = (targetY: number, duration = 650) => {
+  const smoothScrollTo = (targetY: number, duration = 600) => {
     const startY = window.scrollY;
     const difference = targetY - startY;
     const startTime = performance.now();
@@ -73,8 +76,6 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
     // easeInOutCubic curve for smooth slow start & slow finish
     const easeInOutCubic = (t: number) =>
       t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
-
-    isScrollingRef.current = true;
 
     const step = (currentTime: number) => {
       const elapsed = currentTime - startTime;
@@ -85,29 +86,27 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
 
       if (progress < 1) {
         requestAnimationFrame(step);
-      } else {
-        setTimeout(() => {
-          isScrollingRef.current = false;
-        }, 80);
       }
     };
 
     requestAnimationFrame(step);
   };
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleNavClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
     const targetId = href.replace("#", "");
-    const targetEl = document.getElementById(targetId);
 
+    // Lock scroll listener for 800ms to guarantee no intermediate section hijack
+    lockScrollUntil.current = Date.now() + 800;
     setActiveSection(targetId);
 
+    const targetEl = document.getElementById(targetId);
     if (targetEl) {
       const topOffset = 80;
       const elementPosition = targetEl.getBoundingClientRect().top;
       const targetY = Math.max(0, elementPosition + window.scrollY - topOffset);
 
-      smoothScrollTo(targetY, 700);
+      smoothScrollTo(targetY, 600);
     }
   };
 
@@ -115,10 +114,10 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
     <header className="fixed top-0 left-0 right-0 z-50 w-full py-3 sm:py-4 pointer-events-none transition-all duration-300">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 sm:px-8">
         {/* Brand Logo (Transparent Floating) */}
-        <a
-          href="#about"
+        <button
+          type="button"
           onClick={(e) => handleNavClick(e, "#about")}
-          className="pointer-events-auto group flex items-center transition hover:opacity-90 active:scale-95 cursor-pointer"
+          className="pointer-events-auto group flex items-center transition hover:opacity-90 active:scale-95 cursor-pointer bg-transparent border-none p-0"
           title="Sinoo Hub Portfolio"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -127,33 +126,40 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
             alt="Sinoo Hub"
             className="h-9 w-auto rounded-xl object-contain shadow-lg shadow-indigo-500/20 transition-transform duration-300 group-hover:scale-105"
           />
-        </a>
+        </button>
 
-        {/* Center Floating Capsule Pill with Smooth Sliding Active Indicator */}
-        <nav className="pointer-events-auto hidden items-center gap-1 rounded-full border border-white/15 bg-black/40 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl md:flex">
-          {navItems.map((item) => {
-            const isActive = activeSection === item.id;
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={(e) => handleNavClick(e, item.href)}
-                className={`relative px-4 py-1.5 text-xs font-semibold transition-colors duration-200 cursor-pointer ${
-                  isActive ? "text-white" : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="active-pill"
-                    className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-600/50 via-indigo-600/50 to-purple-600/50 border border-violet-400/40 shadow-md shadow-violet-500/20"
-                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10">{item.label}</span>
-              </a>
-            );
-          })}
-        </nav>
+        {/* Center Floating Capsule Pill with LayoutGroup for Silk-Smooth Pill Sliding */}
+        <LayoutGroup id="floating-navbar-capsule">
+          <nav className="pointer-events-auto hidden items-center gap-1 rounded-full border border-white/15 bg-black/40 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl md:flex">
+            {navItems.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className={`relative px-4 py-1.5 text-xs font-semibold transition-colors duration-200 cursor-pointer select-none bg-transparent border-none ${
+                    isActive ? "text-white" : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="active-pill-bubble"
+                      className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-600/50 via-indigo-600/50 to-purple-600/50 border border-violet-400/40 shadow-md shadow-violet-500/20"
+                      transition={{
+                        type: "spring",
+                        stiffness: 380,
+                        damping: 30,
+                        mass: 0.8,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </LayoutGroup>
 
         {/* Action Buttons (Transparent Floating) */}
         <div className="pointer-events-auto flex items-center gap-3">
@@ -201,21 +207,21 @@ export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
           >
             <nav className="flex flex-col gap-1.5">
               {navItems.map((item) => (
-                <a
+                <button
                   key={item.href}
-                  href={item.href}
+                  type="button"
                   onClick={(e) => {
                     setMobileMenuOpen(false);
                     handleNavClick(e, item.href);
                   }}
-                  className={`rounded-xl px-3.5 py-2 text-sm font-medium transition ${
+                  className={`w-full text-left rounded-xl px-3.5 py-2 text-sm font-medium transition bg-transparent border-none ${
                     activeSection === item.id
                       ? "bg-violet-600/30 text-white font-semibold border border-violet-500/30"
                       : "text-slate-300 hover:bg-white/5 hover:text-white"
                   }`}
                 >
                   {item.label}
-                </a>
+                </button>
               ))}
             </nav>
           </motion.div>
