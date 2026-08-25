@@ -90,6 +90,7 @@ export function resolveProjectThumbnail(project?: {
   techStack?: string | null;
   role?: string | null;
   name?: string | null;
+  hideDemoUrl?: boolean;
 } | null): string {
   if (!project) return "";
 
@@ -98,8 +99,8 @@ export function resolveProjectThumbnail(project?: {
     return normalizeImageUrl(project.thumbnailUrl);
   }
 
-  // 2. Mobile apps do not use web screenshots
-  if (isMobileProject(project)) {
+  // 2. Mobile apps or hidden demoUrl do not use web screenshots
+  if (project.hideDemoUrl || isMobileProject(project)) {
     return "";
   }
 

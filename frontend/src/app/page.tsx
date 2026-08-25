@@ -116,7 +116,7 @@ export default async function Home() {
     resume = defaultResume;
   }
 
-  const { basics, summary, projects, technicalSkills, experience, education, hiddenSections = [] } =
+  const { basics, summary, projects, technicalSkills, experience, education, hiddenSections = [], hiddenBasicsFields = [] } =
     resume;
 
   const visibleProjects = (projects || []).filter((p) => p.isVisible !== false);
@@ -243,17 +243,27 @@ export default async function Home() {
 
             {/* Main Title & Headline */}
             <h1 className="mt-8 text-balance text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
-              Hi, I&apos;m{" "}
-              <span className="bg-gradient-to-r from-amber-100 via-amber-200 to-amber-400 bg-clip-text text-transparent font-extrabold">
-                {basics.name}
-              </span>
+              {!hiddenBasicsFields.includes("name") ? (
+                <>
+                  Hi, I&apos;m{" "}
+                  <span className="bg-gradient-to-r from-amber-100 via-amber-200 to-amber-400 bg-clip-text text-transparent font-extrabold">
+                    {basics.name}
+                  </span>
+                </>
+              ) : (
+                <span className="bg-gradient-to-r from-amber-100 via-amber-200 to-amber-400 bg-clip-text text-transparent font-extrabold">
+                  Fullstack Software Engineer
+                </span>
+              )}
             </h1>
 
-            <p className="mt-4 text-xl font-semibold text-slate-300 sm:text-2xl">
-              {basics.headline}
-            </p>
+            {!hiddenBasicsFields.includes("headline") && basics.headline && (
+              <p className="mt-4 text-xl font-semibold text-slate-300 sm:text-2xl">
+                {basics.headline}
+              </p>
+            )}
 
-            {basics.location && (
+            {!hiddenBasicsFields.includes("location") && basics.location && (
               <div className="mt-3 flex items-center gap-1.5 text-sm font-medium text-slate-400">
                 <MapPin className="h-4 w-4 text-indigo-400" />
                 <span>{basics.location}</span>
@@ -285,7 +295,7 @@ export default async function Home() {
                 <span>Open Printable CV</span>
               </a>
 
-              {basics.github && (
+              {!hiddenBasicsFields.includes("github") && basics.github && (
                 <a
                   href={
                     basics.github.startsWith("http")
@@ -301,7 +311,7 @@ export default async function Home() {
                 </a>
               )}
 
-              {basics.linkedin && (
+              {!hiddenBasicsFields.includes("linkedin") && basics.linkedin && (
                 <a
                   href={
                     basics.linkedin.startsWith("http")
@@ -314,6 +324,22 @@ export default async function Home() {
                   title="LinkedIn Profile"
                 >
                   <LinkedinIcon className="h-5 w-5 text-blue-400" />
+                </a>
+              )}
+
+              {!hiddenBasicsFields.includes("website") && basics.website && (
+                <a
+                  href={
+                    basics.website.startsWith("http")
+                      ? basics.website
+                      : `https://${basics.website}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 backdrop-blur-md transition-all duration-200 hover:border-white/30 hover:bg-white/10 hover:text-white hover:scale-105 active:scale-95"
+                  title="Personal Website"
+                >
+                  <Globe className="h-5 w-5 text-emerald-400" />
                 </a>
               )}
             </div>
@@ -435,7 +461,7 @@ export default async function Home() {
 
                             {/* Links / CTAs */}
                             <div className="mt-6 flex flex-wrap items-center gap-3">
-                              {project.repository && (
+                              {!project.hideRepository && project.repository && (
                                 <a
                                   href={
                                     project.repository.startsWith("http")
@@ -451,7 +477,7 @@ export default async function Home() {
                                 </a>
                               )}
 
-                              {project.demoUrl && (
+                              {!project.hideDemoUrl && project.demoUrl && (
                                 <a
                                   href={
                                     project.demoUrl.startsWith("http")

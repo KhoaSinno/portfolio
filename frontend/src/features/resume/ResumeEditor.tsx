@@ -334,6 +334,7 @@ export function ResumeEditor() {
   };
 
   const hiddenSections = resume.hiddenSections || [];
+  const hiddenBasicsFields = resume.hiddenBasicsFields || [];
 
   const toggleSectionVisibility = (sectionKey: ResumeSectionKey) => {
     const current = resume.hiddenSections || [];
@@ -342,6 +343,15 @@ export function ResumeEditor() {
       ? current.filter((k) => k !== sectionKey)
       : [...current, sectionKey];
     setValue("hiddenSections", updated, { shouldDirty: true, shouldValidate: true });
+  };
+
+  const toggleBasicsFieldVisibility = (fieldKey: string) => {
+    const current = resume.hiddenBasicsFields || [];
+    const isHidden = current.includes(fieldKey);
+    const updated = isHidden
+      ? current.filter((k) => k !== fieldKey)
+      : [...current, fieldKey];
+    setValue("hiddenBasicsFields", updated, { shouldDirty: true, shouldValidate: true });
   };
 
   const toggleItemVisibility = (
@@ -581,6 +591,8 @@ export function ResumeEditor() {
                 thumbnailAlt: "",
                 highlights: "",
                 isVisible: true,
+                hideRepository: false,
+                hideDemoUrl: false,
               })
             }
             isHidden={hiddenSections.includes("projects")}
@@ -633,11 +645,25 @@ export function ResumeEditor() {
                     <Field
                       label="Repository (GitHub)"
                       placeholder="github.com/name/project"
+                      isHidden={Boolean(resume.projects?.[index]?.hideRepository)}
+                      onToggleVisibility={() => {
+                        const current = Boolean(resume.projects?.[index]?.hideRepository);
+                        setValue(`projects.${index}.hideRepository` as any, !current, {
+                          shouldDirty: true,
+                        });
+                      }}
                       {...register(`projects.${index}.repository`)}
                     />
                     <Field
                       label="Live Demo URL"
                       placeholder="myproject.vercel.app"
+                      isHidden={Boolean(resume.projects?.[index]?.hideDemoUrl)}
+                      onToggleVisibility={() => {
+                        const current = Boolean(resume.projects?.[index]?.hideDemoUrl);
+                        setValue(`projects.${index}.hideDemoUrl` as any, !current, {
+                          shouldDirty: true,
+                        });
+                      }}
                       {...register(`projects.${index}.demoUrl`)}
                     />
                     <Field
@@ -1071,12 +1097,16 @@ export function ResumeEditor() {
                 label="Full name"
                 placeholder="John Doe"
                 error={errors.basics?.name?.message}
+                isHidden={hiddenBasicsFields.includes("name")}
+                onToggleVisibility={() => toggleBasicsFieldVisibility("name")}
                 {...register("basics.name")}
               />
               <Field
                 label="Professional headline"
                 placeholder="Final-year IT Student | Aspiring Fullstack Developer"
                 error={errors.basics?.headline?.message}
+                isHidden={hiddenBasicsFields.includes("headline")}
+                onToggleVisibility={() => toggleBasicsFieldVisibility("headline")}
                 {...register("basics.headline")}
               />
               <Field
@@ -1084,27 +1114,37 @@ export function ResumeEditor() {
                 type="email"
                 placeholder="john@example.com"
                 error={errors.basics?.email?.message}
+                isHidden={hiddenBasicsFields.includes("email")}
+                onToggleVisibility={() => toggleBasicsFieldVisibility("email")}
                 {...register("basics.email")}
               />
               <Field
                 label="Location"
                 placeholder="Ho Chi Minh City, Vietnam"
                 error={errors.basics?.location?.message}
+                isHidden={hiddenBasicsFields.includes("location")}
+                onToggleVisibility={() => toggleBasicsFieldVisibility("location")}
                 {...register("basics.location")}
               />
               <Field
                 label="Personal website"
                 placeholder="portfolio.com"
+                isHidden={hiddenBasicsFields.includes("website")}
+                onToggleVisibility={() => toggleBasicsFieldVisibility("website")}
                 {...register("basics.website")}
               />
               <Field
                 label="LinkedIn profile"
                 placeholder="linkedin.com/in/username"
+                isHidden={hiddenBasicsFields.includes("linkedin")}
+                onToggleVisibility={() => toggleBasicsFieldVisibility("linkedin")}
                 {...register("basics.linkedin")}
               />
               <Field
                 label="GitHub profile"
                 placeholder="github.com/username"
+                isHidden={hiddenBasicsFields.includes("github")}
+                onToggleVisibility={() => toggleBasicsFieldVisibility("github")}
                 {...register("basics.github")}
               />
             </div>
@@ -1442,14 +1482,53 @@ function Field({
   label,
   error,
   className = "",
+  isHidden = false,
+  onToggleVisibility,
   ...props
-}: React.ComponentProps<"input"> & { label: string; error?: string }) {
+}: React.ComponentProps<"input"> & {
+  label: string;
+  error?: string;
+  isHidden?: boolean;
+  onToggleVisibility?: () => void;
+}) {
   return (
-    <label className={`block ${className}`}>
-      <span className="text-xs font-medium text-zinc-700">{label}</span>
-      <input className="field mt-1" {...props} />
+    <div className={`block ${className} ${isHidden ? "opacity-65" : "opacity-100"} transition-opacity`}>
+      <div className="flex items-center justify-between gap-1.5">
+        <label className="text-xs font-medium text-zinc-700 flex items-center gap-1.5">
+          <span className={isHidden ? "line-through text-zinc-400" : ""}>{label}</span>
+          {isHidden && (
+            <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700">
+              Hidden
+            </span>
+          )}
+        </label>
+        {onToggleVisibility && (
+          <button
+            type="button"
+            onClick={onToggleVisibility}
+            className={`rounded p-0.5 transition ${
+              isHidden
+                ? "text-amber-600 hover:bg-amber-100"
+                : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
+            }`}
+            title={
+              isHidden
+                ? `Field "${label}" is Hidden. Click to Show on CV & Web.`
+                : `Field "${label}" is Visible. Click to Hide on CV & Web.`
+            }
+          >
+            {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
+        )}
+      </div>
+      <input
+        className={`field mt-1 transition ${
+          isHidden ? "border-dashed border-amber-300 bg-amber-50/25 text-zinc-500" : ""
+        }`}
+        {...props}
+      />
       <FieldError message={error} />
-    </label>
+    </div>
   );
 }
 

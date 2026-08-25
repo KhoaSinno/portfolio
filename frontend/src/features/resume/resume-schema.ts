@@ -63,6 +63,8 @@ export const resumeSchema = z.object({
     thumbnailAlt: z.string().max(160).optional(),
     highlights: z.string().optional(),
     isVisible: z.boolean().default(true),
+    hideRepository: z.boolean().default(false),
+    hideDemoUrl: z.boolean().default(false),
   })).min(1, "Add at least one featured project."),
   education: z.array(z.object({
     institution: z.string().min(1, "Institution is required."),
@@ -73,6 +75,7 @@ export const resumeSchema = z.object({
   })).min(1, "Add at least one education entry."),
   sectionOrder: z.array(z.enum(["summary", "technicalSkills", "experience", "projects", "education"])),
   hiddenSections: z.array(z.string()).default([]),
+  hiddenBasicsFields: z.array(z.string()).default([]),
 });
 
 export type ResumeData = z.infer<typeof resumeSchema>;
@@ -127,6 +130,8 @@ export const defaultResume: ResumeData = {
       highlights:
         "Built a Vietnamese audiobook application with intelligent voice conversational AI assistant.\nIntegrated LiveKit WebRTC and OpenAI Realtime API for low-latency voice streaming.\nImplemented Hybrid RAG with Vector Search and RRF reranking for accurate content discovery.",
       isVisible: true,
+      hideRepository: false,
+      hideDemoUrl: false,
     },
     {
       name: "Portfolio Platform",
@@ -141,6 +146,8 @@ export const defaultResume: ResumeData = {
       highlights:
         "Designed a fullstack portfolio with a structured resume editor.\nBuilt reusable resume templates with print-ready HTML and CSS.\nPlanned a scalable backend architecture for projects, AI chat, and content management.",
       isVisible: true,
+      hideRepository: false,
+      hideDemoUrl: false,
     },
   ],
   education: [
@@ -154,6 +161,7 @@ export const defaultResume: ResumeData = {
   ],
   sectionOrder: ["summary", "technicalSkills", "projects", "education"],
   hiddenSections: [],
+  hiddenBasicsFields: [],
 };
 
 export const RESUME_DRAFT_KEY = "portfolio.resume.draft";

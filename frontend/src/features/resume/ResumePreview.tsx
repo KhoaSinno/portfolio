@@ -132,6 +132,7 @@ export function ResumePreview({
       : DEFAULT_SECTION_ORDER;
 
   const hiddenSections = resume.hiddenSections || [];
+  const hiddenBasicsFields = resume.hiddenBasicsFields || [];
 
   const renderSection = (key: ResumeSectionKey) => {
     if (hiddenSections.includes(key)) return null;
@@ -403,9 +404,9 @@ export function ResumePreview({
                       <span className="italic">{project.techStack}</span>
                     </p>
                   )}
-                  {(project.repository || project.demoUrl) && (
+                  {((!project.hideRepository && project.repository) || (!project.hideDemoUrl && project.demoUrl)) && (
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
-                      {project.repository && (
+                      {!project.hideRepository && project.repository && (
                         <span
                           onClick={(e) => {
                             if (isInteractive) {
@@ -429,7 +430,7 @@ export function ResumePreview({
                           </CleanLink>
                         </span>
                       )}
-                      {project.demoUrl && (
+                      {!project.hideDemoUrl && project.demoUrl && (
                         <span
                           onClick={(e) => {
                             if (isInteractive) {
@@ -599,25 +600,29 @@ export function ResumePreview({
         <header className="border-b-2 border-slate-800 pb-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
-              <h1
-                onClick={() => onSelectField?.({ section: "basics", field: "basics.name" })}
-                className={`text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl ${interactiveClass}`}
-                title={isInteractive ? "Click to edit Full name" : undefined}
-              >
-                {resume.basics.name}
-              </h1>
-              <p
-                onClick={() => onSelectField?.({ section: "basics", field: "basics.headline" })}
-                className={`mt-0.5 text-sm font-semibold text-slate-700 ${interactiveClass}`}
-                title={isInteractive ? "Click to edit Headline" : undefined}
-              >
-                {resume.basics.headline}
-              </p>
+              {!hiddenBasicsFields.includes("name") && resume.basics.name && (
+                <h1
+                  onClick={() => onSelectField?.({ section: "basics", field: "basics.name" })}
+                  className={`text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl ${interactiveClass}`}
+                  title={isInteractive ? "Click to edit Full name" : undefined}
+                >
+                  {resume.basics.name}
+                </h1>
+              )}
+              {!hiddenBasicsFields.includes("headline") && resume.basics.headline && (
+                <p
+                  onClick={() => onSelectField?.({ section: "basics", field: "basics.headline" })}
+                  className={`mt-0.5 text-sm font-semibold text-slate-700 ${interactiveClass}`}
+                  title={isInteractive ? "Click to edit Headline" : undefined}
+                >
+                  {resume.basics.headline}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600">
-            {resume.basics.location && (
+            {!hiddenBasicsFields.includes("location") && resume.basics.location && (
               <span
                 onClick={() => onSelectField?.({ section: "basics", field: "basics.location" })}
                 className={`inline-flex items-center gap-1 ${interactiveClass}`}
@@ -627,7 +632,7 @@ export function ResumePreview({
                 <span>{resume.basics.location}</span>
               </span>
             )}
-            {resume.basics.email && (
+            {!hiddenBasicsFields.includes("email") && resume.basics.email && (
               <span
                 onClick={(e) => {
                   if (isInteractive) {
@@ -642,7 +647,7 @@ export function ResumePreview({
                 <span>{resume.basics.email}</span>
               </span>
             )}
-            {resume.basics.website && (
+            {!hiddenBasicsFields.includes("website") && resume.basics.website && (
               <span
                 onClick={(e) => {
                   if (isInteractive) {
@@ -661,7 +666,7 @@ export function ResumePreview({
                 </CleanLink>
               </span>
             )}
-            {resume.basics.linkedin && (
+            {!hiddenBasicsFields.includes("linkedin") && resume.basics.linkedin && (
               <span
                 onClick={(e) => {
                   if (isInteractive) {
@@ -680,7 +685,7 @@ export function ResumePreview({
                 </CleanLink>
               </span>
             )}
-            {resume.basics.github && (
+            {!hiddenBasicsFields.includes("github") && resume.basics.github && (
               <span
                 onClick={(e) => {
                   if (isInteractive) {

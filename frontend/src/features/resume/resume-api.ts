@@ -59,6 +59,9 @@ function validateContent(response: { content: unknown } | null | undefined): Res
   if (!raw.hiddenSections) {
     raw.hiddenSections = [];
   }
+  if (!raw.hiddenBasicsFields) {
+    raw.hiddenBasicsFields = [];
+  }
   const parsed = resumeSchema.safeParse(raw);
   return parsed.success ? parsed.data : null;
 }
