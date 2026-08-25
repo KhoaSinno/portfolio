@@ -5,6 +5,7 @@ const datedRole = z.object({
   role: z.string().min(1, "Role is required."),
   period: z.string().min(1, "Period is required."),
   highlights: z.string(),
+  isVisible: z.boolean().default(true),
 });
 
 export const RESUME_SECTION_KEYS = [
@@ -47,6 +48,7 @@ export const resumeSchema = z.object({
   technicalSkills: z.array(z.object({
     category: z.string().min(1, "Skill category is required."),
     items: z.string().min(1, "Add skills for this category."),
+    isVisible: z.boolean().default(true),
   })).min(1, "Add at least one skill category."),
   experience: z.array(datedRole),
   projects: z.array(z.object({
@@ -60,14 +62,17 @@ export const resumeSchema = z.object({
     thumbnailUrl: z.string().url().optional().or(z.literal("")),
     thumbnailAlt: z.string().max(160).optional(),
     highlights: z.string().optional(),
+    isVisible: z.boolean().default(true),
   })).min(1, "Add at least one featured project."),
   education: z.array(z.object({
     institution: z.string().min(1, "Institution is required."),
     period: z.string().min(1, "Period is required."),
     degree: z.string().min(1, "Degree is required."),
     details: z.string().optional(),
+    isVisible: z.boolean().default(true),
   })).min(1, "Add at least one education entry."),
   sectionOrder: z.array(z.enum(["summary", "technicalSkills", "experience", "projects", "education"])),
+  hiddenSections: z.array(z.string()).default([]),
 });
 
 export type ResumeData = z.infer<typeof resumeSchema>;
@@ -88,18 +93,22 @@ export const defaultResume: ResumeData = {
     {
       category: "Frontend",
       items: "TypeScript, Next.js, React, Tailwind CSS, responsive UI",
+      isVisible: true,
     },
     {
       category: "Backend & Database",
       items: "NestJS, FastAPI, PostgreSQL, Prisma, Supabase",
+      isVisible: true,
     },
     {
       category: "DevOps & Tools",
       items: "Git/GitHub, Docker, Postman, Vercel, Render, EC2",
+      isVisible: true,
     },
     {
       category: "AI",
       items: "Hybrid RAG, RRF, Reranking, Vector database",
+      isVisible: true,
     },
   ],
   experience: [],
@@ -117,6 +126,7 @@ export const defaultResume: ResumeData = {
       thumbnailAlt: "TRIAM audiobook application preview",
       highlights:
         "Built a Vietnamese audiobook application with intelligent voice conversational AI assistant.\nIntegrated LiveKit WebRTC and OpenAI Realtime API for low-latency voice streaming.\nImplemented Hybrid RAG with Vector Search and RRF reranking for accurate content discovery.",
+      isVisible: true,
     },
     {
       name: "Portfolio Platform",
@@ -130,6 +140,7 @@ export const defaultResume: ResumeData = {
       thumbnailAlt: "Portfolio Platform preview",
       highlights:
         "Designed a fullstack portfolio with a structured resume editor.\nBuilt reusable resume templates with print-ready HTML and CSS.\nPlanned a scalable backend architecture for projects, AI chat, and content management.",
+      isVisible: true,
     },
   ],
   education: [
@@ -138,9 +149,11 @@ export const defaultResume: ResumeData = {
       period: "2022 — Now",
       degree: "Information Technology",
       details: "Major in Software Engineering · GPA: 3.6/4.0\nCapstone Project: Triam Audiobook with AI Voice Agent",
+      isVisible: true,
     },
   ],
   sectionOrder: ["summary", "technicalSkills", "projects", "education"],
+  hiddenSections: [],
 };
 
 export const RESUME_DRAFT_KEY = "portfolio.resume.draft";
@@ -150,8 +163,13 @@ export function parseStoredResume(value: string | null): ResumeData | null {
   if (!value) return null;
   try {
     const raw = JSON.parse(value);
-    if (raw && typeof raw === "object" && !raw.sectionOrder) {
-      raw.sectionOrder = [...DEFAULT_SECTION_ORDER];
+    if (raw && typeof raw === "object") {
+      if (!raw.sectionOrder) {
+        raw.sectionOrder = [...DEFAULT_SECTION_ORDER];
+      }
+      if (!raw.hiddenSections) {
+        raw.hiddenSections = [];
+      }
     }
     const parsed = resumeSchema.safeParse(raw);
     return parsed.success ? parsed.data : null;

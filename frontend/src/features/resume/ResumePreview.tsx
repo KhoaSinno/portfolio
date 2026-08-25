@@ -131,7 +131,11 @@ export function ResumePreview({
       ? resume.sectionOrder
       : DEFAULT_SECTION_ORDER;
 
+  const hiddenSections = resume.hiddenSections || [];
+
   const renderSection = (key: ResumeSectionKey) => {
+    if (hiddenSections.includes(key)) return null;
+
     switch (key) {
       case "summary":
         if (!resume.summary) return null;
@@ -157,9 +161,9 @@ export function ResumePreview({
           </ResumeSection>
         );
 
-      case "technicalSkills":
-        if (!resume.technicalSkills || resume.technicalSkills.length === 0)
-          return null;
+      case "technicalSkills": {
+        const visibleSkills = (resume.technicalSkills || []).filter((s) => s.isVisible !== false);
+        if (visibleSkills.length === 0) return null;
         return (
           <ResumeSection
             key="technicalSkills"
@@ -168,7 +172,7 @@ export function ResumePreview({
             isInteractive={isInteractive}
           >
             <div className="space-y-1 text-[12.5px] leading-snug text-slate-700">
-              {resume.technicalSkills.map((skill, index) => (
+              {visibleSkills.map((skill, index) => (
                 <div key={`${skill.category}-${index}`} className="flex items-baseline gap-1">
                   <strong
                     onClick={(e) => {
@@ -207,9 +211,11 @@ export function ResumePreview({
             </div>
           </ResumeSection>
         );
+      }
 
-      case "experience":
-        if (!resume.experience || resume.experience.length === 0) return null;
+      case "experience": {
+        const visibleExperience = (resume.experience || []).filter((e) => e.isVisible !== false);
+        if (visibleExperience.length === 0) return null;
         return (
           <ResumeSection
             key="experience"
@@ -218,7 +224,7 @@ export function ResumePreview({
             isInteractive={isInteractive}
           >
             <div className="space-y-3">
-              {resume.experience.map((item, index) => (
+              {visibleExperience.map((item, index) => (
                 <article key={`${item.company}-${index}`} className="break-inside-avoid">
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[13px] font-bold text-slate-950">
@@ -302,9 +308,11 @@ export function ResumePreview({
             </div>
           </ResumeSection>
         );
+      }
 
-      case "projects":
-        if (!resume.projects || resume.projects.length === 0) return null;
+      case "projects": {
+        const visibleProjects = (resume.projects || []).filter((p) => p.isVisible !== false);
+        if (visibleProjects.length === 0) return null;
         return (
           <ResumeSection
             key="projects"
@@ -313,7 +321,7 @@ export function ResumePreview({
             isInteractive={isInteractive}
           >
             <div className="space-y-3">
-              {resume.projects.map((project, index) => (
+              {visibleProjects.map((project, index) => (
                 <article key={`${project.name}-${index}`} className="break-inside-avoid">
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[13px] font-bold text-slate-950">
@@ -470,9 +478,11 @@ export function ResumePreview({
             </div>
           </ResumeSection>
         );
+      }
 
-      case "education":
-        if (!resume.education || resume.education.length === 0) return null;
+      case "education": {
+        const visibleEducation = (resume.education || []).filter((ed) => ed.isVisible !== false);
+        if (visibleEducation.length === 0) return null;
         return (
           <ResumeSection
             key="education"
@@ -481,7 +491,7 @@ export function ResumePreview({
             isInteractive={isInteractive}
           >
             <div className="space-y-2">
-              {resume.education.map((item, index) => (
+              {visibleEducation.map((item, index) => (
                 <article key={`${item.institution}-${index}`} className="break-inside-avoid">
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[13px] font-bold text-slate-950">
@@ -555,7 +565,7 @@ export function ResumePreview({
                         }
                       }}
                       className={interactiveClass}
-                      title={isInteractive ? "Click to edit Additional details" : undefined}
+                      title={isInteractive ? "Click to edit Education details" : undefined}
                     >
                       {item.details.includes("\n") || item.details.trim().startsWith("•") || item.details.trim().startsWith("-") ? (
                         <Bullets value={item.details} />
@@ -571,6 +581,7 @@ export function ResumePreview({
             </div>
           </ResumeSection>
         );
+      }
 
       default:
         return null;

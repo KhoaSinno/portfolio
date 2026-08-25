@@ -1,4 +1,4 @@
-import { DEFAULT_SECTION_ORDER, resumeSchema, type ResumeData } from "./resume-schema";
+import { DEFAULT_SECTION_ORDER, defaultResume, resumeSchema, type ResumeData } from "./resume-schema";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
@@ -55,6 +55,9 @@ function validateContent(response: { content: unknown } | null | undefined): Res
   const raw = (typeof response.content === "object" ? { ...response.content } : {}) as Record<string, unknown>;
   if (!raw.sectionOrder) {
     raw.sectionOrder = [...DEFAULT_SECTION_ORDER];
+  }
+  if (!raw.hiddenSections) {
+    raw.hiddenSections = [];
   }
   const parsed = resumeSchema.safeParse(raw);
   return parsed.success ? parsed.data : null;
@@ -296,15 +299,7 @@ export async function getResumeVersions(resumeId?: string): Promise<ResumeVersio
     version: item.version,
     template: item.template,
     createdAt: item.createdAt,
-    content: validateContent({ content: item.content }) ?? {
-      basics: { name: "", headline: "", email: "", location: "", website: "", linkedin: "", github: "" },
-      summary: "",
-      technicalSkills: [],
-      experience: [],
-      projects: [],
-      education: [],
-      sectionOrder: [...DEFAULT_SECTION_ORDER],
-    },
+    content: validateContent({ content: item.content }) ?? defaultResume,
   }));
 }
 

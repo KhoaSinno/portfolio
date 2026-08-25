@@ -116,8 +116,19 @@ export default async function Home() {
     resume = defaultResume;
   }
 
-  const { basics, summary, projects, technicalSkills, experience, education } =
+  const { basics, summary, projects, technicalSkills, experience, education, hiddenSections = [] } =
     resume;
+
+  const visibleProjects = (projects || []).filter((p) => p.isVisible !== false);
+  const visibleSkills = (technicalSkills || []).filter((s) => s.isVisible !== false);
+  const visibleExperience = (experience || []).filter((e) => e.isVisible !== false);
+  const visibleEducation = (education || []).filter((ed) => ed.isVisible !== false);
+
+  const showSummary = !hiddenSections.includes("summary") && Boolean(summary);
+  const showProjectsSection = !hiddenSections.includes("projects") && visibleProjects.length > 0;
+  const showSkillsSection = !hiddenSections.includes("technicalSkills") && visibleSkills.length > 0;
+  const showExperienceSection = !hiddenSections.includes("experience") && visibleExperience.length > 0;
+  const showEducationSection = !hiddenSections.includes("education") && visibleEducation.length > 0;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -210,7 +221,12 @@ export default async function Home() {
       </div>
 
       {/* Floating Glassmorphism Navbar */}
-      <FloatingNavbar hasExperience={Boolean(experience && experience.length > 0)} />
+      <FloatingNavbar
+        showProjects={showProjectsSection}
+        showSkills={showSkillsSection}
+        showExperience={showExperienceSection}
+        showEducation={showEducationSection}
+      />
 
       <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8 pt-4 sm:pt-6">
         {/* Hero / About Section */}
@@ -245,7 +261,7 @@ export default async function Home() {
             )}
 
             {/* Professional Summary */}
-            {summary && (
+            {showSummary && (
               <p className="mt-6 max-w-3xl text-balance text-base leading-relaxed text-slate-300 sm:text-lg sm:leading-8">
                 {summary}
               </p>
@@ -305,281 +321,245 @@ export default async function Home() {
         </ScrollReveal>
 
         {/* Selected Work / Featured Projects with Spotlight Cards */}
-        <section
-          id="projects"
-          className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
-        >
-          <ScrollReveal direction="up">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-md bg-indigo-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 border border-indigo-500/20">
-                  <Terminal className="h-3.5 w-3.5" />
-                  Featured Projects
+        {showProjectsSection && (
+          <section
+            id="projects"
+            className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
+          >
+            <ScrollReveal direction="up">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-md bg-indigo-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-indigo-400 border border-indigo-500/20">
+                    <Terminal className="h-3.5 w-3.5" />
+                    Featured Projects
+                  </div>
+                  <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                    Systems & Applications I&apos;ve Built
+                  </h2>
                 </div>
-                <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                  Systems & Applications I&apos;ve Built
-                </h2>
+                <p className="max-w-md text-sm text-slate-400">
+                  Hands-on engineering projects showcasing fullstack architecture,
+                  AI integrations, and responsive UX.
+                </p>
               </div>
-              <p className="max-w-md text-sm text-slate-400">
-                Hands-on engineering projects showcasing fullstack architecture,
-                AI integrations, and responsive UX.
-              </p>
-            </div>
-          </ScrollReveal>
+            </ScrollReveal>
 
-          <div className="mt-12 space-y-8">
-            {projects.map((project, idx) => {
-              const techList = project.techStack
-                ? project.techStack
-                    .split(/[·,]/)
-                    .map((t) => t.trim())
-                    .filter(Boolean)
-                : [];
-              const highlightLines = project.highlights
-                ? project.highlights
-                    .split("\n")
-                    .map((h) => h.trim())
-                    .filter(Boolean)
-                : [];
+            <div className="mt-12 space-y-8">
+              {visibleProjects.map((project, idx) => {
+                const techList = project.techStack
+                  ? project.techStack
+                      .split(/[·,]/)
+                      .map((t) => t.trim())
+                      .filter(Boolean)
+                  : [];
+                const highlightLines = project.highlights
+                  ? project.highlights
+                      .split("\n")
+                      .map((h) => h.trim())
+                      .filter(Boolean)
+                  : [];
 
-              const isMobileApp =
-                project.techStack?.toLowerCase().includes("flutter") ||
-                project.techStack?.toLowerCase().includes("react native") ||
-                project.techStack?.toLowerCase().includes("riverpod") ||
-                project.techStack?.toLowerCase().includes("mobile") ||
-                project.role?.toLowerCase().includes("flutter") ||
-                project.role?.toLowerCase().includes("mobile");
+                const isMobileApp =
+                  project.techStack?.toLowerCase().includes("flutter") ||
+                  project.techStack?.toLowerCase().includes("react native") ||
+                  project.techStack?.toLowerCase().includes("riverpod") ||
+                  project.techStack?.toLowerCase().includes("mobile") ||
+                  project.role?.toLowerCase().includes("flutter") ||
+                  project.name?.toLowerCase().includes("mobile") ||
+                  project.name?.toLowerCase().includes("app");
 
-              const caseStudySlug = encodeURIComponent(
-                project.projectSlug ||
-                  project.repository
-                    ?.replace(/\.git$/i, "")
-                    .split("/")
-                    .filter(Boolean)
-                    .pop() ||
-                  project.name
-                    .toLowerCase()
-                    .trim()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/^-|-$/g, "")
-              );
+                return (
+                  <ScrollReveal key={`${project.name}-${idx}`} direction="up" delay={idx * 0.08}>
+                    <SpotlightCard className="overflow-hidden border border-white/10 p-0 transition-all duration-300 hover:border-white/20">
+                      <div className="grid lg:grid-cols-12">
+                        {/* Left Column: Visual Media / Interactive Window Mockup */}
+                        <div className="relative min-h-[260px] sm:min-h-[300px] lg:col-span-6 lg:min-h-[340px] flex flex-col justify-center bg-slate-950/80 p-3 sm:p-5 border-b lg:border-b-0 lg:border-r border-white/10 overflow-hidden">
+                          <ProjectVisualFrame project={project} />
+                        </div>
 
-              return (
-                <ScrollReveal
-                  key={`${project.name}-${idx}`}
-                  direction="up"
-                  delay={idx * 0.1}
-                >
-                  <SpotlightCard className="group p-6 sm:p-8 lg:p-10 border border-white/10 hover:border-violet-500/40 bg-slate-900/40 rounded-3xl transition-all duration-300">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                      {/* Left Column: Visual Mockup / Architecture Frame (5 cols) */}
-                      <div className="lg:col-span-5">
-                        <ProjectVisualFrame project={project} />
-                      </div>
-
-                      {/* Right Column: Content, Highlights & Tech Stack (7 cols) */}
-                      <div className="lg:col-span-7 flex flex-col justify-between h-full space-y-4">
-                        <div>
-                          {/* Top Meta Bar */}
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5">
-                              <span className="font-mono text-xs font-bold text-indigo-400">
-                                {`0${idx + 1}`}
-                              </span>
-                              <span className="h-1 w-1 rounded-full bg-slate-600" />
+                        {/* Right Column: Project Details & Tech Badges */}
+                        <div className="flex flex-col justify-between p-6 sm:p-8 lg:col-span-6">
+                          <div>
+                            {/* Role & Period Header */}
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                               {project.role && (
-                                <span className="rounded-full bg-violet-500/10 px-2.5 py-0.5 text-xs font-medium text-violet-300 border border-violet-500/20">
+                                <span className="inline-flex items-center gap-1.5 rounded-md bg-indigo-500/10 px-2.5 py-1 text-xs font-mono font-medium text-indigo-300 border border-indigo-500/20">
+                                  <Code2 className="h-3.5 w-3.5" />
                                   {project.role}
                                 </span>
                               )}
+                              {project.period && (
+                                <span className="font-mono text-xs text-slate-400">
+                                  {project.period}
+                                </span>
+                              )}
                             </div>
-                            {project.period && (
-                              <span className="font-mono text-xs text-slate-400 bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full">
-                                {project.period}
-                              </span>
+
+                            {/* Project Name & Link */}
+                            <h3 className="mt-4 text-2xl font-bold text-white tracking-tight">
+                              {project.name}
+                            </h3>
+
+                            {/* Highlight Bullet Points */}
+                            {highlightLines.length > 0 && (
+                              <ul className="mt-4 space-y-2 text-sm text-slate-300 leading-relaxed">
+                                {highlightLines.map((bullet, bIdx) => (
+                                  <li key={bIdx} className="flex items-start gap-2.5">
+                                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                                    <span>{bullet}</span>
+                                  </li>
+                                ))}
+                              </ul>
                             )}
                           </div>
 
-                          {/* Title */}
-                          <h3 className="mt-3 text-2xl sm:text-3xl font-extrabold text-white group-hover:text-indigo-300 transition-colors tracking-tight">
-                            {project.name}
-                          </h3>
+                          <div className="mt-6 pt-5 border-t border-white/10">
+                            {/* Tech Stack Chips with Dynamic Meta Icons */}
+                            {techList.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {techList.map((tech, tIdx) => {
+                                  const meta = getTechMeta(tech);
+                                  const Icon = meta.icon;
+                                  return (
+                                    <span
+                                      key={tIdx}
+                                      className={`inline-flex items-center gap-1.5 rounded-lg border ${meta.borderColor} ${meta.badgeBg} px-2.5 py-1 text-xs font-medium text-slate-200 transition hover:scale-105`}
+                                    >
+                                      <Icon className={`h-3 w-3 ${meta.color}`} />
+                                      <span>{tech}</span>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
 
-                          {/* Highlights / Bullet Points */}
-                          {highlightLines.length > 0 && (
-                            <ul className="mt-4 space-y-2 text-sm leading-relaxed text-slate-300">
-                              {highlightLines.map((line, hIdx) => (
-                                <li
-                                  key={hIdx}
-                                  className="flex items-start gap-2.5"
+                            {/* Links / CTAs */}
+                            <div className="mt-6 flex flex-wrap items-center gap-3">
+                              {project.repository && (
+                                <a
+                                  href={
+                                    project.repository.startsWith("http")
+                                      ? project.repository
+                                      : `https://${project.repository}`
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
                                 >
-                                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
-                                  <span className="leading-normal">{line}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
+                                  <GithubIcon className="h-4 w-4" />
+                                  <span>Repository</span>
+                                </a>
+                              )}
 
-                        {/* Tech Stack & Action Links */}
-                        <div className="pt-4 border-t border-white/10 space-y-4">
-                          {/* Tech Badges with Official Brand Icons */}
-                          {techList.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {techList.map((tech, tIdx) => {
-                                const meta = getTechMeta(tech);
-                                const TechIcon = meta.icon;
-                                return (
-                                  <span
-                                    key={tIdx}
-                                    className={`inline-flex items-center gap-1.5 rounded-lg border ${meta.borderColor} ${meta.badgeBg} px-2.5 py-1 text-xs font-semibold text-slate-200 shadow-sm transition hover:scale-105`}
-                                  >
-                                    <TechIcon
-                                      className={`h-3.5 w-3.5 ${meta.color}`}
-                                    />
-                                    <span>{tech}</span>
-                                  </span>
-                                );
-                              })}
+                              {project.demoUrl && (
+                                <a
+                                  href={
+                                    project.demoUrl.startsWith("http")
+                                      ? project.demoUrl
+                                      : `https://${project.demoUrl}`
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-300 transition hover:border-emerald-500/50 hover:bg-emerald-500/20 hover:text-white"
+                                >
+                                  <Globe className="h-4 w-4 text-emerald-400" />
+                                  <span>Live Demo</span>
+                                  <ExternalLink className="h-3.5 w-3.5 text-emerald-400" />
+                                </a>
+                              )}
                             </div>
-                          )}
-
-                          {/* Action Buttons */}
-                          <div className="flex flex-wrap items-center gap-3 pt-2">
-                            {project.repository && (
-                              <Link
-                                href={`/projects/${caseStudySlug}`}
-                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-violet-500/20 transition-all hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-95"
-                              >
-                                <FileText className="h-4 w-4" />
-                                <span>Read Case Study</span>
-                                <ArrowRight className="h-3.5 w-3.5" />
-                              </Link>
-                            )}
-
-                            {project.repository && (
-                              <a
-                                href={
-                                  project.repository.startsWith("http")
-                                    ? project.repository
-                                    : `https://${project.repository}`
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-semibold text-slate-300 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
-                              >
-                                <GithubIcon className="h-4 w-4" />
-                                <span>Source Code</span>
-                                <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
-                              </a>
-                            )}
-
-                            {project.demoUrl && (
-                              <a
-                                href={
-                                  project.demoUrl.startsWith("http")
-                                    ? project.demoUrl
-                                    : `https://${project.demoUrl}`
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-300 transition hover:border-emerald-500/50 hover:bg-emerald-500/20 hover:text-white"
-                              >
-                                <Globe className="h-4 w-4 text-emerald-400" />
-                                <span>Live Demo</span>
-                                <ExternalLink className="h-3.5 w-3.5 text-emerald-400" />
-                              </a>
-                            )}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </SpotlightCard>
-                </ScrollReveal>
-              );
-            })}
-          </div>
-        </section>
+                    </SpotlightCard>
+                  </ScrollReveal>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Technical Toolkit & Infinite Marquee */}
-        <section
-          id="skills"
-          className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
-        >
-          <ScrollReveal direction="up">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-md bg-purple-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-purple-400 border border-purple-500/20">
-                  <Layers className="h-3.5 w-3.5" />
-                  Technical Toolkit
+        {showSkillsSection && (
+          <section
+            id="skills"
+            className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
+          >
+            <ScrollReveal direction="up">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-md bg-purple-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-purple-400 border border-purple-500/20">
+                    <Layers className="h-3.5 w-3.5" />
+                    Technical Toolkit
+                  </div>
+                  <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                    Skills & Technologies
+                  </h2>
                 </div>
-                <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                  Skills & Technologies
-                </h2>
+                <p className="max-w-md text-sm text-slate-400">
+                  Modern frontend frameworks, scalable backend APIs, database
+                  design, and generative AI toolchains.
+                </p>
               </div>
-              <p className="max-w-md text-sm text-slate-400">
-                Modern frontend frameworks, scalable backend APIs, database
-                design, and generative AI toolchains.
-              </p>
+            </ScrollReveal>
+
+            {/* Dual-Direction Infinite Tech Marquee */}
+            <div className="mt-8">
+              <TechStackMarquee skills={visibleSkills} />
             </div>
-          </ScrollReveal>
 
-          {/* Dual-Direction Infinite Tech Marquee */}
-          <div className="mt-8">
-            <TechStackMarquee skills={technicalSkills} />
-          </div>
+            {/* Bento Grid Categorized Skills (Balanced 2x2 Grid) */}
+            <StaggerContainer className="mt-10 grid gap-6 grid-cols-1 md:grid-cols-2 items-stretch">
+              {visibleSkills.map((skillGroup, idx) => {
+                const items = skillGroup.items
+                  .split(",")
+                  .map((i) => i.trim())
+                  .filter(Boolean);
 
-          {/* Bento Grid Categorized Skills (Balanced 2x2 Grid) */}
-          <StaggerContainer className="mt-10 grid gap-6 grid-cols-1 md:grid-cols-2 items-stretch">
-            {technicalSkills.map((skillGroup, idx) => {
-              const items = skillGroup.items
-                .split(",")
-                .map((i) => i.trim())
-                .filter(Boolean);
-
-              return (
-                <StaggerItem key={`${skillGroup.category}-${idx}`} className="h-full">
-                  <SpotlightCard className="h-full flex flex-col justify-between p-6 sm:p-7 border border-white/10 hover:border-white/20 transition-all duration-300">
-                    <div>
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/5 border border-white/10 shadow-sm">
-                            {getSkillCategoryIcon(skillGroup.category)}
+                return (
+                  <StaggerItem key={`${skillGroup.category}-${idx}`} className="h-full">
+                    <SpotlightCard className="h-full flex flex-col justify-between p-6 sm:p-7 border border-white/10 hover:border-white/20 transition-all duration-300">
+                      <div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/5 border border-white/10 shadow-sm">
+                              {getSkillCategoryIcon(skillGroup.category)}
+                            </div>
+                            <h3 className="font-bold text-white text-base tracking-tight">
+                              {skillGroup.category}
+                            </h3>
                           </div>
-                          <h3 className="font-bold text-white text-base tracking-tight">
-                            {skillGroup.category}
-                          </h3>
+                          <span className="font-mono text-xs text-slate-400 bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full">
+                            {items.length} skills
+                          </span>
                         </div>
-                        <span className="font-mono text-xs text-slate-400 bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full">
-                          {items.length} skills
-                        </span>
-                      </div>
 
-                      <div className="mt-6 flex flex-wrap gap-2.5">
-                        {items.map((skill, sIdx) => {
-                          const meta = getTechMeta(skill);
-                          const Icon = meta.icon;
-                          return (
-                            <span
-                              key={sIdx}
-                              className={`inline-flex items-center gap-2 rounded-xl border ${meta.borderColor} ${meta.badgeBg} px-3 py-1.5 text-xs font-semibold text-slate-200 shadow-sm transition-all duration-200 hover:scale-105`}
-                            >
-                              <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
-                              <span>{skill}</span>
-                            </span>
-                          );
-                        })}
+                        <div className="mt-6 flex flex-wrap gap-2.5">
+                          {items.map((skill, sIdx) => {
+                            const meta = getTechMeta(skill);
+                            const Icon = meta.icon;
+                            return (
+                              <span
+                                key={sIdx}
+                                className={`inline-flex items-center gap-2 rounded-xl border ${meta.borderColor} ${meta.badgeBg} px-3 py-1.5 text-xs font-semibold text-slate-200 shadow-sm transition-all duration-200 hover:scale-105`}
+                              >
+                                <Icon className={`h-3.5 w-3.5 ${meta.color}`} />
+                                <span>{skill}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  </SpotlightCard>
-                </StaggerItem>
-              );
-            })}
-          </StaggerContainer>
-        </section>
+                    </SpotlightCard>
+                  </StaggerItem>
+                );
+              })}
+            </StaggerContainer>
+          </section>
+        )}
 
         {/* Experience Section (Conditionally rendered) */}
-        {experience && experience.length > 0 && (
+        {showExperienceSection && (
           <section
             id="experience"
             className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
@@ -597,7 +577,7 @@ export default async function Home() {
             </ScrollReveal>
 
             <StaggerContainer className="mt-10 space-y-6">
-              {experience.map((exp, idx) => {
+              {visibleExperience.map((exp, idx) => {
                 const bullets = exp.highlights
                   ? exp.highlights
                       .split("\n")
@@ -643,113 +623,115 @@ export default async function Home() {
         )}
 
         {/* Education Section */}
-        <section
-          id="education"
-          className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
-        >
-          <ScrollReveal direction="up">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-emerald-400 border border-emerald-500/20">
-                <GraduationCap className="h-3.5 w-3.5" />
-                Academic Background
+        {showEducationSection && (
+          <section
+            id="education"
+            className="scroll-mt-24 border-t border-white/10 py-16 sm:py-24"
+          >
+            <ScrollReveal direction="up">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-mono font-bold uppercase tracking-wider text-emerald-400 border border-emerald-500/20">
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  Academic Background
+                </div>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                  Education & Degrees
+                </h2>
               </div>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Education & Degrees
-              </h2>
-            </div>
-          </ScrollReveal>
+            </ScrollReveal>
 
-          <StaggerContainer className="mt-10 grid gap-6 md:grid-cols-2 items-stretch">
-            {education.map((edu, idx) => {
-              const isCertificate =
-                edu.institution.toLowerCase().includes("vstep") ||
-                edu.institution.toLowerCase().includes("ielts") ||
-                edu.institution.toLowerCase().includes("toeic") ||
-                edu.institution.toLowerCase().includes("certificate") ||
-                edu.degree.toLowerCase().includes("b1") ||
-                edu.degree.toLowerCase().includes("b2") ||
-                edu.degree.toLowerCase().includes("cefr") ||
-                edu.degree.toLowerCase().includes("certificate") ||
-                edu.degree.toLowerCase().includes("chứng chỉ") ||
-                edu.degree.toLowerCase().includes("proficiency") ||
-                edu.degree.toLowerCase().includes("english");
+            <StaggerContainer className="mt-10 grid gap-6 md:grid-cols-2 items-stretch">
+              {visibleEducation.map((edu, idx) => {
+                const isCertificate =
+                  edu.institution.toLowerCase().includes("vstep") ||
+                  edu.institution.toLowerCase().includes("ielts") ||
+                  edu.institution.toLowerCase().includes("toeic") ||
+                  edu.institution.toLowerCase().includes("certificate") ||
+                  edu.degree.toLowerCase().includes("b1") ||
+                  edu.degree.toLowerCase().includes("b2") ||
+                  edu.degree.toLowerCase().includes("cefr") ||
+                  edu.degree.toLowerCase().includes("certificate") ||
+                  edu.degree.toLowerCase().includes("chứng chỉ") ||
+                  edu.degree.toLowerCase().includes("proficiency") ||
+                  edu.degree.toLowerCase().includes("english");
 
-              const Icon = isCertificate ? Award : GraduationCap;
-              const badgeLabel = isCertificate ? "Language Certificate" : "University Degree";
-              const accentBg = isCertificate
-                ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
-              const tagBg = isCertificate
-                ? "bg-amber-500/10 text-amber-300 border-amber-500/20"
-                : "bg-emerald-500/10 text-emerald-300 border-emerald-500/20";
-              const dotBg = isCertificate ? "bg-amber-400" : "bg-emerald-400";
+                const Icon = isCertificate ? Award : GraduationCap;
+                const badgeLabel = isCertificate ? "Language Certificate" : "University Degree";
+                const accentBg = isCertificate
+                  ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                  : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
+                const tagBg = isCertificate
+                  ? "bg-amber-500/10 text-amber-300 border-amber-500/20"
+                  : "bg-emerald-500/10 text-emerald-300 border-emerald-500/20";
+                const dotBg = isCertificate ? "bg-amber-400" : "bg-emerald-400";
 
-              return (
-                <StaggerItem key={`${edu.institution}-${idx}`} className="h-full">
-                  <SpotlightCard className="h-full flex flex-col justify-between p-6 sm:p-7 border border-white/10 hover:border-white/20 transition-all duration-300">
-                    <div>
-                      {/* Top Header Row: Icon + Type Badge + Period */}
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${accentBg} shadow-sm`}
-                          >
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <span
-                            className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-mono font-medium ${tagBg}`}
-                          >
-                            {badgeLabel}
-                          </span>
-                        </div>
-                        {edu.period && (
-                          <span className="font-mono text-xs text-slate-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full shrink-0">
-                            {edu.period}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Institution / University */}
-                      <h3 className="mt-5 text-lg font-bold text-white tracking-tight">
-                        {edu.institution}
-                      </h3>
-
-                      {/* Degree / Program */}
-                      <p
-                        className={`mt-1 text-sm font-semibold ${
-                          isCertificate ? "text-amber-300" : "text-emerald-300"
-                        }`}
-                      >
-                        {edu.degree}
-                      </p>
-                    </div>
-
-                    {/* Details / Bullets */}
-                    {edu.details && (
-                      <div className="mt-5 pt-4 border-t border-white/5 space-y-2">
-                        {edu.details
-                          .split("\n")
-                          .map((line) => line.trim().replace(/^[-•*]\s*/, ""))
-                          .filter(Boolean)
-                          .map((bullet, bIdx) => (
+                return (
+                  <StaggerItem key={`${edu.institution}-${idx}`} className="h-full">
+                    <SpotlightCard className="h-full flex flex-col justify-between p-6 sm:p-7 border border-white/10 hover:border-white/20 transition-all duration-300">
+                      <div>
+                        {/* Top Header Row: Icon + Type Badge + Period */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
                             <div
-                              key={bIdx}
-                              className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300 leading-relaxed"
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${accentBg} shadow-sm`}
                             >
-                              <span
-                                className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${dotBg}`}
-                              />
-                              <span>{bullet}</span>
+                              <Icon className="h-5 w-5" />
                             </div>
-                          ))}
+                            <span
+                              className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-mono font-medium ${tagBg}`}
+                            >
+                              {badgeLabel}
+                            </span>
+                          </div>
+                          {edu.period && (
+                            <span className="font-mono text-xs text-slate-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full shrink-0">
+                              {edu.period}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Institution / University */}
+                        <h3 className="mt-5 text-lg font-bold text-white tracking-tight">
+                          {edu.institution}
+                        </h3>
+
+                        {/* Degree / Program */}
+                        <p
+                          className={`mt-1 text-sm font-semibold ${
+                            isCertificate ? "text-amber-300" : "text-emerald-300"
+                          }`}
+                        >
+                          {edu.degree}
+                        </p>
                       </div>
-                    )}
-                  </SpotlightCard>
-                </StaggerItem>
-              );
-            })}
-          </StaggerContainer>
-        </section>
+
+                      {/* Details / Bullets */}
+                      {edu.details && (
+                        <div className="mt-5 pt-4 border-t border-white/5 space-y-2">
+                          {edu.details
+                            .split("\n")
+                            .map((line) => line.trim().replace(/^[-•*]\s*/, ""))
+                            .filter(Boolean)
+                            .map((bullet, bIdx) => (
+                              <div
+                                key={bIdx}
+                                className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-300 leading-relaxed"
+                              >
+                                <span
+                                  className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${dotBg}`}
+                                />
+                                <span>{bullet}</span>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </SpotlightCard>
+                  </StaggerItem>
+                );
+              })}
+            </StaggerContainer>
+          </section>
+        )}
 
         {/* Contact & Connect Section */}
         <section

@@ -19,6 +19,7 @@ import {
   CopyPlus,
   ExternalLink,
   Eye,
+  EyeOff,
   Files,
   History,
   Image as ImageIcon,
@@ -86,7 +87,7 @@ export function ResumeEditor() {
   };
 
   const form = useForm<ResumeData>({
-    resolver: zodResolver(resumeSchema),
+    resolver: zodResolver(resumeSchema) as any,
     defaultValues: defaultResume,
     mode: "onBlur",
   });
@@ -332,6 +333,27 @@ export function ResumeEditor() {
     setValue("sectionOrder", newOrder, { shouldDirty: true, shouldValidate: true });
   };
 
+  const hiddenSections = resume.hiddenSections || [];
+
+  const toggleSectionVisibility = (sectionKey: ResumeSectionKey) => {
+    const current = resume.hiddenSections || [];
+    const isHidden = current.includes(sectionKey);
+    const updated = isHidden
+      ? current.filter((k) => k !== sectionKey)
+      : [...current, sectionKey];
+    setValue("hiddenSections", updated, { shouldDirty: true, shouldValidate: true });
+  };
+
+  const toggleItemVisibility = (
+    arrayName: "technicalSkills" | "experience" | "projects" | "education",
+    index: number
+  ) => {
+    const items = resume[arrayName] as Array<{ isVisible?: boolean }>;
+    if (!items || !items[index]) return;
+    const currentVal = items[index].isVisible !== false; // defaults to true
+    setValue(`${arrayName}.${index}.isVisible` as any, !currentVal, { shouldDirty: true });
+  };
+
   const handleSelectFieldFromPreview = (target: FieldSelectTarget) => {
     // 1. Auto-expand if the target item is currently collapsed
     if (target.section === "technicalSkills" && target.index !== undefined) {
@@ -385,6 +407,8 @@ export function ResumeEditor() {
             totalSections={sectionOrder.length}
             onMoveUp={() => moveSection(sectionIdx, "up")}
             onMoveDown={() => moveSection(sectionIdx, "down")}
+            isHidden={hiddenSections.includes("summary")}
+            onToggleVisibility={() => toggleSectionVisibility("summary")}
           >
             <p className="mb-2 text-xs text-zinc-500">
               Highlight your strongest skills, background, and career objectives (aim for 2-3 concise sentences).
@@ -409,12 +433,15 @@ export function ResumeEditor() {
             onMoveUp={() => moveSection(sectionIdx, "up")}
             onMoveDown={() => moveSection(sectionIdx, "down")}
             action="Add category"
-            onAction={() => skills.append({ category: "", items: "" })}
+            onAction={() => skills.append({ category: "", items: "", isVisible: true })}
+            isHidden={hiddenSections.includes("technicalSkills")}
+            onToggleVisibility={() => toggleSectionVisibility("technicalSkills")}
           >
             {skills.fields.map((field, index) => {
               const isCollapsed = collapsedItems[field.id];
               const categoryValue = resume.technicalSkills?.[index]?.category || "New Category";
               const itemsValue = resume.technicalSkills?.[index]?.items || "";
+              const isItemHidden = resume.technicalSkills?.[index]?.isVisible === false;
 
               return (
                 <CollapsibleCard
@@ -429,6 +456,8 @@ export function ResumeEditor() {
                   onMoveUp={() => skills.move(index, index - 1)}
                   onMoveDown={() => skills.move(index, index + 1)}
                   onRemove={() => skills.remove(index)}
+                  isHidden={isItemHidden}
+                  onToggleVisibility={() => toggleItemVisibility("technicalSkills", index)}
                 >
                   <Field
                     label="Category name"
@@ -463,8 +492,10 @@ export function ResumeEditor() {
             onMoveDown={() => moveSection(sectionIdx, "down")}
             action="Add experience"
             onAction={() =>
-              experience.append({ company: "", role: "", period: "", highlights: "" })
+              experience.append({ company: "", role: "", period: "", highlights: "", isVisible: true })
             }
+            isHidden={hiddenSections.includes("experience")}
+            onToggleVisibility={() => toggleSectionVisibility("experience")}
           >
             <p className="mb-3 text-xs text-zinc-500">
               Leave this empty if you do not have work experience yet. It will automatically hide on your CV.
@@ -473,6 +504,7 @@ export function ResumeEditor() {
               const isCollapsed = collapsedItems[field.id];
               const roleValue = resume.experience?.[index]?.role || "New Role";
               const companyValue = resume.experience?.[index]?.company || "";
+              const isItemHidden = resume.experience?.[index]?.isVisible === false;
 
               return (
                 <CollapsibleCard
@@ -487,6 +519,8 @@ export function ResumeEditor() {
                   onMoveUp={() => experience.move(index, index - 1)}
                   onMoveDown={() => experience.move(index, index + 1)}
                   onRemove={() => experience.remove(index)}
+                  isHidden={isItemHidden}
+                  onToggleVisibility={() => toggleItemVisibility("experience", index)}
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -546,13 +580,17 @@ export function ResumeEditor() {
                 thumbnailUrl: "",
                 thumbnailAlt: "",
                 highlights: "",
+                isVisible: true,
               })
             }
+            isHidden={hiddenSections.includes("projects")}
+            onToggleVisibility={() => toggleSectionVisibility("projects")}
           >
             {projects.fields.map((field, index) => {
               const isCollapsed = collapsedItems[field.id];
               const nameValue = resume.projects?.[index]?.name || `Project #${index + 1}`;
               const stackValue = resume.projects?.[index]?.techStack || "";
+              const isItemHidden = resume.projects?.[index]?.isVisible === false;
 
               return (
                 <CollapsibleCard
@@ -567,6 +605,8 @@ export function ResumeEditor() {
                   onMoveUp={() => projects.move(index, index - 1)}
                   onMoveDown={() => projects.move(index, index + 1)}
                   onRemove={() => projects.remove(index)}
+                  isHidden={isItemHidden}
+                  onToggleVisibility={() => toggleItemVisibility("projects", index)}
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -648,13 +688,16 @@ export function ResumeEditor() {
             onMoveDown={() => moveSection(sectionIdx, "down")}
             action="Add education"
             onAction={() =>
-              education.append({ institution: "", period: "", degree: "", details: "" })
+              education.append({ institution: "", period: "", degree: "", details: "", isVisible: true })
             }
+            isHidden={hiddenSections.includes("education")}
+            onToggleVisibility={() => toggleSectionVisibility("education")}
           >
             {education.fields.map((field, index) => {
               const isCollapsed = collapsedItems[field.id];
               const instValue = resume.education?.[index]?.institution || "University Name";
               const degreeValue = resume.education?.[index]?.degree || "";
+              const isItemHidden = resume.education?.[index]?.isVisible === false;
 
               return (
                 <CollapsibleCard
@@ -669,6 +712,8 @@ export function ResumeEditor() {
                   onMoveUp={() => education.move(index, index - 1)}
                   onMoveDown={() => education.move(index, index + 1)}
                   onRemove={() => education.remove(index)}
+                  isHidden={isItemHidden}
+                  onToggleVisibility={() => toggleItemVisibility("education", index)}
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -955,35 +1000,64 @@ export function ResumeEditor() {
               <span className="text-[11px] text-zinc-500">Use ↑ ↓ to reorder on CV</span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {sectionOrder.map((key, index) => (
-                <div
-                  key={key}
-                  className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs font-medium text-zinc-800 shadow-2xs"
-                >
-                  <span className="text-[11px] text-zinc-400">{index + 1}.</span>
-                  <span className="text-xs">{SECTION_LABELS[key]}</span>
-                  <div className="ml-1 flex items-center">
+              {sectionOrder.map((key, index) => {
+                const isSectionHidden = hiddenSections.includes(key);
+                return (
+                  <div
+                    key={key}
+                    className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium shadow-2xs transition ${
+                      isSectionHidden
+                        ? "border-dashed border-amber-300 bg-amber-50/70 text-zinc-500 opacity-75"
+                        : "border-zinc-200 bg-white text-zinc-800"
+                    }`}
+                  >
                     <button
                       type="button"
-                      disabled={index === 0}
-                      onClick={() => moveSection(index, "up")}
-                      className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-20 disabled:hover:bg-transparent"
-                      title="Move section up"
+                      onClick={() => toggleSectionVisibility(key)}
+                      className={`rounded p-0.5 transition ${
+                        isSectionHidden
+                          ? "text-amber-600 hover:bg-amber-100"
+                          : "text-blue-600 hover:bg-blue-50"
+                      }`}
+                      title={
+                        isSectionHidden
+                          ? `Section ${SECTION_LABELS[key]} is Hidden. Click to Show on CV.`
+                          : `Section ${SECTION_LABELS[key]} is Visible. Click to Hide on CV.`
+                      }
                     >
-                      <ChevronUp className="h-3 w-3" />
+                      {isSectionHidden ? (
+                        <EyeOff className="h-3 w-3" />
+                      ) : (
+                        <Eye className="h-3 w-3" />
+                      )}
                     </button>
-                    <button
-                      type="button"
-                      disabled={index === sectionOrder.length - 1}
-                      onClick={() => moveSection(index, "down")}
-                      className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-20 disabled:hover:bg-transparent"
-                      title="Move section down"
-                    >
-                      <ChevronDown className="h-3 w-3" />
-                    </button>
+                    <span className="text-[11px] text-zinc-400">{index + 1}.</span>
+                    <span className={`text-xs ${isSectionHidden ? "line-through text-zinc-500" : ""}`}>
+                      {SECTION_LABELS[key]}
+                    </span>
+                    <div className="ml-1 flex items-center">
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => moveSection(index, "up")}
+                        className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-20 disabled:hover:bg-transparent"
+                        title="Move section up"
+                      >
+                        <ChevronUp className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index === sectionOrder.length - 1}
+                        onClick={() => moveSection(index, "down")}
+                        className="rounded p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-20 disabled:hover:bg-transparent"
+                        title="Move section down"
+                      >
+                        <ChevronDown className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -1145,6 +1219,8 @@ function SectionHeader({
   totalSections,
   onMoveUp,
   onMoveDown,
+  isHidden = false,
+  onToggleVisibility,
 }: {
   id?: string;
   title: string;
@@ -1155,15 +1231,50 @@ function SectionHeader({
   totalSections: number;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  isHidden?: boolean;
+  onToggleVisibility?: () => void;
 }) {
   return (
-    <fieldset id={id} className="border-t border-zinc-200 pt-4 scroll-mt-20">
+    <fieldset
+      id={id}
+      className={`border-t border-zinc-200 pt-4 scroll-mt-20 transition-opacity ${
+        isHidden ? "opacity-65" : "opacity-100"
+      }`}
+    >
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <legend className="text-xs font-bold uppercase tracking-wider text-zinc-800">
-            {title}
+          <legend className="text-xs font-bold uppercase tracking-wider text-zinc-800 flex items-center gap-2">
+            <span className={isHidden ? "line-through text-zinc-500" : ""}>{title}</span>
+            {isHidden && (
+              <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200 normal-case tracking-normal">
+                Hidden on CV & Web
+              </span>
+            )}
           </legend>
           <div className="flex items-center gap-0.5 rounded border border-zinc-200 bg-zinc-50 px-1 py-0.5">
+            {onToggleVisibility && (
+              <button
+                type="button"
+                onClick={onToggleVisibility}
+                className={`rounded p-0.5 transition ${
+                  isHidden
+                    ? "text-amber-600 hover:bg-amber-100"
+                    : "text-blue-600 hover:bg-blue-100"
+                }`}
+                title={
+                  isHidden
+                    ? "Section is currently Hidden. Click to Show on CV & Web"
+                    : "Section is currently Visible. Click to Hide on CV & Web"
+                }
+              >
+                {isHidden ? (
+                  <EyeOff className="h-3 w-3" />
+                ) : (
+                  <Eye className="h-3 w-3" />
+                )}
+              </button>
+            )}
+            <div className="mx-0.5 h-3 w-[1px] bg-zinc-200" />
             <button
               type="button"
               disabled={sectionIndex === 0}
@@ -1212,6 +1323,8 @@ function CollapsibleCard({
   onMoveUp,
   onMoveDown,
   onRemove,
+  isHidden = false,
+  onToggleVisibility,
 }: {
   id: string;
   title: string;
@@ -1224,9 +1337,17 @@ function CollapsibleCard({
   onMoveUp: () => void;
   onMoveDown: () => void;
   onRemove: () => void;
+  isHidden?: boolean;
+  onToggleVisibility?: () => void;
 }) {
   return (
-    <div className="mb-3 rounded-lg border border-zinc-200 bg-zinc-50/50 shadow-2xs transition">
+    <div
+      className={`mb-3 rounded-lg border shadow-2xs transition ${
+        isHidden
+          ? "border-dashed border-amber-200 bg-amber-50/30 opacity-80"
+          : "border-zinc-200 bg-zinc-50/50"
+      }`}
+    >
       <div className="flex items-center justify-between px-3 py-2">
         <button
           type="button"
@@ -1238,10 +1359,21 @@ function CollapsibleCard({
           ) : (
             <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
           )}
-          <div>
-            <span className="text-xs font-semibold text-zinc-800">{title}</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span
+              className={`text-xs font-semibold ${
+                isHidden ? "text-zinc-500 line-through" : "text-zinc-800"
+              }`}
+            >
+              {title}
+            </span>
+            {isHidden && (
+              <span className="rounded bg-amber-100 px-1.5 py-0.2 text-[9px] font-bold text-amber-800">
+                Hidden
+              </span>
+            )}
             {subtitle && (
-              <span className="ml-2 text-[11px] text-zinc-500 truncate max-w-[200px] inline-block align-bottom">
+              <span className="text-[11px] text-zinc-500 truncate max-w-[200px] inline-block align-bottom">
                 {subtitle}
               </span>
             )}
@@ -1249,6 +1381,28 @@ function CollapsibleCard({
         </button>
 
         <div className="flex items-center gap-1">
+          {onToggleVisibility && (
+            <button
+              type="button"
+              onClick={onToggleVisibility}
+              className={`rounded p-1 transition ${
+                isHidden
+                  ? "text-amber-600 hover:bg-amber-100"
+                  : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
+              }`}
+              title={
+                isHidden
+                  ? "Item is currently Hidden. Click to Show on CV & Web"
+                  : "Item is currently Visible. Click to Hide on CV & Web"
+              }
+            >
+              {isHidden ? (
+                <EyeOff className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
           <button
             type="button"
             disabled={index === 0}

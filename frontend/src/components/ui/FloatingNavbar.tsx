@@ -12,23 +12,35 @@ interface NavItem {
 
 interface FloatingNavbarProps {
   hasExperience?: boolean;
+  showProjects?: boolean;
+  showSkills?: boolean;
+  showExperience?: boolean;
+  showEducation?: boolean;
 }
 
-export function FloatingNavbar({ hasExperience = true }: FloatingNavbarProps) {
+export function FloatingNavbar({
+  hasExperience = true,
+  showProjects = true,
+  showSkills = true,
+  showExperience,
+  showEducation = true,
+}: FloatingNavbarProps) {
   const [activeSection, setActiveSection] = useState("about");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const lockScrollUntil = useRef<number>(0);
 
+  const isExpVisible = showExperience !== undefined ? showExperience : hasExperience;
+
   const navItems: NavItem[] = useMemo(
     () => [
       { label: "About", href: "#about", id: "about" },
-      { label: "Projects", href: "#projects", id: "projects" },
-      { label: "Skills", href: "#skills", id: "skills" },
-      ...(hasExperience ? [{ label: "Experience", href: "#experience", id: "experience" }] : []),
-      { label: "Education", href: "#education", id: "education" },
+      ...(showProjects ? [{ label: "Projects", href: "#projects", id: "projects" }] : []),
+      ...(showSkills ? [{ label: "Skills", href: "#skills", id: "skills" }] : []),
+      ...(isExpVisible ? [{ label: "Experience", href: "#experience", id: "experience" }] : []),
+      ...(showEducation ? [{ label: "Education", href: "#education", id: "education" }] : []),
       { label: "Contact", href: "#contact", id: "contact" },
     ],
-    [hasExperience]
+    [showProjects, showSkills, isExpVisible, showEducation]
   );
 
   useEffect(() => {
