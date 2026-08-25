@@ -607,7 +607,7 @@ export function ResumeEditor() {
                       {...register(`projects.${index}.projectSlug`)}
                     />
                     <Field
-                      label="Thumbnail image URL"
+                      label="Thumbnail image URL (Optional)"
                       placeholder="https://.../project-cover.webp"
                       error={errors.projects?.[index]?.thumbnailUrl?.message}
                       {...register(`projects.${index}.thumbnailUrl`)}
@@ -619,6 +619,9 @@ export function ResumeEditor() {
                     placeholder="Briefly describe the project cover image"
                     {...register(`projects.${index}.thumbnailAlt`)}
                   />
+                  <p className="mt-2 text-[11px] text-zinc-500">
+                    💡 <strong>Smart Preview:</strong> If Thumbnail URL is left blank, Web projects with a Live Demo URL will automatically render a live website screenshot. Mobile applications will automatically use the high-tech mobile UI frame.
+                  </p>
                   <label className="mt-3 block text-xs font-medium text-zinc-700">
                     Key Highlights <span className="font-normal text-zinc-500">(one bullet per line)</span>
                   </label>
