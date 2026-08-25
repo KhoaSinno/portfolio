@@ -20,7 +20,9 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  FileText,
   Files,
+  Globe,
   History,
   Image as ImageIcon,
   LogOut,
@@ -364,6 +366,17 @@ export function ResumeEditor() {
     setValue(`${arrayName}.${index}.isVisible` as any, !currentVal, { shouldDirty: true });
   };
 
+  const toggleTargetVisibility = (
+    arrayName: "experience" | "projects",
+    index: number,
+    target: "showOnWeb" | "showOnCv"
+  ) => {
+    const items = resume[arrayName] as Array<{ showOnWeb?: boolean; showOnCv?: boolean }>;
+    if (!items || !items[index]) return;
+    const currentVal = items[index][target] !== false; // defaults to true
+    setValue(`${arrayName}.${index}.${target}` as any, !currentVal, { shouldDirty: true });
+  };
+
   const handleSelectFieldFromPreview = (target: FieldSelectTarget) => {
     // 1. Auto-expand if the target item is currently collapsed
     if (target.section === "technicalSkills" && target.index !== undefined) {
@@ -550,7 +563,15 @@ export function ResumeEditor() {
             onMoveDown={() => moveSection(sectionIdx, "down")}
             action="Add experience"
             onAction={() =>
-              experience.append({ company: "", role: "", period: "", highlights: "", isVisible: true })
+              experience.append({
+                company: "",
+                role: "",
+                period: "",
+                highlights: "",
+                isVisible: true,
+                showOnWeb: true,
+                showOnCv: true,
+              })
             }
             isHidden={hiddenSections.includes("experience")}
             onToggleVisibility={() => toggleSectionVisibility("experience")}
@@ -579,6 +600,10 @@ export function ResumeEditor() {
                   onRemove={() => experience.remove(index)}
                   isHidden={isItemHidden}
                   onToggleVisibility={() => toggleItemVisibility("experience", index)}
+                  showOnWeb={resume.experience?.[index]?.showOnWeb !== false}
+                  onToggleShowOnWeb={() => toggleTargetVisibility("experience", index, "showOnWeb")}
+                  showOnCv={resume.experience?.[index]?.showOnCv !== false}
+                  onToggleShowOnCv={() => toggleTargetVisibility("experience", index, "showOnCv")}
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -639,6 +664,8 @@ export function ResumeEditor() {
                 thumbnailAlt: "",
                 highlights: "",
                 isVisible: true,
+                showOnWeb: true,
+                showOnCv: true,
                 hideRepository: false,
                 hideDemoUrl: false,
               })
@@ -667,6 +694,10 @@ export function ResumeEditor() {
                   onRemove={() => projects.remove(index)}
                   isHidden={isItemHidden}
                   onToggleVisibility={() => toggleItemVisibility("projects", index)}
+                  showOnWeb={resume.projects?.[index]?.showOnWeb !== false}
+                  onToggleShowOnWeb={() => toggleTargetVisibility("projects", index, "showOnWeb")}
+                  showOnCv={resume.projects?.[index]?.showOnCv !== false}
+                  onToggleShowOnCv={() => toggleTargetVisibility("projects", index, "showOnCv")}
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -1415,6 +1446,10 @@ function CollapsibleCard({
   onRemove,
   isHidden = false,
   onToggleVisibility,
+  showOnWeb,
+  onToggleShowOnWeb,
+  showOnCv,
+  onToggleShowOnCv,
 }: {
   id: string;
   title: string;
@@ -1429,11 +1464,17 @@ function CollapsibleCard({
   onRemove: () => void;
   isHidden?: boolean;
   onToggleVisibility?: () => void;
+  showOnWeb?: boolean;
+  onToggleShowOnWeb?: () => void;
+  showOnCv?: boolean;
+  onToggleShowOnCv?: () => void;
 }) {
+  const isCompletelyHidden = isHidden || (showOnWeb === false && showOnCv === false);
+
   return (
     <div
       className={`mb-3 rounded-lg border shadow-2xs transition ${
-        isHidden
+        isCompletelyHidden
           ? "border-dashed border-amber-200 bg-amber-50/30 opacity-80"
           : "border-zinc-200 bg-zinc-50/50"
       }`}
@@ -1452,12 +1493,12 @@ function CollapsibleCard({
           <div className="flex items-center gap-1.5 flex-wrap">
             <span
               className={`text-xs font-semibold ${
-                isHidden ? "text-zinc-500 line-through" : "text-zinc-800"
+                isCompletelyHidden ? "text-zinc-500 line-through" : "text-zinc-800"
               }`}
             >
               {title}
             </span>
-            {isHidden && (
+            {isCompletelyHidden && (
               <span className="rounded bg-amber-100 px-1.5 py-0.2 text-[9px] font-bold text-amber-800">
                 Hidden
               </span>
@@ -1470,8 +1511,49 @@ function CollapsibleCard({
           </div>
         </button>
 
-        <div className="flex items-center gap-1">
-          {onToggleVisibility && (
+        <div className="flex items-center gap-1.5">
+          {/* Target destination pills for Web & CV */}
+          {onToggleShowOnWeb && (
+            <button
+              type="button"
+              onClick={onToggleShowOnWeb}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border transition ${
+                showOnWeb !== false
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                  : "bg-zinc-100 text-zinc-400 border-zinc-200 line-through hover:bg-zinc-200"
+              }`}
+              title={
+                showOnWeb !== false
+                  ? "Visible on Web Portfolio. Click to Hide on Web."
+                  : "Hidden from Web Portfolio. Click to Show on Web."
+              }
+            >
+              <Globe className="h-2.5 w-2.5" />
+              <span>Web</span>
+            </button>
+          )}
+
+          {onToggleShowOnCv && (
+            <button
+              type="button"
+              onClick={onToggleShowOnCv}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border transition ${
+                showOnCv !== false
+                  ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                  : "bg-zinc-100 text-zinc-400 border-zinc-200 line-through hover:bg-zinc-200"
+              }`}
+              title={
+                showOnCv !== false
+                  ? "Visible on Printable CV. Click to Hide on CV."
+                  : "Hidden from Printable CV. Click to Show on CV."
+              }
+            >
+              <FileText className="h-2.5 w-2.5" />
+              <span>CV</span>
+            </button>
+          )}
+
+          {onToggleVisibility && !onToggleShowOnWeb && !onToggleShowOnCv && (
             <button
               type="button"
               onClick={onToggleVisibility}
@@ -1482,8 +1564,8 @@ function CollapsibleCard({
               }`}
               title={
                 isHidden
-                  ? "Item is currently Hidden. Click to Show on CV & Web"
-                  : "Item is currently Visible. Click to Hide on CV & Web"
+                  ? "Item is currently Hidden. Click to Show"
+                  : "Item is currently Visible. Click to Hide"
               }
             >
               {isHidden ? (

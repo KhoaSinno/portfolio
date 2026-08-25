@@ -119,9 +119,9 @@ export default async function Home() {
   const { basics, summary, projects, technicalSkills, experience, education, hiddenSections = [], hiddenBasicsFields = [] } =
     resume;
 
-  const visibleProjects = (projects || []).filter((p) => p.isVisible !== false);
+  const visibleProjects = (projects || []).filter((p) => p.isVisible !== false && p.showOnWeb !== false);
   const visibleSkills = (technicalSkills || []).filter((s) => s.isVisible !== false);
-  const visibleExperience = (experience || []).filter((e) => e.isVisible !== false);
+  const visibleExperience = (experience || []).filter((e) => e.isVisible !== false && e.showOnWeb !== false);
   const visibleEducation = (education || []).filter((ed) => ed.isVisible !== false);
 
   const showSummary = !hiddenSections.includes("summary") && Boolean(summary);

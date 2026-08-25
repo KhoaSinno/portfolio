@@ -226,7 +226,9 @@ export function ResumePreview({
       }
 
       case "experience": {
-        const visibleExperience = (resume.experience || []).filter((e) => e.isVisible !== false);
+        const visibleExperience = (resume.experience || []).filter(
+          (e) => e.isVisible !== false && e.showOnCv !== false
+        );
         if (visibleExperience.length === 0) return null;
         return (
           <ResumeSection
@@ -332,7 +334,9 @@ export function ResumePreview({
       }
 
       case "projects": {
-        const visibleProjects = (resume.projects || []).filter((p) => p.isVisible !== false);
+        const visibleProjects = (resume.projects || []).filter(
+          (p) => p.isVisible !== false && p.showOnCv !== false
+        );
         if (visibleProjects.length === 0) return null;
         return (
           <ResumeSection

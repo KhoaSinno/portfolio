@@ -6,6 +6,8 @@ const datedRole = z.object({
   period: z.string().min(1, "Period is required."),
   highlights: z.string(),
   isVisible: z.boolean().default(true),
+  showOnWeb: z.boolean().default(true),
+  showOnCv: z.boolean().default(true),
 });
 
 export const RESUME_SECTION_KEYS = [
@@ -63,6 +65,8 @@ export const resumeSchema = z.object({
     thumbnailAlt: z.string().max(160).optional(),
     highlights: z.string().optional(),
     isVisible: z.boolean().default(true),
+    showOnWeb: z.boolean().default(true),
+    showOnCv: z.boolean().default(true),
     hideRepository: z.boolean().default(false),
     hideDemoUrl: z.boolean().default(false),
   })).min(1, "Add at least one featured project."),
@@ -130,6 +134,8 @@ export const defaultResume: ResumeData = {
       highlights:
         "Built a Vietnamese audiobook application with intelligent voice conversational AI assistant.\nIntegrated LiveKit WebRTC and OpenAI Realtime API for low-latency voice streaming.\nImplemented Hybrid RAG with Vector Search and RRF reranking for accurate content discovery.",
       isVisible: true,
+      showOnWeb: true,
+      showOnCv: true,
       hideRepository: false,
       hideDemoUrl: false,
     },
@@ -146,6 +152,8 @@ export const defaultResume: ResumeData = {
       highlights:
         "Designed a fullstack portfolio with a structured resume editor.\nBuilt reusable resume templates with print-ready HTML and CSS.\nPlanned a scalable backend architecture for projects, AI chat, and content management.",
       isVisible: true,
+      showOnWeb: true,
+      showOnCv: true,
       hideRepository: false,
       hideDemoUrl: false,
     },
