@@ -93,14 +93,16 @@ function ResumeSection({
   children,
   onClick,
   isInteractive,
+  dataSection,
 }: {
   title: string;
   children: ReactNode;
   onClick?: () => void;
   isInteractive?: boolean;
+  dataSection?: string;
 }) {
   return (
-    <section className="mt-4 first:mt-3">
+    <section data-preview-section={dataSection} className="mt-4 first:mt-3 transition-colors duration-300">
       <h2
         onClick={onClick}
         className={`mb-2 border-b border-slate-300 pb-0.5 text-[13px] font-bold uppercase tracking-wider text-slate-900 ${
@@ -143,11 +145,13 @@ export function ResumePreview({
         return (
           <ResumeSection
             key="summary"
+            dataSection="summary"
             title="Professional Summary"
             onClick={() => onSelectField?.({ section: "summary", field: "summary" })}
             isInteractive={isInteractive}
           >
             <p
+              data-preview-field="summary"
               onClick={(e) => {
                 if (isInteractive) {
                   e.stopPropagation();
@@ -168,14 +172,20 @@ export function ResumePreview({
         return (
           <ResumeSection
             key="technicalSkills"
+            dataSection="technicalSkills"
             title="Technical Skills"
             onClick={() => onSelectField?.({ section: "technicalSkills", index: 0, field: "technicalSkills.0.category" })}
             isInteractive={isInteractive}
           >
             <div className="space-y-1 text-[12.5px] leading-snug text-slate-700">
               {visibleSkills.map((skill, index) => (
-                <div key={`${skill.category}-${index}`} className="flex items-baseline gap-1">
+                <div
+                  key={`${skill.category}-${index}`}
+                  data-preview-item={`technicalSkills.${index}`}
+                  className="flex items-baseline gap-1"
+                >
                   <strong
+                    data-preview-field={`technicalSkills.${index}.category`}
                     onClick={(e) => {
                       if (isInteractive) {
                         e.stopPropagation();
@@ -192,6 +202,7 @@ export function ResumePreview({
                     {skill.category}:
                   </strong>{" "}
                   <span
+                    data-preview-field={`technicalSkills.${index}.items`}
                     onClick={(e) => {
                       if (isInteractive) {
                         e.stopPropagation();
@@ -220,16 +231,22 @@ export function ResumePreview({
         return (
           <ResumeSection
             key="experience"
+            dataSection="experience"
             title="Professional Experience"
             onClick={() => onSelectField?.({ section: "experience", index: 0, field: "experience.0.role" })}
             isInteractive={isInteractive}
           >
             <div className="space-y-3">
               {visibleExperience.map((item, index) => (
-                <article key={`${item.company}-${index}`} className="break-inside-avoid">
+                <article
+                  key={`${item.company}-${index}`}
+                  data-preview-item={`experience.${index}`}
+                  className="break-inside-avoid"
+                >
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[13px] font-bold text-slate-950">
                       <span
+                        data-preview-field={`experience.${index}.role`}
                         onClick={(e) => {
                           if (isInteractive) {
                             e.stopPropagation();
@@ -249,6 +266,7 @@ export function ResumePreview({
                         <span className="font-normal text-slate-700">
                           {" "}—{" "}
                           <span
+                            data-preview-field={`experience.${index}.company`}
                             onClick={(e) => {
                               if (isInteractive) {
                                 e.stopPropagation();
@@ -269,6 +287,7 @@ export function ResumePreview({
                     </h3>
                     {item.period && (
                       <span
+                        data-preview-field={`experience.${index}.period`}
                         onClick={(e) => {
                           if (isInteractive) {
                             e.stopPropagation();
@@ -288,6 +307,7 @@ export function ResumePreview({
                   </div>
                   {item.highlights && (
                     <div
+                      data-preview-field={`experience.${index}.highlights`}
                       onClick={(e) => {
                         if (isInteractive) {
                           e.stopPropagation();
@@ -317,16 +337,22 @@ export function ResumePreview({
         return (
           <ResumeSection
             key="projects"
+            dataSection="projects"
             title="Featured Projects"
             onClick={() => onSelectField?.({ section: "projects", index: 0, field: "projects.0.name" })}
             isInteractive={isInteractive}
           >
             <div className="space-y-3">
               {visibleProjects.map((project, index) => (
-                <article key={`${project.name}-${index}`} className="break-inside-avoid">
+                <article
+                  key={`${project.name}-${index}`}
+                  data-preview-item={`projects.${index}`}
+                  className="break-inside-avoid"
+                >
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[13px] font-bold text-slate-950">
                       <span
+                        data-preview-field={`projects.${index}.name`}
                         onClick={(e) => {
                           if (isInteractive) {
                             e.stopPropagation();
@@ -346,6 +372,7 @@ export function ResumePreview({
                         <span className="font-normal text-slate-700">
                           {" "}·{" "}
                           <span
+                            data-preview-field={`projects.${index}.role`}
                             onClick={(e) => {
                               if (isInteractive) {
                                 e.stopPropagation();
@@ -366,6 +393,7 @@ export function ResumePreview({
                     </h3>
                     {project.period && (
                       <span
+                        data-preview-field={`projects.${index}.period`}
                         onClick={(e) => {
                           if (isInteractive) {
                             e.stopPropagation();
@@ -385,6 +413,7 @@ export function ResumePreview({
                   </div>
                   {project.techStack && (
                     <p
+                      data-preview-field={`projects.${index}.techStack`}
                       onClick={(e) => {
                         if (isInteractive) {
                           e.stopPropagation();
@@ -408,6 +437,7 @@ export function ResumePreview({
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
                       {!project.hideRepository && project.repository && (
                         <span
+                          data-preview-field={`projects.${index}.repository`}
                           onClick={(e) => {
                             if (isInteractive) {
                               e.preventDefault();
@@ -432,6 +462,7 @@ export function ResumePreview({
                       )}
                       {!project.hideDemoUrl && project.demoUrl && (
                         <span
+                          data-preview-field={`projects.${index}.demoUrl`}
                           onClick={(e) => {
                             if (isInteractive) {
                               e.preventDefault();
@@ -458,6 +489,7 @@ export function ResumePreview({
                   )}
                   {project.highlights && (
                     <div
+                      data-preview-field={`projects.${index}.highlights`}
                       onClick={(e) => {
                         if (isInteractive) {
                           e.stopPropagation();
@@ -487,16 +519,22 @@ export function ResumePreview({
         return (
           <ResumeSection
             key="education"
+            dataSection="education"
             title="Education"
             onClick={() => onSelectField?.({ section: "education", index: 0, field: "education.0.institution" })}
             isInteractive={isInteractive}
           >
             <div className="space-y-2">
               {visibleEducation.map((item, index) => (
-                <article key={`${item.institution}-${index}`} className="break-inside-avoid">
+                <article
+                  key={`${item.institution}-${index}`}
+                  data-preview-item={`education.${index}`}
+                  className="break-inside-avoid"
+                >
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-[13px] font-bold text-slate-950">
                       <span
+                        data-preview-field={`education.${index}.institution`}
                         onClick={(e) => {
                           if (isInteractive) {
                             e.stopPropagation();
@@ -516,6 +554,7 @@ export function ResumePreview({
                         <span className="font-medium text-slate-800">
                           {" "}·{" "}
                           <span
+                            data-preview-field={`education.${index}.degree`}
                             onClick={(e) => {
                               if (isInteractive) {
                                 e.stopPropagation();
@@ -536,6 +575,7 @@ export function ResumePreview({
                     </h3>
                     {item.period && (
                       <span
+                        data-preview-field={`education.${index}.period`}
                         onClick={(e) => {
                           if (isInteractive) {
                             e.stopPropagation();
@@ -555,6 +595,7 @@ export function ResumePreview({
                   </div>
                   {item.details && (
                     <div
+                      data-preview-field={`education.${index}.details`}
                       onClick={(e) => {
                         if (isInteractive) {
                           e.stopPropagation();
@@ -597,11 +638,12 @@ export function ResumePreview({
         style={{ minHeight: showPageGuide ? "297mm" : "auto" }}
       >
         {/* Header */}
-        <header className="border-b-2 border-slate-800 pb-3">
+        <header data-preview-section="basics" className="border-b-2 border-slate-800 pb-3 transition-colors duration-300">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
               {!hiddenBasicsFields.includes("name") && resume.basics.name && (
                 <h1
+                  data-preview-field="basics.name"
                   onClick={() => onSelectField?.({ section: "basics", field: "basics.name" })}
                   className={`text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl ${interactiveClass}`}
                   title={isInteractive ? "Click to edit Full name" : undefined}
@@ -611,6 +653,7 @@ export function ResumePreview({
               )}
               {!hiddenBasicsFields.includes("headline") && resume.basics.headline && (
                 <p
+                  data-preview-field="basics.headline"
                   onClick={() => onSelectField?.({ section: "basics", field: "basics.headline" })}
                   className={`mt-0.5 text-sm font-semibold text-slate-700 ${interactiveClass}`}
                   title={isInteractive ? "Click to edit Headline" : undefined}
@@ -624,6 +667,7 @@ export function ResumePreview({
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600">
             {!hiddenBasicsFields.includes("location") && resume.basics.location && (
               <span
+                data-preview-field="basics.location"
                 onClick={() => onSelectField?.({ section: "basics", field: "basics.location" })}
                 className={`inline-flex items-center gap-1 ${interactiveClass}`}
                 title={isInteractive ? "Click to edit Location" : undefined}
@@ -634,6 +678,7 @@ export function ResumePreview({
             )}
             {!hiddenBasicsFields.includes("email") && resume.basics.email && (
               <span
+                data-preview-field="basics.email"
                 onClick={(e) => {
                   if (isInteractive) {
                     e.preventDefault();
@@ -649,6 +694,7 @@ export function ResumePreview({
             )}
             {!hiddenBasicsFields.includes("website") && resume.basics.website && (
               <span
+                data-preview-field="basics.website"
                 onClick={(e) => {
                   if (isInteractive) {
                     e.preventDefault();
@@ -668,6 +714,7 @@ export function ResumePreview({
             )}
             {!hiddenBasicsFields.includes("linkedin") && resume.basics.linkedin && (
               <span
+                data-preview-field="basics.linkedin"
                 onClick={(e) => {
                   if (isInteractive) {
                     e.preventDefault();
@@ -687,6 +734,7 @@ export function ResumePreview({
             )}
             {!hiddenBasicsFields.includes("github") && resume.basics.github && (
               <span
+                data-preview-field="basics.github"
                 onClick={(e) => {
                   if (isInteractive) {
                     e.preventDefault();

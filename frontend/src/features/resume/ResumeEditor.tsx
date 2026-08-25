@@ -405,6 +405,54 @@ export function ResumeEditor() {
     }, 100);
   };
 
+  /**
+   * Highlights and scrolls to the corresponding section/field in the Live Preview
+   * when any input in the Editor is focused or typed into.
+   */
+  const highlightPreviewElement = (fieldName: string) => {
+    if (!fieldName) return;
+
+    // 1. Try finding exact preview field
+    const exactField = document.querySelector(`[data-preview-field="${fieldName}"]`);
+    // 2. Or fallback to array item (e.g. projects.0)
+    const arrayItemKey = fieldName.split(".").slice(0, 2).join(".");
+    const arrayItem = document.querySelector(`[data-preview-item="${arrayItemKey}"]`);
+    // 3. Or fallback to section container (e.g. projects, basics, summary)
+    const sectionKey = fieldName.split(".")[0];
+    const section = document.querySelector(`[data-preview-section="${sectionKey}"]`);
+
+    const targetEl = exactField || arrayItem || section;
+
+    if (targetEl && targetEl instanceof HTMLElement) {
+      targetEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+      targetEl.classList.remove("preview-flash-highlight");
+      // Force DOM reflow to restart CSS animation
+      void targetEl.offsetWidth;
+      targetEl.classList.add("preview-flash-highlight");
+      setTimeout(() => {
+        targetEl.classList.remove("preview-flash-highlight");
+      }, 2000);
+    }
+  };
+
+  const handleEditorFocusCapture = (e: React.FocusEvent<HTMLFormElement>) => {
+    const target = e.target as HTMLElement;
+    if (!target) return;
+    const name = target.getAttribute("name");
+    if (name) {
+      highlightPreviewElement(name);
+    }
+  };
+
+  const handleEditorInputCapture = (e: React.FormEvent<HTMLFormElement>) => {
+    const target = e.target as HTMLElement;
+    if (!target) return;
+    const name = target.getAttribute("name");
+    if (name) {
+      highlightPreviewElement(name);
+    }
+  };
+
   const renderSectionForm = (key: ResumeSectionKey, sectionIdx: number) => {
     switch (key) {
       case "summary":
@@ -994,6 +1042,8 @@ export function ResumeEditor() {
         {/* Left Column: Form */}
         <form
           onSubmit={handleSubmit(saveDraft)}
+          onFocusCapture={handleEditorFocusCapture}
+          onInputCapture={handleEditorInputCapture}
           className="no-print space-y-3.5 self-start rounded-xl border border-zinc-200/80 bg-white p-4 shadow-xs"
         >
           {/* Top action row */}
