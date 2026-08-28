@@ -734,8 +734,8 @@ export function ResumeEditor() {
                       {...register(`projects.${index}.repository`)}
                     />
                     <Field
-                      label="Live Demo URL"
-                      placeholder="myproject.vercel.app"
+                      label="Live Demo / Video URL"
+                      placeholder="myproject.vercel.app or youtu.be/..."
                       isHidden={Boolean(resume.projects?.[index]?.hideDemoUrl)}
                       onToggleVisibility={() => {
                         const current = Boolean(resume.projects?.[index]?.hideDemoUrl);
@@ -765,7 +765,7 @@ export function ResumeEditor() {
                     {...register(`projects.${index}.thumbnailAlt`)}
                   />
                   <p className="mt-2 text-[11px] text-zinc-500">
-                    💡 <strong>Smart Preview:</strong> If Thumbnail URL is left blank, Web projects with a Live Demo URL will automatically render a live website screenshot. Mobile applications will automatically use the high-tech mobile UI frame.
+                    💡 <strong>Smart Preview:</strong> If Thumbnail URL is left blank, Web projects will generate a live screenshot, while YouTube video links will automatically fetch their HD video cover. Mobile apps will render the high-tech mobile UI frame.
                   </p>
                   <label className="mt-3 block text-xs font-medium text-zinc-700">
                     Key Highlights <span className="font-normal text-zinc-500">(one bullet per line)</span>

@@ -78,11 +78,64 @@ export function getAutoWebScreenshotUrl(url?: string | null): string {
 }
 
 /**
+ * Extracts YouTube Video ID from various YouTube URL formats.
+ * Supports watch?v=, youtu.be/, embed/, shorts/, live/
+ */
+export function getYouTubeVideoId(url?: string | null): string | null {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  const match = trimmed.match(
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i
+  );
+  return match ? match[1] : null;
+}
+
+/**
+ * Checks if a URL is a video demo link (YouTube, Loom, Vimeo, Streamable).
+ */
+export function isVideoUrl(url?: string | null): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim().toLowerCase();
+  return (
+    Boolean(getYouTubeVideoId(url)) ||
+    trimmed.includes("loom.com/share") ||
+    trimmed.includes("vimeo.com") ||
+    trimmed.includes("streamable.com")
+  );
+}
+
+/**
+ * Returns the HD / standard thumbnail URL for a YouTube video.
+ */
+export function getYouTubeThumbnailUrl(videoId: string, quality: "hq" | "maxres" = "hq"): string {
+  return `https://img.youtube.com/vi/${videoId}/${quality === "maxres" ? "maxresdefault.jpg" : "hqdefault.jpg"}`;
+}
+
+/**
+ * Resolves project demo metadata (determines if CTA should say 'Watch Demo' vs 'Live Demo').
+ */
+export function getProjectDemoMeta(project?: {
+  demoUrl?: string | null;
+  techStack?: string | null;
+  role?: string | null;
+  name?: string | null;
+} | null) {
+  const isVideo = isVideoUrl(project?.demoUrl) || (isMobileProject(project) && Boolean(project?.demoUrl));
+  const isYouTube = Boolean(getYouTubeVideoId(project?.demoUrl));
+  return {
+    isVideo,
+    isYouTube,
+    label: isVideo ? "Watch Demo" : "Live Demo",
+  };
+}
+
+/**
  * Resolves the appropriate thumbnail URL for a project.
  * 1. If explicit thumbnailUrl is provided, normalizes and returns it.
- * 2. If it's a mobile project, returns empty string (no web screenshot generation for apps).
- * 3. If it's a web project with a valid demoUrl, automatically generates a screenshot preview URL.
- * 4. Otherwise returns empty string for placeholder fallback.
+ * 2. If demoUrl is a YouTube video, automatically extracts the YouTube thumbnail.
+ * 3. If it's a mobile project, returns empty string (no web screenshot generation for apps).
+ * 4. If it's a web project with a valid demoUrl, automatically generates a screenshot preview URL.
+ * 5. Otherwise returns empty string for placeholder fallback.
  */
 export function resolveProjectThumbnail(project?: {
   thumbnailUrl?: string | null;
@@ -99,16 +152,25 @@ export function resolveProjectThumbnail(project?: {
     return normalizeImageUrl(project.thumbnailUrl);
   }
 
-  // 2. Mobile apps or hidden demoUrl do not use web screenshots
+  // 2. Auto YouTube thumbnail extraction
+  if (project.demoUrl && !project.hideDemoUrl) {
+    const ytId = getYouTubeVideoId(project.demoUrl);
+    if (ytId) {
+      return getYouTubeThumbnailUrl(ytId, "hq");
+    }
+  }
+
+  // 3. Mobile apps or hidden demoUrl do not use web screenshots
   if (project.hideDemoUrl || isMobileProject(project)) {
     return "";
   }
 
-  // 3. Web projects with a Live Demo URL automatically generate screenshot
+  // 4. Web projects with a Live Demo URL automatically generate screenshot
   if (project.demoUrl && typeof project.demoUrl === "string" && project.demoUrl.trim().length > 0) {
     return getAutoWebScreenshotUrl(project.demoUrl);
   }
 
   return "";
 }
+
 

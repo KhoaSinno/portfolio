@@ -3,14 +3,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Code2, Copy, ExternalLink, FileText, Globe, LoaderCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Code2, Copy, ExternalLink, FileText, Globe, LoaderCircle, Play, Sparkles } from "lucide-react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkFrontmatter from "remark-frontmatter";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import { useEffect, useState } from "react";
-import { normalizeImageUrl } from "@/lib/image-url";
+import { isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
 
 type CaseStudy = {
   title: string;
@@ -211,18 +211,32 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
               <ExternalLink className="h-3 w-3 text-slate-400" />
             </a>
 
-            {data.demoUrl && (
-              <a
-                href={externalUrl(data.demoUrl)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 text-xs font-bold text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-500 hover:to-indigo-500 active:scale-95"
-              >
-                <Globe className="h-4 w-4" />
-                <span>Live Demo</span>
-                <ExternalLink className="h-3 w-3 text-white/80" />
-              </a>
-            )}
+            {data.demoUrl && (() => {
+              const isVideo = isVideoUrl(data.demoUrl);
+              return isVideo ? (
+                <a
+                  href={externalUrl(data.demoUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 px-4 text-xs font-bold text-white shadow-lg shadow-rose-600/25 transition hover:from-rose-500 hover:to-red-500 active:scale-95"
+                >
+                  <Play className="h-3.5 w-3.5 fill-white" />
+                  <span>Watch Demo Video</span>
+                  <ExternalLink className="h-3 w-3 text-white/80" />
+                </a>
+              ) : (
+                <a
+                  href={externalUrl(data.demoUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 text-xs font-bold text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-500 hover:to-indigo-500 active:scale-95"
+                >
+                  <Globe className="h-4 w-4" />
+                  <span>Live Demo</span>
+                  <ExternalLink className="h-3 w-3 text-white/80" />
+                </a>
+              );
+            })()}
           </div>
         </header>
 

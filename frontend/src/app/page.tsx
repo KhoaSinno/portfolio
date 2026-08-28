@@ -14,10 +14,12 @@ import {
   GraduationCap,
   Layers,
   MapPin,
+  Play,
   Server,
   Smartphone,
   Sparkles,
   Terminal,
+  Video,
   Wifi,
   Wrench,
 } from "lucide-react";
@@ -26,7 +28,7 @@ import { getPublishedResume } from "@/features/resume/resume-api";
 import { defaultResume } from "@/features/resume/resume-schema";
 import { CopyEmailButton } from "@/features/home/HomeClientEnhancements";
 import { ContactForm } from "@/features/home/ContactForm";
-import { normalizeImageUrl } from "@/lib/image-url";
+import { isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
 import { ProjectVisualFrame } from "@/features/projects/ProjectVisualFrame";
 import { FloatingNavbar } from "@/components/ui/FloatingNavbar";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
@@ -477,22 +479,36 @@ export default async function Home() {
                                 </a>
                               )}
 
-                              {!project.hideDemoUrl && project.demoUrl && (
-                                <a
-                                  href={
-                                    project.demoUrl.startsWith("http")
-                                      ? project.demoUrl
-                                      : `https://${project.demoUrl}`
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-300 transition hover:border-emerald-500/50 hover:bg-emerald-500/20 hover:text-white"
-                                >
-                                  <Globe className="h-4 w-4 text-emerald-400" />
-                                  <span>Live Demo</span>
-                                  <ExternalLink className="h-3.5 w-3.5 text-emerald-400" />
-                                </a>
-                              )}
+                              {!project.hideDemoUrl && project.demoUrl && (() => {
+                                const isVideo = isVideoUrl(project.demoUrl) || isMobileApp;
+                                const cleanUrl = project.demoUrl.startsWith("http")
+                                  ? project.demoUrl
+                                  : `https://${project.demoUrl}`;
+
+                                return isVideo ? (
+                                  <a
+                                    href={cleanUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs font-semibold text-rose-300 shadow-lg shadow-rose-500/10 backdrop-blur-md transition hover:border-rose-500/60 hover:bg-rose-500/20 hover:text-white active:scale-95"
+                                  >
+                                    <Play className="h-3.5 w-3.5 fill-rose-400 text-rose-400" />
+                                    <span>Watch Demo</span>
+                                    <ExternalLink className="h-3.5 w-3.5 text-rose-400/80" />
+                                  </a>
+                                ) : (
+                                  <a
+                                    href={cleanUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-300 transition hover:border-emerald-500/50 hover:bg-emerald-500/20 hover:text-white active:scale-95"
+                                  >
+                                    <Globe className="h-4 w-4 text-emerald-400" />
+                                    <span>Live Demo</span>
+                                    <ExternalLink className="h-3.5 w-3.5 text-emerald-400" />
+                                  </a>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>

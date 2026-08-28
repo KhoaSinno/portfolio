@@ -4,12 +4,14 @@ import {
   Globe,
   Mail,
   MapPin,
+  Play,
 } from "lucide-react";
 import {
   DEFAULT_SECTION_ORDER,
   type ResumeData,
   type ResumeSectionKey,
 } from "./resume-schema";
+import { isVideoUrl } from "@/lib/image-url";
 
 function GithubIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   return (
@@ -464,31 +466,40 @@ export function ResumePreview({
                           </CleanLink>
                         </span>
                       )}
-                      {!project.hideDemoUrl && project.demoUrl && (
-                        <span
-                          data-preview-field={`projects.${index}.demoUrl`}
-                          onClick={(e) => {
-                            if (isInteractive) {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onSelectField?.({
-                                section: "projects",
-                                index,
-                                field: `projects.${index}.demoUrl`,
-                              });
-                            }
-                          }}
-                          className={interactiveClass}
-                          title={isInteractive ? "Click to edit Live Demo URL" : undefined}
-                        >
-                          <CleanLink
-                            href={project.demoUrl}
-                            icon={<ExternalLink className="h-3 w-3" />}
+                      {!project.hideDemoUrl && project.demoUrl && (() => {
+                        const isVideo = isVideoUrl(project.demoUrl);
+                        return (
+                          <span
+                            data-preview-field={`projects.${index}.demoUrl`}
+                            onClick={(e) => {
+                              if (isInteractive) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onSelectField?.({
+                                  section: "projects",
+                                  index,
+                                  field: `projects.${index}.demoUrl`,
+                                });
+                              }
+                            }}
+                            className={interactiveClass}
+                            title={isInteractive ? `Click to edit ${isVideo ? "Video Demo" : "Live Demo"} URL` : undefined}
                           >
-                            {project.demoUrl}
-                          </CleanLink>
-                        </span>
-                      )}
+                            <CleanLink
+                              href={project.demoUrl}
+                              icon={
+                                isVideo ? (
+                                  <Play className="h-3 w-3 fill-current" />
+                                ) : (
+                                  <ExternalLink className="h-3 w-3" />
+                                )
+                              }
+                            >
+                              {project.demoUrl}
+                            </CleanLink>
+                          </span>
+                        );
+                      })()}
                     </div>
                   )}
                   {project.highlights && (
