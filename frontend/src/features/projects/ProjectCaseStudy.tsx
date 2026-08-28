@@ -19,7 +19,7 @@ import remarkGfm from "remark-gfm";
 import remarkFrontmatter from "remark-frontmatter";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
-import { isValidElement, useEffect, useState } from "react";
+import { isValidElement, useMemo, useState } from "react";
 import { isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
 import { MermaidRenderer } from "@/features/projects/MermaidRenderer";
 import {
@@ -105,18 +105,42 @@ function preprocessMarkdown(markdown: string, baseUrl: string): string {
   return result;
 }
 
-export function ProjectCaseStudy({ slug }: { slug: string }) {
+export function ProjectCaseStudy({
+  slug,
+  initialCaseStudy,
+}: {
+  slug: string;
+  initialCaseStudy: ProjectCaseStudyData | null;
+}) {
   const router = useRouter();
   const [state, setState] = useState<{
     data?: ProjectCaseStudyData;
     error?: string;
-  }>({});
-  const [activeRepoIndex, setActiveRepoIndex] = useState<number>(0);
+  }>(() =>
+    initialCaseStudy
+      ? { data: initialCaseStudy }
+      : { error: "Unable to load this case study." },
+  );
+  const [activeRepoIndex, setActiveRepoIndex] = useState<number>(
+    initialCaseStudy?.selectedRepoIndex ?? 0,
+  );
   const [repoCache, setRepoCache] = useState<
     Record<number, ProjectCaseStudyData>
-  >({});
+  >(() =>
+    initialCaseStudy
+      ? { [initialCaseStudy.selectedRepoIndex]: initialCaseStudy }
+      : {},
+  );
   const [isSwitching, setIsSwitching] = useState(false);
   const [copied, setCopied] = useState(false);
+  const caseStudyData = state.data;
+  const processedMarkdown = useMemo(
+    () =>
+      caseStudyData
+        ? preprocessMarkdown(caseStudyData.markdown, caseStudyData.baseUrl)
+        : "",
+    [caseStudyData],
+  );
 
   const handleBack = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -154,28 +178,6 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
       });
   };
 
-  useEffect(() => {
-    const controller = new AbortController();
-    void getProjectCaseStudy(slug, undefined, controller.signal)
-      .then((data) => {
-        const initialIndex = data.selectedRepoIndex ?? 0;
-        setRepoCache({ [initialIndex]: data });
-        setActiveRepoIndex(initialIndex);
-        setState({ data });
-      })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError")
-          return;
-        setState({
-          error:
-            error instanceof Error
-              ? error.message
-              : "Unable to load this case study.",
-        });
-      });
-    return () => controller.abort();
-  }, [slug]);
-
   const copyRepoUrl = () => {
     if (!state.data?.repositoryUrl) return;
     void navigator.clipboard.writeText(state.data.repositoryUrl);
@@ -209,7 +211,7 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
     );
   }
 
-  if (!state.data) {
+  if (!caseStudyData) {
     return (
       <main className="flex min-h-[75vh] flex-col items-center justify-center text-slate-300 gap-3">
         <LoaderCircle className="h-8 w-8 animate-spin text-violet-400" />
@@ -220,8 +222,7 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
     );
   }
 
-  const { data } = state;
-  const processedMarkdown = preprocessMarkdown(data.markdown, data.baseUrl);
+  const data = caseStudyData;
   const repositories = data.repositories || [];
   const hasMultipleRepos = repositories.length > 1;
 

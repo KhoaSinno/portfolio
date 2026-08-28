@@ -44,7 +44,9 @@ function parseRepository(value: unknown): ProjectRepository | null {
   };
 }
 
-function parseCaseStudy(value: unknown): ProjectCaseStudyData | null {
+export function parseProjectCaseStudy(
+  value: unknown,
+): ProjectCaseStudyData | null {
   if (!isRecord(value)) return null;
   const selectedRepoIndex = value.selectedRepoIndex;
   if (
@@ -83,24 +85,30 @@ function parseCaseStudy(value: unknown): ProjectCaseStudyData | null {
   };
 }
 
+export function getProjectCaseStudyUrl(
+  slug: string,
+  repositoryIndex?: number,
+): string {
+  const repositoryQuery =
+    repositoryIndex === undefined ? "" : `?repo=${repositoryIndex}`;
+  return `${API_BASE_URL}/projects/${encodeURIComponent(slug)}/case-study${repositoryQuery}`;
+}
+
 export async function getProjectCaseStudy(
   slug: string,
   repositoryIndex?: number,
   signal?: AbortSignal,
 ): Promise<ProjectCaseStudyData> {
-  const repositoryQuery =
-    repositoryIndex === undefined ? "" : `?repo=${repositoryIndex}`;
-  const response = await fetch(
-    `${API_BASE_URL}/projects/${encodeURIComponent(slug)}/case-study${repositoryQuery}`,
-    { signal },
-  );
+  const response = await fetch(getProjectCaseStudyUrl(slug, repositoryIndex), {
+    signal,
+  });
   if (!response.ok) {
     throw new Error(
       await getApiErrorMessage(response, "Unable to load this case study."),
     );
   }
 
-  const caseStudy = parseCaseStudy(await response.json());
+  const caseStudy = parseProjectCaseStudy(await response.json());
   if (!caseStudy) {
     throw new Error("The case-study API returned an invalid response.");
   }

@@ -1,28 +1,28 @@
 "use client";
 /* eslint-disable @next/next/no-html-link-for-pages */
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useReactToPrint } from "react-to-print";
-import { toPng } from "html-to-image";
 import {
   ArrowLeft,
   FileText,
   Image as ImageIcon,
   Lock,
   Printer,
-  Sparkles,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
 import { ResumePreview } from "./ResumePreview";
-import { getPublishedResume } from "./resume-api";
 import { defaultResume, type ResumeData } from "./resume-schema";
 
-export function PublicResume({ slug }: { slug?: string }) {
+export function PublicResume({
+  initialResume,
+}: {
+  initialResume: ResumeData | null;
+}) {
   const contentRef = useRef<HTMLDivElement>(null);
-  const [resume, setResume] = useState<ResumeData>(defaultResume);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const resume = initialResume ?? defaultResume;
+  const notFound = initialResume === null;
   const [zoomLevel, setZoomLevel] = useState(100);
   const [exportingImage, setExportingImage] = useState(false);
 
@@ -85,6 +85,7 @@ export function PublicResume({ slug }: { slug?: string }) {
     if (!contentRef.current) return;
     try {
       setExportingImage(true);
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(contentRef.current, {
         quality: 1,
         pixelRatio: 2,
@@ -101,22 +102,6 @@ export function PublicResume({ slug }: { slug?: string }) {
     }
   };
 
-  useEffect(() => {
-    void getPublishedResume(slug)
-      .then((published) => {
-        if (published) {
-          setResume(published);
-          setNotFound(false);
-        } else {
-          setNotFound(true);
-        }
-      })
-      .catch(() => {
-        setNotFound(true);
-      })
-      .finally(() => setLoading(false));
-  }, [slug]);
-
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       {/* Top Floating / Sticky Toolbar */}
@@ -130,7 +115,11 @@ export function PublicResume({ slug }: { slug?: string }) {
             >
               <ArrowLeft className="h-3.5 w-3.5 text-zinc-500" />
               <div className="flex items-center rounded-lg bg-[#090d16] px-2 py-1">
-                <img src="/logo.png" alt="Sinoo Hub" className="h-4 w-auto object-contain" />
+                <img
+                  src="/logo.png"
+                  alt="Sinoo Hub"
+                  className="h-4 w-auto object-contain"
+                />
               </div>
             </a>
             <div className="hidden sm:flex sm:items-center sm:gap-2">
@@ -217,19 +206,25 @@ export function PublicResume({ slug }: { slug?: string }) {
           className="transition-transform duration-150 origin-top"
           style={{ transform: `scale(${zoomLevel / 100})` }}
         >
-          {loading ? (
-            <div className="flex h-[297mm] w-full max-w-[210mm] items-center justify-center rounded bg-white p-12 shadow-xl ring-1 ring-black/5">
-              <div className="flex items-center gap-2 text-sm text-zinc-500">
-                <Sparkles className="h-4 w-4 animate-spin text-blue-600" />
-                <span>Loading CV document...</span>
-              </div>
-            </div>
-          ) : notFound ? (
+          {notFound ? (
             <section className="flex min-h-[60vh] w-full max-w-2xl flex-col items-center justify-center rounded-2xl border border-zinc-200 bg-white p-10 text-center shadow-xl">
-              <FileText className="h-10 w-10 text-zinc-400" aria-hidden="true" />
-              <h1 className="mt-5 text-2xl font-bold tracking-tight text-zinc-900">This CV is not available</h1>
-              <p className="mt-3 max-w-md leading-7 text-zinc-600">The link may be incorrect, or this CV has not been published yet.</p>
-              <a href="/resume" className="mt-7 inline-flex min-h-11 items-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800">View primary CV</a>
+              <FileText
+                className="h-10 w-10 text-zinc-400"
+                aria-hidden="true"
+              />
+              <h1 className="mt-5 text-2xl font-bold tracking-tight text-zinc-900">
+                This CV is not available
+              </h1>
+              <p className="mt-3 max-w-md leading-7 text-zinc-600">
+                The link may be incorrect, or this CV has not been published
+                yet.
+              </p>
+              <a
+                href="/resume"
+                className="mt-7 inline-flex min-h-11 items-center rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800"
+              >
+                View primary CV
+              </a>
             </section>
           ) : (
             <ResumePreview resume={resume} contentRef={contentRef} />

@@ -1,4 +1,5 @@
 import { PublicResume } from "@/features/resume/PublicResume";
+import { getPublishedResume } from "@/features/resume/public-resume-api";
 
 export default async function PublicResumeBySlugPage({
   params,
@@ -6,5 +7,6 @@ export default async function PublicResumeBySlugPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return <PublicResume slug={slug} />;
+  const resume = await getPublishedResume(slug).catch(() => null);
+  return <PublicResume initialResume={resume} />;
 }

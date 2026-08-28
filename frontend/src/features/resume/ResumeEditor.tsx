@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages, react-hooks/set-state-in-effect */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useReactToPrint } from "react-to-print";
 import { useRouter } from "next/navigation";
@@ -36,7 +36,6 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { toPng } from "html-to-image";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { ResumePreview, type FieldSelectTarget } from "./ResumePreview";
 import {
@@ -83,7 +82,9 @@ export function ResumeEditor() {
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Accordion collapsed state IDs
-  const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>({});
+  const [collapsedItems, setCollapsedItems] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const toggleCollapse = (id: string) => {
     setCollapsedItems((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -109,7 +110,11 @@ export function ResumeEditor() {
   const projects = useFieldArray({ control, name: "projects" });
   const education = useFieldArray({ control, name: "education" });
 
-  const resume = useWatch({ control, defaultValue: defaultResume }) as ResumeData;
+  const resume = useWatch({
+    control,
+    defaultValue: defaultResume,
+  }) as ResumeData;
+  const previewResume = useDeferredValue(resume);
   const [exportingImage, setExportingImage] = useState(false);
 
   const printResume = useReactToPrint({
@@ -171,6 +176,7 @@ export function ResumeEditor() {
     if (!contentRef.current) return;
     try {
       setExportingImage(true);
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(contentRef.current, {
         quality: 1,
         pixelRatio: 2,
@@ -240,7 +246,9 @@ export function ResumeEditor() {
         setNotice(`Loaded CV profile "${profile.title}".`);
       }
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : "Failed to load CV profile.");
+      setNotice(
+        err instanceof Error ? err.message : "Failed to load CV profile.",
+      );
     }
   };
 
@@ -325,12 +333,16 @@ export function ResumeEditor() {
 
   const handleRollback = async (version: ResumeVersionItem) => {
     try {
-      const restored = await rollbackResumeVersion(version.id, activeResumeId || undefined);
+      const restored = await rollbackResumeVersion(
+        version.id,
+        activeResumeId || undefined,
+      );
       reset(restored);
       setNotice(`Restored successfully from Snapshot v${version.version}.`);
       void fetchResumesList();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to restore version.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to restore version.";
       setNotice(msg);
     }
   };
@@ -356,7 +368,10 @@ export function ResumeEditor() {
     const newOrder = [...sectionOrder];
     const [moved] = newOrder.splice(index, 1);
     newOrder.splice(targetIndex, 0, moved);
-    setValue("sectionOrder", newOrder, { shouldDirty: true, shouldValidate: true });
+    setValue("sectionOrder", newOrder, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   const hiddenSections = resume.hiddenSections || [];
@@ -368,7 +383,10 @@ export function ResumeEditor() {
     const updated = isHidden
       ? current.filter((k) => k !== sectionKey)
       : [...current, sectionKey];
-    setValue("hiddenSections", updated, { shouldDirty: true, shouldValidate: true });
+    setValue("hiddenSections", updated, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   const toggleBasicsFieldVisibility = (fieldKey: string) => {
@@ -377,28 +395,38 @@ export function ResumeEditor() {
     const updated = isHidden
       ? current.filter((k) => k !== fieldKey)
       : [...current, fieldKey];
-    setValue("hiddenBasicsFields", updated, { shouldDirty: true, shouldValidate: true });
+    setValue("hiddenBasicsFields", updated, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   const toggleItemVisibility = (
     arrayName: "technicalSkills" | "experience" | "projects" | "education",
-    index: number
+    index: number,
   ) => {
     const items = resume[arrayName] as Array<{ isVisible?: boolean }>;
     if (!items || !items[index]) return;
     const currentVal = items[index].isVisible !== false; // defaults to true
-    setValue(`${arrayName}.${index}.isVisible` as any, !currentVal, { shouldDirty: true });
+    setValue(`${arrayName}.${index}.isVisible` as any, !currentVal, {
+      shouldDirty: true,
+    });
   };
 
   const toggleTargetVisibility = (
     arrayName: "experience" | "projects",
     index: number,
-    target: "showOnWeb" | "showOnCv"
+    target: "showOnWeb" | "showOnCv",
   ) => {
-    const items = resume[arrayName] as Array<{ showOnWeb?: boolean; showOnCv?: boolean }>;
+    const items = resume[arrayName] as Array<{
+      showOnWeb?: boolean;
+      showOnCv?: boolean;
+    }>;
     if (!items || !items[index]) return;
     const currentVal = items[index][target] !== false; // defaults to true
-    setValue(`${arrayName}.${index}.${target}` as any, !currentVal, { shouldDirty: true });
+    setValue(`${arrayName}.${index}.${target}` as any, !currentVal, {
+      shouldDirty: true,
+    });
   };
 
   const handleSelectFieldFromPreview = (target: FieldSelectTarget) => {
@@ -422,11 +450,15 @@ export function ResumeEditor() {
       let element: HTMLElement | null = null;
 
       if (target.field) {
-        element = document.querySelector(`[name="${target.field}"]`) as HTMLElement;
+        element = document.querySelector(
+          `[name="${target.field}"]`,
+        ) as HTMLElement;
       }
 
       if (!element && target.section) {
-        element = document.getElementById(`section-${target.section}`) as HTMLElement;
+        element = document.getElementById(
+          `section-${target.section}`,
+        ) as HTMLElement;
       }
 
       if (element) {
@@ -434,9 +466,21 @@ export function ResumeEditor() {
         element.focus();
 
         // Flash highlight ring and subtle background
-        element.classList.add("!border-blue-600", "ring-4", "ring-blue-500/40", "bg-blue-50/70", "transition-all", "duration-300");
+        element.classList.add(
+          "!border-blue-600",
+          "ring-4",
+          "ring-blue-500/40",
+          "bg-blue-50/70",
+          "transition-all",
+          "duration-300",
+        );
         setTimeout(() => {
-          element?.classList.remove("!border-blue-600", "ring-4", "ring-blue-500/40", "bg-blue-50/70");
+          element?.classList.remove(
+            "!border-blue-600",
+            "ring-4",
+            "ring-blue-500/40",
+            "bg-blue-50/70",
+          );
         }, 1500);
       }
     }, 100);
@@ -450,18 +494,28 @@ export function ResumeEditor() {
     if (!fieldName) return;
 
     // 1. Try finding exact preview field
-    const exactField = document.querySelector(`[data-preview-field="${fieldName}"]`);
+    const exactField = document.querySelector(
+      `[data-preview-field="${fieldName}"]`,
+    );
     // 2. Or fallback to array item (e.g. projects.0)
     const arrayItemKey = fieldName.split(".").slice(0, 2).join(".");
-    const arrayItem = document.querySelector(`[data-preview-item="${arrayItemKey}"]`);
+    const arrayItem = document.querySelector(
+      `[data-preview-item="${arrayItemKey}"]`,
+    );
     // 3. Or fallback to section container (e.g. projects, basics, summary)
     const sectionKey = fieldName.split(".")[0];
-    const section = document.querySelector(`[data-preview-section="${sectionKey}"]`);
+    const section = document.querySelector(
+      `[data-preview-section="${sectionKey}"]`,
+    );
 
     const targetEl = exactField || arrayItem || section;
 
     if (targetEl && targetEl instanceof HTMLElement) {
-      targetEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+      targetEl.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
+      });
       targetEl.classList.remove("preview-flash-highlight");
       // Force DOM reflow to restart CSS animation
       void targetEl.offsetWidth;
@@ -506,7 +560,8 @@ export function ResumeEditor() {
             onToggleVisibility={() => toggleSectionVisibility("summary")}
           >
             <p className="mb-2 text-xs text-zinc-500">
-              Highlight your strongest skills, background, and career objectives (aim for 2-3 concise sentences).
+              Highlight your strongest skills, background, and career objectives
+              (aim for 2-3 concise sentences).
             </p>
             <textarea
               className="field min-h-24"
@@ -528,22 +583,33 @@ export function ResumeEditor() {
             onMoveUp={() => moveSection(sectionIdx, "up")}
             onMoveDown={() => moveSection(sectionIdx, "down")}
             action="Add category"
-            onAction={() => skills.append({ category: "", items: "", isVisible: true })}
+            onAction={() =>
+              skills.append({ category: "", items: "", isVisible: true })
+            }
             isHidden={hiddenSections.includes("technicalSkills")}
-            onToggleVisibility={() => toggleSectionVisibility("technicalSkills")}
+            onToggleVisibility={() =>
+              toggleSectionVisibility("technicalSkills")
+            }
           >
             {skills.fields.map((field, index) => {
               const isCollapsed = collapsedItems[field.id];
-              const categoryValue = resume.technicalSkills?.[index]?.category || "New Category";
+              const categoryValue =
+                resume.technicalSkills?.[index]?.category || "New Category";
               const itemsValue = resume.technicalSkills?.[index]?.items || "";
-              const isItemHidden = resume.technicalSkills?.[index]?.isVisible === false;
+              const isItemHidden =
+                resume.technicalSkills?.[index]?.isVisible === false;
 
               return (
                 <CollapsibleCard
                   key={field.id}
                   id={field.id}
                   title={categoryValue}
-                  subtitle={itemsValue ? itemsValue.slice(0, 45) + (itemsValue.length > 45 ? "…" : "") : "No skills added yet"}
+                  subtitle={
+                    itemsValue
+                      ? itemsValue.slice(0, 45) +
+                        (itemsValue.length > 45 ? "…" : "")
+                      : "No skills added yet"
+                  }
                   isCollapsed={isCollapsed}
                   onToggleCollapse={() => toggleCollapse(field.id)}
                   index={index}
@@ -552,7 +618,9 @@ export function ResumeEditor() {
                   onMoveDown={() => skills.move(index, index + 1)}
                   onRemove={() => skills.remove(index)}
                   isHidden={isItemHidden}
-                  onToggleVisibility={() => toggleItemVisibility("technicalSkills", index)}
+                  onToggleVisibility={() =>
+                    toggleItemVisibility("technicalSkills", index)
+                  }
                 >
                   <Field
                     label="Category name"
@@ -561,14 +629,19 @@ export function ResumeEditor() {
                     {...register(`technicalSkills.${index}.category`)}
                   />
                   <label className="mt-3 block text-xs font-medium text-zinc-700">
-                    Skills <span className="font-normal text-zinc-500">(comma-separated)</span>
+                    Skills{" "}
+                    <span className="font-normal text-zinc-500">
+                      (comma-separated)
+                    </span>
                   </label>
                   <textarea
                     className="field mt-1 min-h-18"
                     placeholder="TypeScript, Next.js, React, Tailwind CSS, REST API..."
                     {...register(`technicalSkills.${index}.items`)}
                   />
-                  <FieldError message={errors.technicalSkills?.[index]?.items?.message} />
+                  <FieldError
+                    message={errors.technicalSkills?.[index]?.items?.message}
+                  />
                 </CollapsibleCard>
               );
             })}
@@ -601,20 +674,24 @@ export function ResumeEditor() {
             onToggleVisibility={() => toggleSectionVisibility("experience")}
           >
             <p className="mb-3 text-xs text-zinc-500">
-              Leave this empty if you do not have work experience yet. It will automatically hide on your CV.
+              Leave this empty if you do not have work experience yet. It will
+              automatically hide on your CV.
             </p>
             {experience.fields.map((field, index) => {
               const isCollapsed = collapsedItems[field.id];
               const roleValue = resume.experience?.[index]?.role || "New Role";
               const companyValue = resume.experience?.[index]?.company || "";
-              const isItemHidden = resume.experience?.[index]?.isVisible === false;
+              const isItemHidden =
+                resume.experience?.[index]?.isVisible === false;
 
               return (
                 <CollapsibleCard
                   key={field.id}
                   id={field.id}
                   title={`${roleValue}${companyValue ? ` — ${companyValue}` : ""}`}
-                  subtitle={resume.experience?.[index]?.period || "Period not set"}
+                  subtitle={
+                    resume.experience?.[index]?.period || "Period not set"
+                  }
                   isCollapsed={isCollapsed}
                   onToggleCollapse={() => toggleCollapse(field.id)}
                   index={index}
@@ -623,11 +700,17 @@ export function ResumeEditor() {
                   onMoveDown={() => experience.move(index, index + 1)}
                   onRemove={() => experience.remove(index)}
                   isHidden={isItemHidden}
-                  onToggleVisibility={() => toggleItemVisibility("experience", index)}
+                  onToggleVisibility={() =>
+                    toggleItemVisibility("experience", index)
+                  }
                   showOnWeb={resume.experience?.[index]?.showOnWeb !== false}
-                  onToggleShowOnWeb={() => toggleTargetVisibility("experience", index, "showOnWeb")}
+                  onToggleShowOnWeb={() =>
+                    toggleTargetVisibility("experience", index, "showOnWeb")
+                  }
                   showOnCv={resume.experience?.[index]?.showOnCv !== false}
-                  onToggleShowOnCv={() => toggleTargetVisibility("experience", index, "showOnCv")}
+                  onToggleShowOnCv={() =>
+                    toggleTargetVisibility("experience", index, "showOnCv")
+                  }
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -651,7 +734,10 @@ export function ResumeEditor() {
                     {...register(`experience.${index}.period`)}
                   />
                   <label className="mt-3 block text-xs font-medium text-zinc-700">
-                    Key Highlights <span className="font-normal text-zinc-500">(one bullet per line)</span>
+                    Key Highlights{" "}
+                    <span className="font-normal text-zinc-500">
+                      (one bullet per line)
+                    </span>
                   </label>
                   <textarea
                     className="field mt-1 min-h-24"
@@ -701,9 +787,11 @@ export function ResumeEditor() {
           >
             {projects.fields.map((field, index) => {
               const isCollapsed = collapsedItems[field.id];
-              const nameValue = resume.projects?.[index]?.name || `Project #${index + 1}`;
+              const nameValue =
+                resume.projects?.[index]?.name || `Project #${index + 1}`;
               const stackValue = resume.projects?.[index]?.techStack || "";
-              const isItemHidden = resume.projects?.[index]?.isVisible === false;
+              const isItemHidden =
+                resume.projects?.[index]?.isVisible === false;
 
               return (
                 <CollapsibleCard
@@ -719,11 +807,17 @@ export function ResumeEditor() {
                   onMoveDown={() => projects.move(index, index + 1)}
                   onRemove={() => projects.remove(index)}
                   isHidden={isItemHidden}
-                  onToggleVisibility={() => toggleItemVisibility("projects", index)}
+                  onToggleVisibility={() =>
+                    toggleItemVisibility("projects", index)
+                  }
                   showOnWeb={resume.projects?.[index]?.showOnWeb !== false}
-                  onToggleShowOnWeb={() => toggleTargetVisibility("projects", index, "showOnWeb")}
+                  onToggleShowOnWeb={() =>
+                    toggleTargetVisibility("projects", index, "showOnWeb")
+                  }
                   showOnCv={resume.projects?.[index]?.showOnCv !== false}
-                  onToggleShowOnCv={() => toggleTargetVisibility("projects", index, "showOnCv")}
+                  onToggleShowOnCv={() =>
+                    toggleTargetVisibility("projects", index, "showOnCv")
+                  }
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -752,12 +846,20 @@ export function ResumeEditor() {
                       register={register}
                       control={control}
                       setValue={setValue}
-                      isHidden={Boolean(resume.projects?.[index]?.hideRepository)}
+                      isHidden={Boolean(
+                        resume.projects?.[index]?.hideRepository,
+                      )}
                       onToggleVisibility={() => {
-                        const current = Boolean(resume.projects?.[index]?.hideRepository);
-                        setValue(`projects.${index}.hideRepository` as any, !current, {
-                          shouldDirty: true,
-                        });
+                        const current = Boolean(
+                          resume.projects?.[index]?.hideRepository,
+                        );
+                        setValue(
+                          `projects.${index}.hideRepository` as any,
+                          !current,
+                          {
+                            shouldDirty: true,
+                          },
+                        );
                       }}
                     />
 
@@ -767,21 +869,42 @@ export function ResumeEditor() {
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[
-                          { value: "auto", label: "Tự động ⚡", desc: "Theo tech stack" },
-                          { value: "mobile", label: "Mobile App 📱", desc: "Khung điện thoại" },
-                          { value: "web", label: "Web Browser 💻", desc: "Cửa sổ trình duyệt" },
-                          { value: "system", label: "System / API ⚙️", desc: "Hệ thống backend" },
+                          {
+                            value: "auto",
+                            label: "Tự động ⚡",
+                            desc: "Theo tech stack",
+                          },
+                          {
+                            value: "mobile",
+                            label: "Mobile App 📱",
+                            desc: "Khung điện thoại",
+                          },
+                          {
+                            value: "web",
+                            label: "Web Browser 💻",
+                            desc: "Cửa sổ trình duyệt",
+                          },
+                          {
+                            value: "system",
+                            label: "System / API ⚙️",
+                            desc: "Hệ thống backend",
+                          },
                         ].map((item) => {
-                          const current = resume.projects?.[index]?.projectType || "auto";
+                          const current =
+                            resume.projects?.[index]?.projectType || "auto";
                           const isSelected = current === item.value;
                           return (
                             <button
                               key={item.value}
                               type="button"
                               onClick={() => {
-                                setValue(`projects.${index}.projectType` as any, item.value as any, {
-                                  shouldDirty: true,
-                                });
+                                setValue(
+                                  `projects.${index}.projectType` as any,
+                                  item.value as any,
+                                  {
+                                    shouldDirty: true,
+                                  },
+                                );
                               }}
                               className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition ${
                                 isSelected
@@ -789,8 +912,12 @@ export function ResumeEditor() {
                                   : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300"
                               }`}
                             >
-                              <span className="text-xs font-semibold">{item.label}</span>
-                              <span className="text-[10px] text-zinc-400 mt-0.5">{item.desc}</span>
+                              <span className="text-xs font-semibold">
+                                {item.label}
+                              </span>
+                              <span className="text-[10px] text-zinc-400 mt-0.5">
+                                {item.desc}
+                              </span>
                             </button>
                           );
                         })}
@@ -802,10 +929,16 @@ export function ResumeEditor() {
                       placeholder="myproject.vercel.app or youtu.be/..."
                       isHidden={Boolean(resume.projects?.[index]?.hideDemoUrl)}
                       onToggleVisibility={() => {
-                        const current = Boolean(resume.projects?.[index]?.hideDemoUrl);
-                        setValue(`projects.${index}.hideDemoUrl` as any, !current, {
-                          shouldDirty: true,
-                        });
+                        const current = Boolean(
+                          resume.projects?.[index]?.hideDemoUrl,
+                        );
+                        setValue(
+                          `projects.${index}.hideDemoUrl` as any,
+                          !current,
+                          {
+                            shouldDirty: true,
+                          },
+                        );
                       }}
                       {...register(`projects.${index}.demoUrl`)}
                     />
@@ -829,10 +962,17 @@ export function ResumeEditor() {
                     {...register(`projects.${index}.thumbnailAlt`)}
                   />
                   <p className="mt-2 text-[11px] text-zinc-500">
-                    💡 <strong>Smart Preview:</strong> If Thumbnail URL is left blank, Web projects will generate a live screenshot, while YouTube video links will automatically fetch their HD video cover. Mobile apps will render the high-tech mobile UI frame.
+                    💡 <strong>Smart Preview:</strong> If Thumbnail URL is left
+                    blank, Web projects will generate a live screenshot, while
+                    YouTube video links will automatically fetch their HD video
+                    cover. Mobile apps will render the high-tech mobile UI
+                    frame.
                   </p>
                   <label className="mt-3 block text-xs font-medium text-zinc-700">
-                    Key Highlights <span className="font-normal text-zinc-500">(one bullet per line)</span>
+                    Key Highlights{" "}
+                    <span className="font-normal text-zinc-500">
+                      (one bullet per line)
+                    </span>
                   </label>
                   <textarea
                     className="field mt-1 min-h-24"
@@ -857,16 +997,24 @@ export function ResumeEditor() {
             onMoveDown={() => moveSection(sectionIdx, "down")}
             action="Add education"
             onAction={() =>
-              education.append({ institution: "", period: "", degree: "", details: "", isVisible: true })
+              education.append({
+                institution: "",
+                period: "",
+                degree: "",
+                details: "",
+                isVisible: true,
+              })
             }
             isHidden={hiddenSections.includes("education")}
             onToggleVisibility={() => toggleSectionVisibility("education")}
           >
             {education.fields.map((field, index) => {
               const isCollapsed = collapsedItems[field.id];
-              const instValue = resume.education?.[index]?.institution || "University Name";
+              const instValue =
+                resume.education?.[index]?.institution || "University Name";
               const degreeValue = resume.education?.[index]?.degree || "";
-              const isItemHidden = resume.education?.[index]?.isVisible === false;
+              const isItemHidden =
+                resume.education?.[index]?.isVisible === false;
 
               return (
                 <CollapsibleCard
@@ -882,7 +1030,9 @@ export function ResumeEditor() {
                   onMoveDown={() => education.move(index, index + 1)}
                   onRemove={() => education.remove(index)}
                   isHidden={isItemHidden}
-                  onToggleVisibility={() => toggleItemVisibility("education", index)}
+                  onToggleVisibility={() =>
+                    toggleItemVisibility("education", index)
+                  }
                 >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field
@@ -906,7 +1056,10 @@ export function ResumeEditor() {
                     {...register(`education.${index}.degree`)}
                   />
                   <label className="mt-3 block text-xs font-medium text-zinc-700">
-                    Additional details <span className="font-normal text-zinc-500">(GPA, Capstone, Scholarships — one bullet per line)</span>
+                    Additional details{" "}
+                    <span className="font-normal text-zinc-500">
+                      (GPA, Capstone, Scholarships — one bullet per line)
+                    </span>
                   </label>
                   <textarea
                     className="field mt-1 min-h-20"
@@ -930,7 +1083,11 @@ export function ResumeEditor() {
       <header className="no-print sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur-xs">
         <div className="mx-auto flex max-w-[1900px] items-center justify-between gap-3 px-3 py-2 sm:px-5">
           <div className="flex items-center gap-3">
-            <a href="/" title="Back to Portfolio" className="group flex items-center">
+            <a
+              href="/"
+              title="Back to Portfolio"
+              className="group flex items-center"
+            >
               <div className="flex items-center rounded-xl bg-[#090d16] px-3 py-1.5 border border-slate-800 shadow-sm transition group-hover:border-indigo-500/50 group-hover:shadow-md group-hover:shadow-indigo-500/10">
                 <img
                   src="/logo.png"
@@ -949,7 +1106,9 @@ export function ResumeEditor() {
                 title="Switch active CV or manage profiles"
               >
                 <Files className="h-3.5 w-3.5 text-indigo-600" />
-                <span className="max-w-[110px] sm:max-w-[180px] truncate">{activeResumeTitle}</span>
+                <span className="max-w-[110px] sm:max-w-[180px] truncate">
+                  {activeResumeTitle}
+                </span>
                 {activeResumeIsPrimary && (
                   <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold">
                     <Star className="h-2 w-2 fill-emerald-600 text-emerald-600" />
@@ -960,9 +1119,7 @@ export function ResumeEditor() {
               </button>
 
               {isProfileDropdownOpen && (
-                <div
-                  className="absolute left-0 top-full mt-1.5 z-50 w-72 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2"
-                >
+                <div className="absolute left-0 top-full mt-1.5 z-50 w-72 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-top-2">
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                     Switch CV Profile ({resumes.length})
                   </div>
@@ -989,7 +1146,9 @@ export function ResumeEditor() {
                             )}
                           </div>
                           <span className="font-mono text-[10px] text-zinc-400 truncate block">
-                            {item.isPrimary ? "/resume" : `/resume/${item.slug || item.id}`}
+                            {item.isPrimary
+                              ? "/resume"
+                              : `/resume/${item.slug || item.id}`}
                           </span>
                         </div>
                         <span className="text-[10px] font-mono text-zinc-400 shrink-0 flex items-center gap-0.5">
@@ -1035,7 +1194,9 @@ export function ResumeEditor() {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-zinc-500 truncate max-w-xs">{notice}</p>
+                <p className="text-[11px] text-zinc-500 truncate max-w-xs">
+                  {notice}
+                </p>
               </div>
             </div>
           </div>
@@ -1051,13 +1212,17 @@ export function ResumeEditor() {
               {copiedLink ? (
                 <>
                   <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="text-emerald-700 font-semibold font-sans text-[11px]">Copied URL!</span>
+                  <span className="text-emerald-700 font-semibold font-sans text-[11px]">
+                    Copied URL!
+                  </span>
                 </>
               ) : (
                 <>
                   <Copy className="h-3.5 w-3.5 text-zinc-400" />
                   <span className="text-[11px] text-zinc-500">
-                    {activeResumeIsPrimary ? "/resume" : `/resume/${publicSlug || "custom"}`}
+                    {activeResumeIsPrimary
+                      ? "/resume"
+                      : `/resume/${publicSlug || "custom"}`}
                   </span>
                 </>
               )}
@@ -1084,7 +1249,11 @@ export function ResumeEditor() {
               <span>History</span>
             </button>
             <a
-              href={activeResumeIsPrimary ? "/resume" : `/resume/${publicSlug || activeResumeId}`}
+              href={
+                activeResumeIsPrimary
+                  ? "/resume"
+                  : `/resume/${publicSlug || activeResumeId}`
+              }
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50"
@@ -1147,7 +1316,9 @@ export function ResumeEditor() {
               <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-800">
                 Resume Content
               </h2>
-              <p className="text-[11px] text-zinc-500">Edit information and arrange sections</p>
+              <p className="text-[11px] text-zinc-500">
+                Edit information and arrange sections
+              </p>
             </div>
             <button
               type="submit"
@@ -1168,7 +1339,9 @@ export function ResumeEditor() {
                   CV Section Order
                 </span>
               </div>
-              <span className="text-[11px] text-zinc-500">Use ↑ ↓ to reorder on CV</span>
+              <span className="text-[11px] text-zinc-500">
+                Use ↑ ↓ to reorder on CV
+              </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {sectionOrder.map((key, index) => {
@@ -1202,8 +1375,12 @@ export function ResumeEditor() {
                         <Eye className="h-3 w-3" />
                       )}
                     </button>
-                    <span className="text-[11px] text-zinc-400">{index + 1}.</span>
-                    <span className={`text-xs ${isSectionHidden ? "line-through text-zinc-500" : ""}`}>
+                    <span className="text-[11px] text-zinc-400">
+                      {index + 1}.
+                    </span>
+                    <span
+                      className={`text-xs ${isSectionHidden ? "line-through text-zinc-500" : ""}`}
+                    >
                       {SECTION_LABELS[key]}
                     </span>
                     <div className="ml-1 flex items-center">
@@ -1233,7 +1410,10 @@ export function ResumeEditor() {
           </div>
 
           {/* Basics (Fixed at top) */}
-          <fieldset id="section-basics" className="border-t border-zinc-200 pt-4 scroll-mt-20">
+          <fieldset
+            id="section-basics"
+            className="border-t border-zinc-200 pt-4 scroll-mt-20"
+          >
             <legend className="text-xs font-bold uppercase tracking-wider text-zinc-800">
               Basic information
             </legend>
@@ -1251,7 +1431,9 @@ export function ResumeEditor() {
                 placeholder="Final-year IT Student | Aspiring Fullstack Developer"
                 error={errors.basics?.headline?.message}
                 isHidden={hiddenBasicsFields.includes("headline")}
-                onToggleVisibility={() => toggleBasicsFieldVisibility("headline")}
+                onToggleVisibility={() =>
+                  toggleBasicsFieldVisibility("headline")
+                }
                 {...register("basics.headline")}
               />
               <Field
@@ -1268,21 +1450,27 @@ export function ResumeEditor() {
                 placeholder="Ho Chi Minh City, Vietnam"
                 error={errors.basics?.location?.message}
                 isHidden={hiddenBasicsFields.includes("location")}
-                onToggleVisibility={() => toggleBasicsFieldVisibility("location")}
+                onToggleVisibility={() =>
+                  toggleBasicsFieldVisibility("location")
+                }
                 {...register("basics.location")}
               />
               <Field
                 label="Personal website"
                 placeholder="portfolio.com"
                 isHidden={hiddenBasicsFields.includes("website")}
-                onToggleVisibility={() => toggleBasicsFieldVisibility("website")}
+                onToggleVisibility={() =>
+                  toggleBasicsFieldVisibility("website")
+                }
                 {...register("basics.website")}
               />
               <Field
                 label="LinkedIn profile"
                 placeholder="linkedin.com/in/username"
                 isHidden={hiddenBasicsFields.includes("linkedin")}
-                onToggleVisibility={() => toggleBasicsFieldVisibility("linkedin")}
+                onToggleVisibility={() =>
+                  toggleBasicsFieldVisibility("linkedin")
+                }
                 {...register("basics.linkedin")}
               />
               <Field
@@ -1297,7 +1485,7 @@ export function ResumeEditor() {
 
           {/* Dynamic Reorderable Sections */}
           {sectionOrder.map((sectionKey, sectionIdx) =>
-            renderSectionForm(sectionKey, sectionIdx)
+            renderSectionForm(sectionKey, sectionIdx),
           )}
         </form>
 
@@ -1360,10 +1548,13 @@ export function ResumeEditor() {
           {/* Scaled Preview Frame */}
           <div
             className="flex justify-center transition-transform duration-150 origin-top"
-            style={{ transform: zoomLevel === 100 ? undefined : `scale(${zoomLevel / 100})` }}
+            style={{
+              transform:
+                zoomLevel === 100 ? undefined : `scale(${zoomLevel / 100})`,
+            }}
           >
             <ResumePreview
-              resume={resume}
+              resume={previewResume}
               contentRef={contentRef}
               showPageGuide={showPageGuide}
               onSelectField={handleSelectFieldFromPreview}
@@ -1429,7 +1620,9 @@ function SectionHeader({
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <legend className="text-xs font-bold uppercase tracking-wider text-zinc-800 flex items-center gap-2">
-            <span className={isHidden ? "line-through text-zinc-500" : ""}>{title}</span>
+            <span className={isHidden ? "line-through text-zinc-500" : ""}>
+              {title}
+            </span>
             {isHidden && (
               <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200 normal-case tracking-normal">
                 Hidden on CV & Web
@@ -1533,7 +1726,8 @@ function CollapsibleCard({
   showOnCv?: boolean;
   onToggleShowOnCv?: () => void;
 }) {
-  const isCompletelyHidden = isHidden || (showOnWeb === false && showOnCv === false);
+  const isCompletelyHidden =
+    isHidden || (showOnWeb === false && showOnCv === false);
 
   return (
     <div
@@ -1557,7 +1751,9 @@ function CollapsibleCard({
           <div className="flex items-center gap-1.5 flex-wrap">
             <span
               className={`text-xs font-semibold ${
-                isCompletelyHidden ? "text-zinc-500 line-through" : "text-zinc-800"
+                isCompletelyHidden
+                  ? "text-zinc-500 line-through"
+                  : "text-zinc-800"
               }`}
             >
               {title}
@@ -1669,7 +1865,9 @@ function CollapsibleCard({
         </div>
       </div>
 
-      {!isCollapsed && <div className="border-t border-zinc-200/80 p-3.5">{children}</div>}
+      {!isCollapsed && (
+        <div className="border-t border-zinc-200/80 p-3.5">{children}</div>
+      )}
     </div>
   );
 }
@@ -1703,10 +1901,14 @@ function ProjectRepositoriesEditor({
   ];
 
   return (
-    <div className={`sm:col-span-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-3.5 ${isHidden ? "opacity-65" : "opacity-100"} transition-opacity`}>
+    <div
+      className={`sm:col-span-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-3.5 ${isHidden ? "opacity-65" : "opacity-100"} transition-opacity`}
+    >
       <div className="flex items-center justify-between gap-1.5 mb-2.5">
         <label className="text-xs font-semibold text-zinc-700 flex items-center gap-1.5">
-          <span className={isHidden ? "line-through text-zinc-400" : ""}>GitHub Repositories (Multi-Repo Support)</span>
+          <span className={isHidden ? "line-through text-zinc-400" : ""}>
+            GitHub Repositories (Multi-Repo Support)
+          </span>
           {isHidden && (
             <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700">
               Hidden
@@ -1717,11 +1919,21 @@ function ProjectRepositoriesEditor({
           type="button"
           onClick={onToggleVisibility}
           className={`rounded p-0.5 transition ${
-            isHidden ? "text-amber-600 hover:bg-amber-100" : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
+            isHidden
+              ? "text-amber-600 hover:bg-amber-100"
+              : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
           }`}
-          title={isHidden ? "Repositories are Hidden. Click to Show." : "Repositories are Visible. Click to Hide."}
+          title={
+            isHidden
+              ? "Repositories are Hidden. Click to Show."
+              : "Repositories are Visible. Click to Hide."
+          }
         >
-          {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {isHidden ? (
+            <EyeOff className="h-3.5 w-3.5" />
+          ) : (
+            <Eye className="h-3.5 w-3.5" />
+          )}
         </button>
       </div>
 
@@ -1729,23 +1941,33 @@ function ProjectRepositoriesEditor({
       <div className="space-y-2">
         {fields.length === 0 ? (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-white/50 p-3 text-center">
-            <p className="text-xs text-zinc-500">Chưa có repository nào. Bấm nút bên dưới để thêm repo cho dự án này.</p>
+            <p className="text-xs text-zinc-500">
+              Chưa có repository nào. Bấm nút bên dưới để thêm repo cho dự án
+              này.
+            </p>
           </div>
         ) : (
           fields.map((field, rIdx) => (
-            <div key={field.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 shadow-xs">
+            <div
+              key={field.id}
+              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 shadow-xs"
+            >
               <div className="w-full sm:w-1/3">
                 <input
                   className="field text-xs py-1.5 px-2 font-medium"
                   placeholder="Label (vd: Mobile App)"
-                  {...register(`projects.${projectIndex}.repositories.${rIdx}.label`)}
+                  {...register(
+                    `projects.${projectIndex}.repositories.${rIdx}.label`,
+                  )}
                 />
               </div>
               <div className="w-full sm:flex-1">
                 <input
                   className="field text-xs py-1.5 px-2 font-mono"
                   placeholder="github.com/username/repo"
-                  {...register(`projects.${projectIndex}.repositories.${rIdx}.url`)}
+                  {...register(
+                    `projects.${projectIndex}.repositories.${rIdx}.url`,
+                  )}
                 />
               </div>
               <button
@@ -1764,7 +1986,9 @@ function ProjectRepositoriesEditor({
       {/* Quick Add Presets & Add Button */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-200/60">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] text-zinc-500 font-medium mr-1">Thêm nhanh nhãn:</span>
+          <span className="text-[11px] text-zinc-500 font-medium mr-1">
+            Thêm nhanh nhãn:
+          </span>
           {PRESETS.map((preset) => (
             <button
               key={preset.label}
@@ -1782,7 +2006,15 @@ function ProjectRepositoriesEditor({
 
         <button
           type="button"
-          onClick={() => append({ label: fields.length === 0 ? "Source Code" : `Repo ${fields.length + 1}`, url: "" })}
+          onClick={() =>
+            append({
+              label:
+                fields.length === 0
+                  ? "Source Code"
+                  : `Repo ${fields.length + 1}`,
+              url: "",
+            })
+          }
           className="inline-flex items-center gap-1 rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-50 active:scale-95 transition"
         >
           <Plus className="h-3.5 w-3.5 text-indigo-600" />
@@ -1807,10 +2039,14 @@ function Field({
   onToggleVisibility?: () => void;
 }) {
   return (
-    <div className={`block ${className} ${isHidden ? "opacity-65" : "opacity-100"} transition-opacity`}>
+    <div
+      className={`block ${className} ${isHidden ? "opacity-65" : "opacity-100"} transition-opacity`}
+    >
       <div className="flex items-center justify-between gap-1.5">
         <label className="text-xs font-medium text-zinc-700 flex items-center gap-1.5">
-          <span className={isHidden ? "line-through text-zinc-400" : ""}>{label}</span>
+          <span className={isHidden ? "line-through text-zinc-400" : ""}>
+            {label}
+          </span>
           {isHidden && (
             <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700">
               Hidden
@@ -1832,13 +2068,19 @@ function Field({
                 : `Field "${label}" is Visible. Click to Hide on CV & Web.`
             }
           >
-            {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {isHidden ? (
+              <EyeOff className="h-3.5 w-3.5" />
+            ) : (
+              <Eye className="h-3.5 w-3.5" />
+            )}
           </button>
         )}
       </div>
       <input
         className={`field mt-1 transition ${
-          isHidden ? "border-dashed border-amber-300 bg-amber-50/25 text-zinc-500" : ""
+          isHidden
+            ? "border-dashed border-amber-300 bg-amber-50/25 text-zinc-500"
+            : ""
         }`}
         {...props}
       />
@@ -1861,10 +2103,14 @@ function TextAreaField({
   onToggleVisibility?: () => void;
 }) {
   return (
-    <div className={`block ${className} ${isHidden ? "opacity-65" : "opacity-100"} transition-opacity`}>
+    <div
+      className={`block ${className} ${isHidden ? "opacity-65" : "opacity-100"} transition-opacity`}
+    >
       <div className="flex items-center justify-between gap-1.5">
         <label className="text-xs font-medium text-zinc-700 flex items-center gap-1.5">
-          <span className={isHidden ? "line-through text-zinc-400" : ""}>{label}</span>
+          <span className={isHidden ? "line-through text-zinc-400" : ""}>
+            {label}
+          </span>
           {isHidden && (
             <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700">
               Hidden
@@ -1886,13 +2132,19 @@ function TextAreaField({
                 : `Field "${label}" is Visible. Click to Hide on CV & Web.`
             }
           >
-            {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {isHidden ? (
+              <EyeOff className="h-3.5 w-3.5" />
+            ) : (
+              <Eye className="h-3.5 w-3.5" />
+            )}
           </button>
         )}
       </div>
       <textarea
         className={`field mt-1 font-mono text-xs transition ${
-          isHidden ? "border-dashed border-amber-300 bg-amber-50/25 text-zinc-500" : ""
+          isHidden
+            ? "border-dashed border-amber-300 bg-amber-50/25 text-zinc-500"
+            : ""
         }`}
         {...props}
       />
@@ -1903,7 +2155,8 @@ function TextAreaField({
 
 function FieldError({ message }: { message?: string }) {
   return message ? (
-    <span className="mt-1 block text-[11px] font-medium text-red-600">{message}</span>
+    <span className="mt-1 block text-[11px] font-medium text-red-600">
+      {message}
+    </span>
   ) : null;
 }
-

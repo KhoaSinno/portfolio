@@ -1,9 +1,5 @@
-import {
-  DEFAULT_SECTION_ORDER,
-  defaultResume,
-  resumeSchema,
-  type ResumeData,
-} from "./resume-schema";
+import { defaultResume, type ResumeData } from "./resume-schema";
+import { parseResumeContent } from "./resume-content";
 import { API_BASE_URL } from "@/lib/api/client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -56,49 +52,6 @@ async function getAuthToken(): Promise<string> {
   return accessToken;
 }
 
-function validateContent(
-  response: { content: unknown } | null | undefined,
-): ResumeData | null {
-  if (!response || !response.content) return null;
-  const raw = (
-    typeof response.content === "object" ? { ...response.content } : {}
-  ) as Record<string, unknown>;
-  if (!raw.sectionOrder) {
-    raw.sectionOrder = [...DEFAULT_SECTION_ORDER];
-  }
-  if (!raw.hiddenSections) {
-    raw.hiddenSections = [];
-  }
-  if (!raw.hiddenBasicsFields) {
-    raw.hiddenBasicsFields = [];
-  }
-  const parsed = resumeSchema.safeParse(raw);
-  return parsed.success ? parsed.data : null;
-}
-
-// --- Public Endpoints ---
-
-export async function getPublishedResume(
-  slug?: string,
-): Promise<ResumeData | null> {
-  try {
-    const url = slug
-      ? `${API_BASE_URL}/resume/${encodeURIComponent(slug)}`
-      : `${API_BASE_URL}/resume`;
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Failed to load published resume (${response.status})`);
-    }
-    const data = (await response.json()) as ResumeResponse;
-    const content = validateContent(data);
-    return content;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("404")) return null;
-    throw error;
-  }
-}
-
 // --- Multi-CV Admin Management Endpoints ---
 
 export async function listResumes(): Promise<ResumeProfileItem[]> {
@@ -124,7 +77,7 @@ export async function getResumeProfile(id: string): Promise<DraftResume> {
   if (!response.ok)
     throw new Error(`Failed to load resume profile (${response.status}).`);
   const data = (await response.json()) as ResumeResponse;
-  const content = validateContent(data);
+  const content = parseResumeContent(data);
   if (!content || !data?.id) return null;
   return {
     id: data.id,
@@ -162,7 +115,7 @@ export async function createResumeProfile(dto: {
       data.message || `Failed to create resume profile (${response.status}).`,
     );
   }
-  const content = validateContent(data);
+  const content = parseResumeContent(data);
   if (!content || !data.id) return null;
   return {
     id: data.id,
@@ -279,7 +232,7 @@ export async function getDraftResume(): Promise<DraftResume> {
   if (!response.ok)
     throw new Error(`Failed to load draft (${response.status}).`);
   const data = (await response.json()) as ResumeResponse;
-  const content = validateContent(data);
+  const content = parseResumeContent(data);
   if (!content || !data?.id) return null;
   return {
     id: data.id,
@@ -355,7 +308,7 @@ export async function getResumeVersions(
     version: item.version,
     template: item.template,
     createdAt: item.createdAt,
-    content: validateContent({ content: item.content }) ?? defaultResume,
+    content: parseResumeContent({ content: item.content }) ?? defaultResume,
   }));
 }
 
@@ -375,7 +328,7 @@ export async function rollbackResumeVersion(
   if (!response.ok)
     throw new Error(`Failed to rollback version (${response.status}).`);
   const data = (await response.json()) as { content: unknown };
-  const valid = validateContent(data);
+  const valid = parseResumeContent(data);
   if (!valid) throw new Error("Restored version content was invalid.");
   return valid;
 }

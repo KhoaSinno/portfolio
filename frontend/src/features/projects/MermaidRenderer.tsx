@@ -1,79 +1,89 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import mermaid from "mermaid";
 import { Check, Copy, LoaderCircle, ZoomIn, ZoomOut } from "lucide-react";
 
-// Initialize Mermaid globally with GitHub-Dark theme
-mermaid.initialize({
-  startOnLoad: false,
-  theme: "dark",
-  securityLevel: "loose",
-  // Render labels as native SVG text instead of HTML <foreignObject> nodes.
-  // The latter inherits host-page layout metrics and can inflate the Mermaid
-  // viewBox by orders of magnitude, leaving an apparently empty diagram.
-  htmlLabels: false,
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial, sans-serif',
-  flowchart: {
-    curve: "basis",
-    useMaxWidth: true,
-  },
-  themeVariables: {
-    darkMode: true,
-    background: "#0d1117",
-    primaryColor: "#21262d",
-    primaryTextColor: "#f0f6fc",
-    primaryBorderColor: "#30363d",
-    lineColor: "#8b949e",
-    secondaryColor: "#161b22",
-    tertiaryColor: "#161b22",
-    clusterBkg: "#161b22",
-    clusterBorder: "#30363d",
-    defaultLinkColor: "#8b949e",
-    titleColor: "#f0f6fc",
-    edgeLabelBackground: "#161b22",
-    nodeBorder: "#30363d",
-    mainBkg: "#21262d",
-    nodeTextColor: "#f0f6fc",
-  },
-});
+let mermaidLoader: Promise<typeof import("mermaid").default> | undefined;
+
+function loadMermaid() {
+  mermaidLoader ??= import("mermaid").then(({ default: mermaid }) => {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: "dark",
+      securityLevel: "loose",
+      // Native SVG labels prevent host layout metrics from inflating the viewBox.
+      htmlLabels: false,
+      fontFamily:
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial, sans-serif',
+      flowchart: { curve: "basis", useMaxWidth: true },
+      themeVariables: {
+        darkMode: true,
+        background: "#0d1117",
+        primaryColor: "#21262d",
+        primaryTextColor: "#f0f6fc",
+        primaryBorderColor: "#30363d",
+        lineColor: "#8b949e",
+        secondaryColor: "#161b22",
+        tertiaryColor: "#161b22",
+        clusterBkg: "#161b22",
+        clusterBorder: "#30363d",
+        defaultLinkColor: "#8b949e",
+        titleColor: "#f0f6fc",
+        edgeLabelBackground: "#161b22",
+        nodeBorder: "#30363d",
+        mainBkg: "#21262d",
+        nodeTextColor: "#f0f6fc",
+      },
+    });
+    return mermaid;
+  });
+  return mermaidLoader;
+}
 
 export function MermaidRenderer({ chart }: { chart: string }) {
   const rawId = useId();
   const uniqueId = `mermaid-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const cleanChart = chart.trim();
   const [svg, setSvg] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [renderedChart, setRenderedChart] = useState<string>("");
+  const [renderError, setRenderError] = useState<{
+    chart: string;
+    message: string;
+  } | null>(null);
   const [zoom, setZoom] = useState<number>(1);
   const [copied, setCopied] = useState<boolean>(false);
+  const error = renderError?.chart === cleanChart ? renderError.message : null;
+  const loading = renderedChart !== cleanChart && !error;
 
   useEffect(() => {
     let isMounted = true;
-    const cleanChart = chart.trim();
     if (!cleanChart) return;
 
-    setLoading(true);
-    setError(null);
-
-    mermaid
-      .render(uniqueId, cleanChart)
+    void loadMermaid()
+      .then((mermaid) => mermaid.render(uniqueId, cleanChart))
       .then(({ svg: renderedSvg }) => {
         if (isMounted) {
           setSvg(renderedSvg);
-          setLoading(false);
+          setRenderedChart(cleanChart);
+          setRenderError(null);
         }
       })
       .catch((err: unknown) => {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : "Failed to parse Mermaid diagram");
-          setLoading(false);
+          setRenderError({
+            chart: cleanChart,
+            message:
+              err instanceof Error
+                ? err.message
+                : "Failed to parse Mermaid diagram",
+          });
         }
       });
 
     return () => {
       isMounted = false;
     };
-  }, [chart, uniqueId]);
+  }, [cleanChart, uniqueId]);
 
   const handleCopy = () => {
     void navigator.clipboard.writeText(chart);
@@ -88,7 +98,9 @@ export function MermaidRenderer({ chart }: { chart: string }) {
   if (error) {
     return (
       <div className="my-4 rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 font-mono text-xs text-rose-300">
-        <p className="mb-2 text-xs font-semibold text-rose-400">⚠️ Mermaid Diagram Parse Error (Fallback to Code):</p>
+        <p className="mb-2 text-xs font-semibold text-rose-400">
+          ⚠️ Mermaid Diagram Parse Error (Fallback to Code):
+        </p>
         <pre className="overflow-x-auto whitespace-pre">{chart}</pre>
       </div>
     );
@@ -98,7 +110,9 @@ export function MermaidRenderer({ chart }: { chart: string }) {
     return (
       <div className="my-6 flex min-h-[160px] items-center justify-center rounded-2xl border border-white/10 bg-[#0d1117]/80 p-6 text-slate-400 gap-2.5 shadow-xl">
         <LoaderCircle className="h-5 w-5 animate-spin text-indigo-400" />
-        <span className="text-xs font-mono">Rendering Architecture Diagram...</span>
+        <span className="text-xs font-mono">
+          Rendering Architecture Diagram...
+        </span>
       </div>
     );
   }

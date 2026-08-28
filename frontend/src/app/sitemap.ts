@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
-import { getPublishedResume } from "@/features/resume/resume-api";
+import { getPublishedResume } from "@/features/resume/public-resume-api";
 import { defaultResume } from "@/features/resume/resume-schema";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nguyentrananhkhoa.id.vn";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.nguyentrananhkhoa.id.vn";
   const now = new Date();
 
   let resumeData = null;
@@ -13,9 +14,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     resumeData = defaultResume;
   }
 
-  const projects = resumeData?.projects && resumeData.projects.length > 0 
-    ? resumeData.projects 
-    : defaultResume.projects;
+  const projects =
+    resumeData?.projects && resumeData.projects.length > 0
+      ? resumeData.projects
+      : defaultResume.projects;
 
   const projectRoutes: MetadataRoute.Sitemap = projects.map((p) => {
     const slug = encodeURIComponent(
@@ -29,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, "")
+          .replace(/^-|-$/g, ""),
     );
 
     return {

@@ -24,15 +24,24 @@ import {
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
-import { getPublishedResume } from "@/features/resume/resume-api";
+import { getPublishedResume } from "@/features/resume/public-resume-api";
 import { defaultResume } from "@/features/resume/resume-schema";
 import { CopyEmailButton } from "@/features/home/HomeClientEnhancements";
 import { ContactForm } from "@/features/home/ContactForm";
-import { getProjectRepositories, getProjectSlug, isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
+import {
+  getProjectRepositories,
+  getProjectSlug,
+  isVideoUrl,
+  normalizeImageUrl,
+} from "@/lib/image-url";
 import { ProjectVisualFrame } from "@/features/projects/ProjectVisualFrame";
 import { FloatingNavbar } from "@/components/ui/FloatingNavbar";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
-import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
+import {
+  ScrollReveal,
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/ScrollReveal";
 import { TextShimmer } from "@/components/ui/TextShimmer";
 import { TechStackMarquee } from "@/components/ui/TechStackMarquee";
 import { getTechMeta } from "@/lib/tech-meta";
@@ -105,9 +114,10 @@ function getSkillCategoryIcon(category: string) {
   return <Cpu className="h-5 w-5 text-blue-400" />;
 }
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nguyentrananhkhoa.id.vn";
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.nguyentrananhkhoa.id.vn";
 
-export const revalidate = 30;
+export const revalidate = 300;
 
 export default async function Home() {
   let resume = defaultResume;
@@ -118,19 +128,39 @@ export default async function Home() {
     resume = defaultResume;
   }
 
-  const { basics, summary, projects, technicalSkills, experience, education, hiddenSections = [], hiddenBasicsFields = [] } =
-    resume;
+  const {
+    basics,
+    summary,
+    projects,
+    technicalSkills,
+    experience,
+    education,
+    hiddenSections = [],
+    hiddenBasicsFields = [],
+  } = resume;
 
-  const visibleProjects = (projects || []).filter((p) => p.isVisible !== false && p.showOnWeb !== false);
-  const visibleSkills = (technicalSkills || []).filter((s) => s.isVisible !== false);
-  const visibleExperience = (experience || []).filter((e) => e.isVisible !== false && e.showOnWeb !== false);
-  const visibleEducation = (education || []).filter((ed) => ed.isVisible !== false);
+  const visibleProjects = (projects || []).filter(
+    (p) => p.isVisible !== false && p.showOnWeb !== false,
+  );
+  const visibleSkills = (technicalSkills || []).filter(
+    (s) => s.isVisible !== false,
+  );
+  const visibleExperience = (experience || []).filter(
+    (e) => e.isVisible !== false && e.showOnWeb !== false,
+  );
+  const visibleEducation = (education || []).filter(
+    (ed) => ed.isVisible !== false,
+  );
 
   const showSummary = !hiddenSections.includes("summary") && Boolean(summary);
-  const showProjectsSection = !hiddenSections.includes("projects") && visibleProjects.length > 0;
-  const showSkillsSection = !hiddenSections.includes("technicalSkills") && visibleSkills.length > 0;
-  const showExperienceSection = !hiddenSections.includes("experience") && visibleExperience.length > 0;
-  const showEducationSection = !hiddenSections.includes("education") && visibleEducation.length > 0;
+  const showProjectsSection =
+    !hiddenSections.includes("projects") && visibleProjects.length > 0;
+  const showSkillsSection =
+    !hiddenSections.includes("technicalSkills") && visibleSkills.length > 0;
+  const showExperienceSection =
+    !hiddenSections.includes("experience") && visibleExperience.length > 0;
+  const showEducationSection =
+    !hiddenSections.includes("education") && visibleEducation.length > 0;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -233,14 +263,19 @@ export default async function Home() {
       <main className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8 pt-4 sm:pt-6">
         {/* Hero / About Section */}
         <ScrollReveal direction="up" delay={0.05}>
-          <section id="about" className="pt-16 pb-16 sm:pt-24 sm:pb-24 scroll-mt-24">
+          <section
+            id="about"
+            className="pt-16 pb-16 sm:pt-24 sm:pb-24 scroll-mt-24"
+          >
             {/* Live Status Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-medium text-emerald-300 shadow-lg shadow-emerald-500/10 backdrop-blur-md">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
-              <span>Available for Fullstack Internships & Engineering Roles</span>
+              <span>
+                Available for Fullstack Internships & Engineering Roles
+              </span>
             </div>
 
             {/* Main Title & Headline */}
@@ -366,8 +401,8 @@ export default async function Home() {
                   </h2>
                 </div>
                 <p className="max-w-md text-sm text-slate-400">
-                  Hands-on engineering projects showcasing fullstack architecture,
-                  AI integrations, and responsive UX.
+                  Hands-on engineering projects showcasing fullstack
+                  architecture, AI integrations, and responsive UX.
                 </p>
               </div>
             </ScrollReveal>
@@ -398,7 +433,11 @@ export default async function Home() {
                   project.name?.toLowerCase().includes("app");
 
                 return (
-                  <ScrollReveal key={`${project.name}-${idx}`} direction="up" delay={idx * 0.08}>
+                  <ScrollReveal
+                    key={`${project.name}-${idx}`}
+                    direction="up"
+                    delay={idx * 0.08}
+                  >
                     <SpotlightCard className="overflow-hidden border border-white/10 p-0 transition-all duration-300 hover:border-white/20">
                       <div className="grid lg:grid-cols-12">
                         {/* Left Column: Visual Media / Interactive Window Mockup */}
@@ -444,7 +483,10 @@ export default async function Home() {
                             {highlightLines.length > 0 && (
                               <ul className="mt-4 space-y-2 text-sm text-slate-300 leading-relaxed">
                                 {highlightLines.map((bullet, bIdx) => (
-                                  <li key={bIdx} className="flex items-start gap-2.5">
+                                  <li
+                                    key={bIdx}
+                                    className="flex items-start gap-2.5"
+                                  >
                                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
                                     <span>{bullet}</span>
                                   </li>
@@ -465,7 +507,9 @@ export default async function Home() {
                                       key={tIdx}
                                       className={`inline-flex items-center gap-1.5 rounded-lg border ${meta.borderColor} ${meta.badgeBg} px-2.5 py-1 text-xs font-medium text-slate-200 transition hover:scale-105`}
                                     >
-                                      <Icon className={`h-3 w-3 ${meta.color}`} />
+                                      <Icon
+                                        className={`h-3 w-3 ${meta.color}`}
+                                      />
                                       <span>{tech}</span>
                                     </span>
                                   );
@@ -487,54 +531,60 @@ export default async function Home() {
                                 </Link>
                               )}
 
-                              {!project.hideRepository && (() => {
-                                const repos = getProjectRepositories(project);
-                                if (repos.length === 0) return null;
-                                return repos.map((repo, rIdx) => (
-                                  <a
-                                    key={rIdx}
-                                    href={repo.cleanUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-95"
-                                    title={`Open ${repo.label} on GitHub`}
-                                  >
-                                    <GithubIcon className="h-4 w-4" />
-                                    <span>{repo.label}</span>
-                                  </a>
-                                ));
-                              })()}
+                              {!project.hideRepository &&
+                                (() => {
+                                  const repos = getProjectRepositories(project);
+                                  if (repos.length === 0) return null;
+                                  return repos.map((repo, rIdx) => (
+                                    <a
+                                      key={rIdx}
+                                      href={repo.cleanUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-95"
+                                      title={`Open ${repo.label} on GitHub`}
+                                    >
+                                      <GithubIcon className="h-4 w-4" />
+                                      <span>{repo.label}</span>
+                                    </a>
+                                  ));
+                                })()}
 
-                              {!project.hideDemoUrl && project.demoUrl && (() => {
-                                const isVideo = isVideoUrl(project.demoUrl) || isMobileApp;
-                                const cleanUrl = project.demoUrl.startsWith("http")
-                                  ? project.demoUrl
-                                  : `https://${project.demoUrl}`;
+                              {!project.hideDemoUrl &&
+                                project.demoUrl &&
+                                (() => {
+                                  const isVideo =
+                                    isVideoUrl(project.demoUrl) || isMobileApp;
+                                  const cleanUrl = project.demoUrl.startsWith(
+                                    "http",
+                                  )
+                                    ? project.demoUrl
+                                    : `https://${project.demoUrl}`;
 
-                                return isVideo ? (
-                                  <a
-                                    href={cleanUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs font-semibold text-rose-300 shadow-lg shadow-rose-500/10 backdrop-blur-md transition hover:border-rose-500/60 hover:bg-rose-500/20 hover:text-white active:scale-95"
-                                  >
-                                    <Play className="h-3.5 w-3.5 fill-rose-400 text-rose-400" />
-                                    <span>Watch Demo</span>
-                                    <ExternalLink className="h-3.5 w-3.5 text-rose-400/80" />
-                                  </a>
-                                ) : (
-                                  <a
-                                    href={cleanUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-300 transition hover:border-emerald-500/50 hover:bg-emerald-500/20 hover:text-white active:scale-95"
-                                  >
-                                    <Globe className="h-4 w-4 text-emerald-400" />
-                                    <span>Live Demo</span>
-                                    <ExternalLink className="h-3.5 w-3.5 text-emerald-400" />
-                                  </a>
-                                );
-                              })()}
+                                  return isVideo ? (
+                                    <a
+                                      href={cleanUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs font-semibold text-rose-300 shadow-lg shadow-rose-500/10 backdrop-blur-md transition hover:border-rose-500/60 hover:bg-rose-500/20 hover:text-white active:scale-95"
+                                    >
+                                      <Play className="h-3.5 w-3.5 fill-rose-400 text-rose-400" />
+                                      <span>Watch Demo</span>
+                                      <ExternalLink className="h-3.5 w-3.5 text-rose-400/80" />
+                                    </a>
+                                  ) : (
+                                    <a
+                                      href={cleanUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-300 transition hover:border-emerald-500/50 hover:bg-emerald-500/20 hover:text-white active:scale-95"
+                                    >
+                                      <Globe className="h-4 w-4 text-emerald-400" />
+                                      <span>Live Demo</span>
+                                      <ExternalLink className="h-3.5 w-3.5 text-emerald-400" />
+                                    </a>
+                                  );
+                                })()}
                             </div>
                           </div>
                         </div>
@@ -585,7 +635,10 @@ export default async function Home() {
                   .filter(Boolean);
 
                 return (
-                  <StaggerItem key={`${skillGroup.category}-${idx}`} className="h-full">
+                  <StaggerItem
+                    key={`${skillGroup.category}-${idx}`}
+                    className="h-full"
+                  >
                     <SpotlightCard className="h-full flex flex-col justify-between p-6 sm:p-7 border border-white/10 hover:border-white/20 transition-all duration-300">
                       <div>
                         <div className="flex items-center justify-between gap-3">
@@ -724,7 +777,9 @@ export default async function Home() {
                   edu.degree.toLowerCase().includes("english");
 
                 const Icon = isCertificate ? Award : GraduationCap;
-                const badgeLabel = isCertificate ? "Language Certificate" : "University Degree";
+                const badgeLabel = isCertificate
+                  ? "Language Certificate"
+                  : "University Degree";
                 const accentBg = isCertificate
                   ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
                   : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
@@ -734,7 +789,10 @@ export default async function Home() {
                 const dotBg = isCertificate ? "bg-amber-400" : "bg-emerald-400";
 
                 return (
-                  <StaggerItem key={`${edu.institution}-${idx}`} className="h-full">
+                  <StaggerItem
+                    key={`${edu.institution}-${idx}`}
+                    className="h-full"
+                  >
                     <SpotlightCard className="h-full flex flex-col justify-between p-6 sm:p-7 border border-white/10 hover:border-white/20 transition-all duration-300">
                       <div>
                         {/* Top Header Row: Icon + Type Badge + Period */}
@@ -766,7 +824,9 @@ export default async function Home() {
                         {/* Degree / Program */}
                         <p
                           className={`mt-1 text-sm font-semibold ${
-                            isCertificate ? "text-amber-300" : "text-emerald-300"
+                            isCertificate
+                              ? "text-amber-300"
+                              : "text-emerald-300"
                           }`}
                         >
                           {edu.degree}
@@ -823,8 +883,10 @@ export default async function Home() {
                     Have a product problem worth solving?
                   </h2>
                   <p className="text-sm sm:text-base leading-relaxed text-slate-300">
-                    I am actively seeking Fullstack Developer Intern opportunities
-                    and high-impact software engineering challenges. Drop your JD or note, or connect directly through any platform below.
+                    I am actively seeking Fullstack Developer Intern
+                    opportunities and high-impact software engineering
+                    challenges. Drop your JD or note, or connect directly
+                    through any platform below.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3 pt-2">
