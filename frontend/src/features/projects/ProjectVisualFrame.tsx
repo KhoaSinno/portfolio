@@ -19,6 +19,8 @@ type ProjectLike = {
   thumbnailAlt?: string | null;
   projectSlug?: string | null;
   repository?: string | null;
+  repositories?: Array<{ label: string; url: string }> | null;
+  projectType?: string | null;
   hideDemoUrl?: boolean;
 };
 

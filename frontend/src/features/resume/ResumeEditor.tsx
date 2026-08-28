@@ -62,6 +62,7 @@ import {
   type ResumeData,
   type ResumeSectionKey,
 } from "./resume-schema";
+import { getProjectRepositories } from "@/lib/image-url";
 
 export function ResumeEditor() {
   const router = useRouter();
@@ -203,6 +204,29 @@ export function ResumeEditor() {
     }
   };
 
+  const normalizeResumeData = (content: any): ResumeData => {
+    if (!content || typeof content !== "object") return defaultResume;
+    const projects = Array.isArray(content.projects)
+      ? content.projects.map((p: any) => {
+          const repos = getProjectRepositories(p);
+          return {
+            ...p,
+            repositories:
+              Array.isArray(p.repositories) && p.repositories.length > 0
+                ? p.repositories
+                : repos.map((r) => ({ label: r.label, url: r.url })),
+            projectType: p.projectType || "auto",
+          };
+        })
+      : defaultResume.projects;
+
+    return {
+      ...defaultResume,
+      ...content,
+      projects,
+    };
+  };
+
   const handleSelectResume = async (id: string) => {
     try {
       setNotice("Loading CV profile...");
@@ -212,7 +236,7 @@ export function ResumeEditor() {
         setActiveResumeTitle(profile.title);
         setActiveResumeIsPrimary(profile.isPrimary);
         setPublicSlug(profile.slug ?? null);
-        reset(profile.content);
+        reset(normalizeResumeData(profile.content));
         setNotice(`Loaded CV profile "${profile.title}".`);
       }
     } catch (err) {
@@ -658,6 +682,8 @@ export function ResumeEditor() {
                 period: "",
                 techStack: "",
                 repository: "",
+                repositories: [{ label: "Source Code", url: "" }],
+                projectType: "auto",
                 demoUrl: "",
                 projectSlug: "",
                 thumbnailUrl: "",
@@ -721,9 +747,11 @@ export function ResumeEditor() {
                       placeholder="Next.js · TypeScript · NestJS · PostgreSQL"
                       {...register(`projects.${index}.techStack`)}
                     />
-                    <Field
-                      label="Repository (GitHub)"
-                      placeholder="github.com/name/project"
+                    <ProjectRepositoriesEditor
+                      projectIndex={index}
+                      register={register}
+                      control={control}
+                      setValue={setValue}
                       isHidden={Boolean(resume.projects?.[index]?.hideRepository)}
                       onToggleVisibility={() => {
                         const current = Boolean(resume.projects?.[index]?.hideRepository);
@@ -731,8 +759,44 @@ export function ResumeEditor() {
                           shouldDirty: true,
                         });
                       }}
-                      {...register(`projects.${index}.repository`)}
                     />
+
+                    <div className="sm:col-span-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-3">
+                      <label className="text-xs font-semibold text-zinc-700 block mb-1.5">
+                        Kiểu hiển thị khung Preview (Mockup Frame)
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[
+                          { value: "auto", label: "Tự động ⚡", desc: "Theo tech stack" },
+                          { value: "mobile", label: "Mobile App 📱", desc: "Khung điện thoại" },
+                          { value: "web", label: "Web Browser 💻", desc: "Cửa sổ trình duyệt" },
+                          { value: "system", label: "System / API ⚙️", desc: "Hệ thống backend" },
+                        ].map((item) => {
+                          const current = resume.projects?.[index]?.projectType || "auto";
+                          const isSelected = current === item.value;
+                          return (
+                            <button
+                              key={item.value}
+                              type="button"
+                              onClick={() => {
+                                setValue(`projects.${index}.projectType` as any, item.value as any, {
+                                  shouldDirty: true,
+                                });
+                              }}
+                              className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition ${
+                                isSelected
+                                  ? "border-indigo-500 bg-indigo-50/80 text-indigo-700 shadow-xs ring-2 ring-indigo-500/20"
+                                  : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300"
+                              }`}
+                            >
+                              <span className="text-xs font-semibold">{item.label}</span>
+                              <span className="text-[10px] text-zinc-400 mt-0.5">{item.desc}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     <Field
                       label="Live Demo / Video URL"
                       placeholder="myproject.vercel.app or youtu.be/..."
@@ -1610,6 +1674,125 @@ function CollapsibleCard({
   );
 }
 
+function ProjectRepositoriesEditor({
+  projectIndex,
+  register,
+  control,
+  setValue,
+  isHidden,
+  onToggleVisibility,
+}: {
+  projectIndex: number;
+  register: any;
+  control: any;
+  setValue: any;
+  isHidden: boolean;
+  onToggleVisibility: () => void;
+}) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: `projects.${projectIndex}.repositories`,
+  });
+
+  const PRESETS = [
+    { label: "Mobile App", icon: "📱" },
+    { label: "Crawler Service", icon: "⚙️" },
+    { label: "Frontend", icon: "💻" },
+    { label: "Backend API", icon: "🔌" },
+    { label: "Source Code", icon: "📦" },
+  ];
+
+  return (
+    <div className={`sm:col-span-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-3.5 ${isHidden ? "opacity-65" : "opacity-100"} transition-opacity`}>
+      <div className="flex items-center justify-between gap-1.5 mb-2.5">
+        <label className="text-xs font-semibold text-zinc-700 flex items-center gap-1.5">
+          <span className={isHidden ? "line-through text-zinc-400" : ""}>GitHub Repositories (Multi-Repo Support)</span>
+          {isHidden && (
+            <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700">
+              Hidden
+            </span>
+          )}
+        </label>
+        <button
+          type="button"
+          onClick={onToggleVisibility}
+          className={`rounded p-0.5 transition ${
+            isHidden ? "text-amber-600 hover:bg-amber-100" : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
+          }`}
+          title={isHidden ? "Repositories are Hidden. Click to Show." : "Repositories are Visible. Click to Hide."}
+        >
+          {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+
+      {/* List of Repositories */}
+      <div className="space-y-2">
+        {fields.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-zinc-300 bg-white/50 p-3 text-center">
+            <p className="text-xs text-zinc-500">Chưa có repository nào. Bấm nút bên dưới để thêm repo cho dự án này.</p>
+          </div>
+        ) : (
+          fields.map((field, rIdx) => (
+            <div key={field.id} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 shadow-xs">
+              <div className="w-full sm:w-1/3">
+                <input
+                  className="field text-xs py-1.5 px-2 font-medium"
+                  placeholder="Label (vd: Mobile App)"
+                  {...register(`projects.${projectIndex}.repositories.${rIdx}.label`)}
+                />
+              </div>
+              <div className="w-full sm:flex-1">
+                <input
+                  className="field text-xs py-1.5 px-2 font-mono"
+                  placeholder="github.com/username/repo"
+                  {...register(`projects.${projectIndex}.repositories.${rIdx}.url`)}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => remove(rIdx)}
+                className="self-end sm:self-center p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition"
+                title="Xóa repository này"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Quick Add Presets & Add Button */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-200/60">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] text-zinc-500 font-medium mr-1">Thêm nhanh nhãn:</span>
+          {PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => {
+                append({ label: preset.label, url: "" });
+              }}
+              className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-medium text-zinc-600 shadow-2xs hover:border-indigo-300 hover:bg-indigo-50/50 hover:text-indigo-600 transition active:scale-95"
+            >
+              <span>{preset.icon}</span>
+              <span>{preset.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => append({ label: fields.length === 0 ? "Source Code" : `Repo ${fields.length + 1}`, url: "" })}
+          className="inline-flex items-center gap-1 rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 shadow-2xs hover:bg-zinc-50 active:scale-95 transition"
+        >
+          <Plus className="h-3.5 w-3.5 text-indigo-600" />
+          <span>+ Add Repo</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Field({
   label,
   error,
@@ -1664,8 +1847,63 @@ function Field({
   );
 }
 
+function TextAreaField({
+  label,
+  error,
+  className = "",
+  isHidden = false,
+  onToggleVisibility,
+  ...props
+}: React.ComponentProps<"textarea"> & {
+  label: string;
+  error?: string;
+  isHidden?: boolean;
+  onToggleVisibility?: () => void;
+}) {
+  return (
+    <div className={`block ${className} ${isHidden ? "opacity-65" : "opacity-100"} transition-opacity`}>
+      <div className="flex items-center justify-between gap-1.5">
+        <label className="text-xs font-medium text-zinc-700 flex items-center gap-1.5">
+          <span className={isHidden ? "line-through text-zinc-400" : ""}>{label}</span>
+          {isHidden && (
+            <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.2 text-[9px] font-semibold text-amber-700">
+              Hidden
+            </span>
+          )}
+        </label>
+        {onToggleVisibility && (
+          <button
+            type="button"
+            onClick={onToggleVisibility}
+            className={`rounded p-0.5 transition ${
+              isHidden
+                ? "text-amber-600 hover:bg-amber-100"
+                : "text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
+            }`}
+            title={
+              isHidden
+                ? `Field "${label}" is Hidden. Click to Show on CV & Web.`
+                : `Field "${label}" is Visible. Click to Hide on CV & Web.`
+            }
+          >
+            {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
+        )}
+      </div>
+      <textarea
+        className={`field mt-1 font-mono text-xs transition ${
+          isHidden ? "border-dashed border-amber-300 bg-amber-50/25 text-zinc-500" : ""
+        }`}
+        {...props}
+      />
+      <FieldError message={error} />
+    </div>
+  );
+}
+
 function FieldError({ message }: { message?: string }) {
   return message ? (
     <span className="mt-1 block text-[11px] font-medium text-red-600">{message}</span>
   ) : null;
 }
+

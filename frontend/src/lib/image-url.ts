@@ -34,8 +34,12 @@ export function isMobileProject(project?: {
   techStack?: string | null;
   role?: string | null;
   name?: string | null;
+  projectType?: string | null;
 } | null): boolean {
   if (!project) return false;
+  if (project.projectType === "mobile") return true;
+  if (project.projectType === "web" || project.projectType === "system") return false;
+
   const combined = `${project.techStack || ""} ${project.role || ""} ${project.name || ""}`.toLowerCase();
   return (
     combined.includes("flutter") ||
@@ -172,5 +176,104 @@ export function resolveProjectThumbnail(project?: {
 
   return "";
 }
+
+/**
+ * Represents a parsed repository link with label and full URL.
+ */
+export type ParsedRepository = {
+  label: string;
+  url: string;
+  cleanUrl: string;
+};
+
+/**
+ * Parses single or multi-line repository inputs.
+ * Supports:
+ * - Simple URL: "github.com/owner/repo" -> label: "Source Code"
+ * - Labeled with colon: "Mobile: github.com/owner/app" -> label: "Mobile"
+ * - Labeled with hyphen: "Backend - github.com/owner/api" -> label: "Backend"
+ * - Labeled with parenthesis: "github.com/owner/app (Mobile App)" -> label: "Mobile App"
+ */
+export function parseRepositories(raw?: string | null): ParsedRepository[] {
+  if (!raw || typeof raw !== "string") return [];
+  const lines = raw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return [];
+
+  return lines.map((line) => {
+    let label = "";
+    let url = line;
+
+    // Pattern 1: "Label: URL" or "Label - URL"
+    const prefixMatch = line.match(/^([^:]+?)\s*[:\-]\s*(https?:\/\/.+|github\.com\/.+|gitlab\.com\/.+|bitbucket\.org\/.+)$/i);
+    if (prefixMatch) {
+      label = prefixMatch[1].trim();
+      url = prefixMatch[2].trim();
+    } else {
+      // Pattern 2: "URL (Label)" or "URL [Label]"
+      const suffixMatch = line.match(/^(.+?)\s*[\(\[]([^\)\]]+)[\)\]]$/i);
+      if (suffixMatch) {
+        url = suffixMatch[1].trim();
+        label = suffixMatch[2].trim();
+      }
+    }
+
+    // Clean fallback: Extract repo name or default to Source Code (No keyword guessing)
+    if (!label) {
+      if (lines.length === 1) {
+        label = "Source Code";
+      } else {
+        const cleanRepo = url.replace(/^(?:https?:\/\/)?(?:www\.)?github\.com\//i, "").replace(/\/$/, "");
+        const parts = cleanRepo.split("/");
+        const repoName = parts[parts.length - 1] || "";
+        label = repoName || "Source Code";
+      }
+    }
+
+    const cleanUrl = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+
+    return {
+      label,
+      url,
+      cleanUrl,
+    };
+  });
+}
+
+/**
+ * Returns a normalized list of repositories for a project,
+ * supporting both first-class `repositories` array and legacy `repository` string.
+ */
+export function getProjectRepositories(project?: {
+  repositories?: Array<{ label: string; url: string }> | null;
+  repository?: string | null;
+} | null): ParsedRepository[] {
+  if (!project) return [];
+
+  // 1. Structured repositories array if present and populated
+  if (Array.isArray(project.repositories) && project.repositories.length > 0) {
+    const valid = project.repositories
+      .filter((r) => r && typeof r.url === "string" && r.url.trim().length > 0)
+      .map((r) => {
+        const label = r.label && r.label.trim().length > 0 ? r.label.trim() : "Source Code";
+        const url = r.url.trim();
+        const cleanUrl = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+        return { label, url, cleanUrl };
+      });
+
+    if (valid.length > 0) return valid;
+  }
+
+  // 2. Legacy repository string fallback
+  if (project.repository && typeof project.repository === "string" && project.repository.trim().length > 0) {
+    return parseRepositories(project.repository);
+  }
+
+  return [];
+}
+
 
 

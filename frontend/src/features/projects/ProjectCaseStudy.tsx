@@ -10,7 +10,7 @@ import remarkFrontmatter from "remark-frontmatter";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import { useEffect, useState } from "react";
-import { isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
+import { isVideoUrl, normalizeImageUrl, parseRepositories } from "@/lib/image-url";
 
 type CaseStudy = {
   title: string;
@@ -200,16 +200,23 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
           </h1>
 
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-white/10 pt-6">
-            <a
-              href={data.repositoryUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-semibold text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-95"
-            >
-              <Code2 className="h-4 w-4 text-violet-400" />
-              <span>Source Code</span>
-              <ExternalLink className="h-3 w-3 text-slate-400" />
-            </a>
+            {data.repositoryUrl && (() => {
+              const repos = parseRepositories(data.repositoryUrl);
+              return repos.map((repo, rIdx) => (
+                <a
+                  key={rIdx}
+                  href={repo.cleanUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-semibold text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-95"
+                  title={`View ${repo.label} on GitHub`}
+                >
+                  <Code2 className="h-4 w-4 text-violet-400" />
+                  <span>{repos.length > 1 ? `Source Code (${repo.label})` : "Source Code"}</span>
+                  <ExternalLink className="h-3 w-3 text-slate-400" />
+                </a>
+              ));
+            })()}
 
             {data.demoUrl && (() => {
               const isVideo = isVideoUrl(data.demoUrl);

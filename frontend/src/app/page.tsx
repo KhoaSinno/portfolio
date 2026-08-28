@@ -28,7 +28,7 @@ import { getPublishedResume } from "@/features/resume/resume-api";
 import { defaultResume } from "@/features/resume/resume-schema";
 import { CopyEmailButton } from "@/features/home/HomeClientEnhancements";
 import { ContactForm } from "@/features/home/ContactForm";
-import { isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
+import { getProjectRepositories, isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
 import { ProjectVisualFrame } from "@/features/projects/ProjectVisualFrame";
 import { FloatingNavbar } from "@/components/ui/FloatingNavbar";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
@@ -463,21 +463,23 @@ export default async function Home() {
 
                             {/* Links / CTAs */}
                             <div className="mt-6 flex flex-wrap items-center gap-3">
-                              {!project.hideRepository && project.repository && (
-                                <a
-                                  href={
-                                    project.repository.startsWith("http")
-                                      ? project.repository
-                                      : `https://${project.repository}`
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white"
-                                >
-                                  <GithubIcon className="h-4 w-4" />
-                                  <span>Repository</span>
-                                </a>
-                              )}
+                              {!project.hideRepository && (() => {
+                                const repos = getProjectRepositories(project);
+                                if (repos.length === 0) return null;
+                                return repos.map((repo, rIdx) => (
+                                  <a
+                                    key={rIdx}
+                                    href={repo.cleanUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-95"
+                                    title={`Open ${repo.label} on GitHub`}
+                                  >
+                                    <GithubIcon className="h-4 w-4" />
+                                    <span>{repo.label}</span>
+                                  </a>
+                                ));
+                              })()}
 
                               {!project.hideDemoUrl && project.demoUrl && (() => {
                                 const isVideo = isVideoUrl(project.demoUrl) || isMobileApp;

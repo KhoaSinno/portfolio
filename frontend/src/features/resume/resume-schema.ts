@@ -36,6 +36,13 @@ export const DEFAULT_SECTION_ORDER: ResumeSectionKey[] = [
   "education",
 ];
 
+export const projectRepositorySchema = z.object({
+  label: z.string().min(1, "Label is required."),
+  url: z.string().min(1, "URL is required."),
+});
+
+export type ProjectRepository = z.infer<typeof projectRepositorySchema>;
+
 export const resumeSchema = z.object({
   basics: z.object({
     name: z.string().min(2, "Enter your full name."),
@@ -59,6 +66,8 @@ export const resumeSchema = z.object({
     period: z.string().optional(),
     techStack: z.string().optional(),
     repository: z.string().optional(),
+    repositories: z.array(projectRepositorySchema).default([]),
+    projectType: z.enum(["auto", "web", "mobile", "system"]).default("auto"),
     demoUrl: z.string().optional(),
     projectSlug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional().or(z.literal("")),
     thumbnailUrl: z.string().url().optional().or(z.literal("")),
@@ -83,6 +92,7 @@ export const resumeSchema = z.object({
 });
 
 export type ResumeData = z.infer<typeof resumeSchema>;
+export type ProjectItem = ResumeData["projects"][number];
 
 export const defaultResume: ResumeData = {
   basics: {
@@ -127,6 +137,10 @@ export const defaultResume: ResumeData = {
       techStack:
         "Flutter · FastAPI · Hybrid RAG · Voice realtime with Livekit and OpenAI realtime API · Supabase",
       repository: "github.com/khoasinno",
+      repositories: [
+        { label: "Mobile App", url: "github.com/khoasinno" },
+      ],
+      projectType: "mobile",
       demoUrl: "",
       projectSlug: "triam-audiobook",
       thumbnailUrl: "",
@@ -145,6 +159,10 @@ export const defaultResume: ResumeData = {
       period: "5/2026 - 8/2026",
       techStack: "Next.js · TypeScript · NestJS · PostgreSQL",
       repository: "github.com/khoasinno/portfolio",
+      repositories: [
+        { label: "Source Code", url: "github.com/khoasinno/portfolio" },
+      ],
+      projectType: "web",
       demoUrl: "https://www.nguyentrananhkhoa.id.vn",
       projectSlug: "portfolio-platform",
       thumbnailUrl: "",

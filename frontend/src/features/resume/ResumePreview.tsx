@@ -11,7 +11,7 @@ import {
   type ResumeData,
   type ResumeSectionKey,
 } from "./resume-schema";
-import { isVideoUrl } from "@/lib/image-url";
+import { getProjectRepositories, isVideoUrl } from "@/lib/image-url";
 
 function GithubIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   return (
@@ -439,33 +439,37 @@ export function ResumePreview({
                       <span className="italic">{project.techStack}</span>
                     </p>
                   )}
-                  {((!project.hideRepository && project.repository) || (!project.hideDemoUrl && project.demoUrl)) && (
+                  {((!project.hideRepository && (project.repository || (project.repositories && project.repositories.length > 0))) || (!project.hideDemoUrl && project.demoUrl)) && (
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
-                      {!project.hideRepository && project.repository && (
-                        <span
-                          data-preview-field={`projects.${index}.repository`}
-                          onClick={(e) => {
-                            if (isInteractive) {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onSelectField?.({
-                                section: "projects",
-                                index,
-                                field: `projects.${index}.repository`,
-                              });
-                            }
-                          }}
-                          className={interactiveClass}
-                          title={isInteractive ? "Click to edit Repository URL" : undefined}
-                        >
-                          <CleanLink
-                            href={project.repository}
-                            icon={<GithubIcon className="h-3 w-3" />}
+                      {!project.hideRepository && (() => {
+                        const repos = getProjectRepositories(project);
+                        return repos.map((repo, rIdx) => (
+                          <span
+                            key={rIdx}
+                            data-preview-field={`projects.${index}.repository`}
+                            onClick={(e) => {
+                              if (isInteractive) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onSelectField?.({
+                                  section: "projects",
+                                  index,
+                                  field: `projects.${index}.repository`,
+                                });
+                              }
+                            }}
+                            className={interactiveClass}
+                            title={isInteractive ? "Click to edit Repository URL" : undefined}
                           >
-                            {project.repository}
-                          </CleanLink>
-                        </span>
-                      )}
+                            <CleanLink
+                              href={repo.cleanUrl}
+                              icon={<GithubIcon className="h-3 w-3" />}
+                            >
+                              {repos.length > 1 ? `${repo.label}: ${repo.url}` : repo.url}
+                            </CleanLink>
+                          </span>
+                        ));
+                      })()}
                       {!project.hideDemoUrl && project.demoUrl && (() => {
                         const isVideo = isVideoUrl(project.demoUrl);
                         return (
