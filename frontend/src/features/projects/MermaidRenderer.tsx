@@ -9,9 +9,12 @@ mermaid.initialize({
   startOnLoad: false,
   theme: "dark",
   securityLevel: "loose",
+  // Render labels as native SVG text instead of HTML <foreignObject> nodes.
+  // The latter inherits host-page layout metrics and can inflate the Mermaid
+  // viewBox by orders of magnitude, leaving an apparently empty diagram.
+  htmlLabels: false,
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Helvetica, Arial, sans-serif',
   flowchart: {
-    htmlLabels: true,
     curve: "basis",
     useMaxWidth: true,
   },
@@ -156,10 +159,17 @@ export function MermaidRenderer({ chart }: { chart: string }) {
         </div>
       </div>
 
-      {/* SVG Canvas Area: Clean unconstrained container allowing Mermaid's internal styles to compute naturally */}
-      <div className="w-full overflow-x-auto p-4 sm:p-8 text-center bg-[#0d1117] min-h-[160px]">
+      {/*
+       * Mermaid emits SVGs with width="100%".  Keeping that SVG in an
+       * inline-block makes the browser use its ~300px intrinsic fallback
+       * width, which shrinks every node and label until the diagram is
+       * unreadable.  Give it a real canvas width instead.  On small screens
+       * we preserve legible text and allow horizontal scrolling rather than
+       * scaling the diagram down again.
+       */}
+      <div className="w-full overflow-x-auto p-4 sm:p-8 bg-[#0d1117] min-h-[160px]">
         <div
-          className="mermaid-svg-wrapper inline-block max-w-full text-center transition-transform duration-200 ease-out"
+          className="mermaid-svg-wrapper w-full min-w-[720px] text-center transition-transform duration-200 ease-out"
           style={{
             transform: `scale(${zoom})`,
             transformOrigin: "top center",

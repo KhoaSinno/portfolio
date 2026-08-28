@@ -365,6 +365,25 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
                 img: ({ src, alt, width, height, ...props }) => {
                   const srcString = typeof src === "string" ? src : "";
                   const resolvedSrc = srcString ? absoluteUrl(srcString, data.baseUrl) : "";
+                  const isBadge = /^https?:\/\/(?:img\.)?shields\.io\//i.test(resolvedSrc);
+
+                  // Shields are compact, inline metadata—not figures. Keeping
+                  // them out of the figure wrapper lets a README badge row
+                  // retain GitHub's natural horizontal flow and wrap cleanly.
+                  if (isBadge) {
+                    return (
+                      <img
+                        src={resolvedSrc}
+                        alt={alt || "Project badge"}
+                        width={width}
+                        height={height}
+                        loading="lazy"
+                        className="my-1 mr-1.5 inline-block h-7 w-auto max-w-full align-middle"
+                        {...props}
+                      />
+                    );
+                  }
+
                   return (
                     <span className="my-4 block text-center">
                       <img
