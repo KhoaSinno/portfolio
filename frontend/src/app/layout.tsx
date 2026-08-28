@@ -12,7 +12,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nguyentrananhkhoa.id.vn";
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.nguyentrananhkhoa.id.vn";
 
 export const viewport: Viewport = {
   themeColor: "#030712",
@@ -51,9 +52,6 @@ export const metadata: Metadata = {
   authors: [{ name: "Nguyen Tran Anh Khoa", url: siteUrl }],
   creator: "Nguyen Tran Anh Khoa",
   publisher: "Nguyen Tran Anh Khoa",
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     type: "website",
     locale: "en_US",
