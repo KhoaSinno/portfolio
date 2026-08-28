@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -64,8 +65,11 @@ export class ResumeController {
   }
 
   @Get('projects/:slug/case-study')
-  getProjectCaseStudy(@Param('slug') slug: string) {
-    return this.resumeService.getProjectCaseStudy(slug);
+  getProjectCaseStudy(
+    @Param('slug') slug: string,
+    @Query('repo') repo?: string,
+  ) {
+    return this.resumeService.getProjectCaseStudy(slug, repo);
   }
 
   // --- Multi-CV Admin Management Endpoints ---

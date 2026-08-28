@@ -275,5 +275,38 @@ export function getProjectRepositories(project?: {
   return [];
 }
 
+/**
+ * Resolves the URL slug for a project case study.
+ */
+export function getProjectSlug(project?: {
+  projectSlug?: string | null;
+  repository?: string | null;
+  repositories?: Array<{ label: string; url: string }> | null;
+  name?: string | null;
+} | null): string {
+  if (!project) return "";
+  if (project.projectSlug && typeof project.projectSlug === "string" && project.projectSlug.trim().length > 0) {
+    return project.projectSlug.trim().toLowerCase();
+  }
+  const repos = getProjectRepositories(project);
+  if (repos.length > 0 && repos[0]?.url) {
+    const cleanRepo = repos[0].url.replace(/^git\+/, "").replace(/\.git$/i, "").trim();
+    const parts = cleanRepo.split("/").filter(Boolean);
+    const repoName = parts.pop();
+    if (repoName && repoName !== "github.com") {
+      return repoName.toLowerCase().trim();
+    }
+  }
+  if (project.name && typeof project.name === "string") {
+    return project.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+  return "";
+}
+
 
 

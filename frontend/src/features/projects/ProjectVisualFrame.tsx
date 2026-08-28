@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Battery, Code2, ExternalLink, Play, Smartphone, Sparkles, Video, Wifi, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, Battery, Code2, ExternalLink, Play, Smartphone, Sparkles, Video, Wifi, X } from "lucide-react";
 import {
+  getProjectSlug,
   getYouTubeThumbnailUrl,
   getYouTubeVideoId,
   isMobileProject,
@@ -34,6 +36,7 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
   const isVideo = isVideoUrl(project.demoUrl) && !project.hideDemoUrl;
   const ytId = getYouTubeVideoId(project.demoUrl);
   const resolvedThumbnailUrl = resolveProjectThumbnail(project);
+  const slug = getProjectSlug(project);
 
   const [currentSrc, setCurrentSrc] = useState<string>(resolvedThumbnailUrl);
   const [imageError, setImageError] = useState(false);
@@ -80,7 +83,7 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border border-white/15 bg-slate-950/80 shadow-2xl shadow-black/60 transition-all duration-500 group-hover:border-violet-500/30 ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-white/15 bg-slate-950/80 shadow-2xl shadow-black/60 transition-all duration-500 hover:border-indigo-500/40 ${className}`}
     >
       {/* Top Device / Window Header */}
       {isMobile ? (
@@ -125,6 +128,15 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
               <Sparkles className="h-2.5 w-2.5" />
               Live Preview
             </span>
+          ) : slug ? (
+            <Link
+              href={`/projects/${slug}`}
+              className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2 py-0.5 font-mono text-[9px] font-medium text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/20 hover:text-white transition"
+              title="Open GitHub Case Study"
+            >
+              <span>Case Study</span>
+              <ArrowUpRight className="h-2.5 w-2.5" />
+            </Link>
           ) : null}
         </div>
       )}
@@ -153,34 +165,28 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
             </button>
           </div>
         ) : hasValidImage ? (
-          <div
-            className={`relative h-full w-full ${isVideo && ytId ? "cursor-pointer" : ""}`}
-            onClick={() => {
-              if (isVideo && ytId) {
-                setIsPlaying(true);
-              }
-            }}
-            role={isVideo && ytId ? "button" : undefined}
-            tabIndex={isVideo && ytId ? 0 : undefined}
-            onKeyDown={(e) => {
-              if ((e.key === "Enter" || e.key === " ") && isVideo && ytId) {
-                e.preventDefault();
-                setIsPlaying(true);
-              }
-            }}
-          >
-            {/* Rendered Thumbnail / Live Web Screenshot / Video Cover */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={currentSrc}
-              alt={project.thumbnailAlt || `${project.name} preview`}
-              className="h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-              loading="lazy"
-              onError={handleImageError}
-            />
-
-            {/* Interactive Centered Play Button Overlay for Videos */}
-            {isVideo && (
+          isVideo && ytId ? (
+            /* Video Thumbnail Click to Play Inline */
+            <div
+              className="relative h-full w-full cursor-pointer group/thumb"
+              onClick={() => setIsPlaying(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setIsPlaying(true);
+                }
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={currentSrc}
+                alt={project.thumbnailAlt || `${project.name} preview`}
+                className="h-full w-full object-cover object-top transition-transform duration-700 group-hover/thumb:scale-105"
+                loading="lazy"
+                onError={handleImageError}
+              />
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/25 transition-colors duration-300 group-hover/screen:bg-black/45">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white shadow-2xl backdrop-blur-md transition-all duration-300 group-hover/screen:scale-110 group-hover/screen:bg-rose-600 group-hover/screen:border-rose-400">
                   <Play className="h-6 w-6 fill-white translate-x-0.5" />
@@ -189,13 +195,78 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
                   Click to Play Inline
                 </span>
               </div>
-            )}
-
-            {/* Subtle bottom vignette */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-slate-950/60 to-transparent" />
-          </div>
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-slate-950/60 to-transparent" />
+            </div>
+          ) : slug ? (
+            /* Image / Diagram / Architecture Thumbnail -> Navigate to Case Study */
+            <Link
+              href={`/projects/${slug}`}
+              className="group/link relative h-full w-full block cursor-pointer"
+              title={`Read ${project.name} Case Study`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={currentSrc}
+                alt={project.thumbnailAlt || `${project.name} preview`}
+                className="h-full w-full object-cover object-top transition-transform duration-700 group-hover/link:scale-105"
+                loading="lazy"
+                onError={handleImageError}
+              />
+              {/* Sleek Hover Overlay for Case Study */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-xs transition-all duration-300 group-hover/link:opacity-100">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-indigo-600/90 px-3.5 py-1.5 font-mono text-xs font-semibold text-white shadow-xl backdrop-blur-md transition hover:scale-105 hover:bg-indigo-500">
+                  <span>Read Case Study</span>
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </span>
+              </div>
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-slate-950/60 to-transparent" />
+            </Link>
+          ) : (
+            <div className="relative h-full w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={currentSrc}
+                alt={project.thumbnailAlt || `${project.name} preview`}
+                className="h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                loading="lazy"
+                onError={handleImageError}
+              />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-slate-950/60 to-transparent" />
+            </div>
+          )
+        ) : slug ? (
+          /* High-Tech Fallback Placeholder -> Linked to Case Study */
+          <Link
+            href={`/projects/${slug}`}
+            className="flex flex-col items-center justify-center p-6 text-center space-y-2 group/fallback w-full h-full cursor-pointer hover:bg-white/[0.02] transition"
+            title={`Read ${project.name} Case Study`}
+          >
+            <div
+              className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
+                isMobile
+                  ? "bg-sky-500/10 border-sky-500/20 text-sky-300"
+                  : "bg-indigo-500/10 border-indigo-500/20 text-indigo-300"
+              } border shadow-inner transition-transform duration-500 group-hover/fallback:scale-110`}
+            >
+              {isMobile ? (
+                <Smartphone className="h-7 w-7" />
+              ) : (
+                <Code2 className="h-7 w-7" />
+              )}
+            </div>
+            <span
+              className={`font-mono text-xs font-semibold uppercase tracking-widest ${
+                isMobile ? "text-sky-300" : "text-indigo-300"
+              }`}
+            >
+              {isMobile ? "Mobile Application" : "System Architecture"}
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] text-indigo-400 font-medium group-hover/fallback:underline">
+              <span>Read Case Study</span>
+              <ArrowUpRight className="h-3 w-3" />
+            </span>
+          </Link>
         ) : (
-          /* High-Tech Fallback Placeholder (Mobile Apps or System Architecture without Web Demo) */
           <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
             <div
               className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
@@ -226,4 +297,5 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
     </div>
   );
 }
+
 

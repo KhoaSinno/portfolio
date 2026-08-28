@@ -514,7 +514,7 @@ export class ResumeService {
    * Public: load the README for a project across resumes.
    * GitHub is queried server-side with multi-branch and raw content fallbacks.
    */
-  async getProjectCaseStudy(slug: string) {
+  async getProjectCaseStudy(slug: string, repoParam?: string) {
     const targetSlug = slug.toLowerCase().trim();
 
     // 1. Search across primary published, then any published, then any resume
@@ -574,8 +574,58 @@ export class ResumeService {
       throw new NotFoundException(`Project case study for '${slug}' was not found in any CV profile.`);
     }
 
-    const repository = typeof matchedProject.repository === 'string' ? matchedProject.repository.trim() : '';
-    const cleanRepo = repository
+    // Extract all repositories for this project (supporting both repositories array and repository string)
+    const allRepos: Array<{ label: string; url: string }> = [];
+
+    if (Array.isArray(matchedProject.repositories) && matchedProject.repositories.length > 0) {
+      for (const item of matchedProject.repositories) {
+        if (item && typeof item === 'object' && typeof (item as any).url === 'string' && (item as any).url.trim().length > 0) {
+          const label = typeof (item as any).label === 'string' && (item as any).label.trim().length > 0
+            ? (item as any).label.trim()
+            : 'Source Code';
+          allRepos.push({ label, url: (item as any).url.trim() });
+        }
+      }
+    }
+
+    if (allRepos.length === 0 && typeof matchedProject.repository === 'string' && matchedProject.repository.trim().length > 0) {
+      const raw = matchedProject.repository.trim();
+      const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        let label = 'Source Code';
+        let url = line;
+        const prefixMatch = line.match(/^([^:]+?)\s*[:\-]\s*(https?:\/\/.+|github\.com\/.+|gitlab\.com\/.+)$/i);
+        if (prefixMatch) {
+          label = prefixMatch[1].trim();
+          url = prefixMatch[2].trim();
+        }
+        allRepos.push({ label, url });
+      }
+    }
+
+    if (allRepos.length === 0) {
+      throw new BadRequestException('This project does not have any GitHub repository URLs configured.');
+    }
+
+    // Determine active repository based on repoParam (index or label)
+    let selectedIndex = 0;
+    if (typeof repoParam === 'string' && repoParam.trim().length > 0) {
+      const trimmed = repoParam.trim().toLowerCase();
+      const parsedNum = parseInt(trimmed, 10);
+      if (!isNaN(parsedNum) && parsedNum >= 0 && parsedNum < allRepos.length) {
+        selectedIndex = parsedNum;
+      } else {
+        const foundIdx = allRepos.findIndex(
+          (r) => r.label.toLowerCase() === trimmed || r.url.toLowerCase().includes(trimmed),
+        );
+        if (foundIdx !== -1) {
+          selectedIndex = foundIdx;
+        }
+      }
+    }
+
+    const activeRepo = allRepos[selectedIndex] || allRepos[0];
+    const cleanRepo = activeRepo.url
       .replace(/^git\+/, '')
       .replace(/\.git$/i, '')
       .trim();
@@ -584,7 +634,7 @@ export class ResumeService {
     const match = cleanRepo.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)/i);
     if (!match) {
       throw new BadRequestException(
-        `This project needs a valid GitHub repository URL (e.g. github.com/username/project), but got '${repository}'.`,
+        `Repository '${activeRepo.label}' requires a valid GitHub repository URL (e.g. github.com/username/project), but got '${activeRepo.url}'.`,
       );
     }
 
@@ -650,13 +700,21 @@ export class ResumeService {
 
     if (!markdown) {
       throw new NotFoundException(
-        `Could not retrieve README from GitHub repository '${owner}/${repo}'. Please ensure the repository is public and contains a README.md file.`,
+        `Could not retrieve README from GitHub repository '${owner}/${repo}' for module '${activeRepo.label}'. Please ensure the repository is public and contains a README.md file.`,
       );
     }
 
     return {
       title: typeof matchedProject.name === 'string' ? matchedProject.name : 'Project case study',
       repositoryUrl: `https://github.com/${owner}/${repo}`,
+      repositories: allRepos.map((r, idx) => ({
+        label: r.label,
+        url: r.url.startsWith('http') ? r.url : `https://${r.url}`,
+        index: idx,
+        isActive: idx === selectedIndex,
+      })),
+      selectedRepoIndex: selectedIndex,
+      selectedRepoLabel: activeRepo.label,
       demoUrl: typeof matchedProject.demoUrl === 'string' ? matchedProject.demoUrl : '',
       markdown,
       baseUrl,

@@ -11,16 +11,39 @@ import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import { useEffect, useState } from "react";
 import { isVideoUrl, normalizeImageUrl, parseRepositories } from "@/lib/image-url";
+import { MermaidRenderer } from "@/features/projects/MermaidRenderer";
+
+type RepositoryItem = {
+  label: string;
+  url: string;
+  index: number;
+  isActive: boolean;
+};
 
 type CaseStudy = {
   title: string;
   repositoryUrl: string;
+  repositories?: RepositoryItem[];
+  selectedRepoIndex?: number;
+  selectedRepoLabel?: string;
   demoUrl: string;
   markdown: string;
   baseUrl: string;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+
+function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
 
 function absoluteUrl(url: string, baseUrl: string) {
   if (!url) return "";
@@ -81,6 +104,9 @@ function preprocessMarkdown(markdown: string, baseUrl: string): string {
 export function ProjectCaseStudy({ slug }: { slug: string }) {
   const router = useRouter();
   const [state, setState] = useState<{ data?: CaseStudy; error?: string }>({});
+  const [activeRepoIndex, setActiveRepoIndex] = useState<number>(0);
+  const [repoCache, setRepoCache] = useState<Record<number, CaseStudy>>({});
+  const [isSwitching, setIsSwitching] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleBack = (e?: React.MouseEvent) => {
@@ -90,6 +116,35 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
     } else {
       router.push("/#projects");
     }
+  };
+
+  const fetchRepoData = (repoIdx: number) => {
+    if (repoCache[repoIdx]) {
+      setState({ data: repoCache[repoIdx] });
+      setActiveRepoIndex(repoIdx);
+      return;
+    }
+
+    setIsSwitching(true);
+    fetch(`${API_URL}/projects/${encodeURIComponent(slug)}/case-study?repo=${repoIdx}`)
+      .then(async (response) => {
+        if (!response.ok) {
+          const body = (await response.json().catch(() => null)) as { message?: string } | null;
+          throw new Error(body?.message || "Unable to load this case study.");
+        }
+        return response.json() as Promise<CaseStudy>;
+      })
+      .then((data) => {
+        setRepoCache((prev) => ({ ...prev, [repoIdx]: data }));
+        setState({ data });
+        setActiveRepoIndex(repoIdx);
+      })
+      .catch((error: unknown) => {
+        setState({ error: error instanceof Error ? error.message : "Unable to load this case study." });
+      })
+      .finally(() => {
+        setIsSwitching(false);
+      });
   };
 
   useEffect(() => {
@@ -102,7 +157,12 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
         }
         return response.json() as Promise<CaseStudy>;
       })
-      .then((data) => setState({ data }))
+      .then((data) => {
+        const initialIndex = data.selectedRepoIndex ?? 0;
+        setRepoCache({ [initialIndex]: data });
+        setActiveRepoIndex(initialIndex);
+        setState({ data });
+      })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setState({ error: error instanceof Error ? error.message : "Unable to load this case study." });
@@ -129,7 +189,7 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
         <button
           type="button"
           onClick={handleBack}
-          className="mx-auto mt-8 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:bg-white/10 active:scale-95"
+          className="mx-auto mt-8 inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition hover:bg-white/10 active:scale-95 cursor-pointer"
         >
           <ArrowLeft className="h-4 w-4" /> Back to projects
         </button>
@@ -148,6 +208,8 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
 
   const { data } = state;
   const processedMarkdown = preprocessMarkdown(data.markdown, data.baseUrl);
+  const repositories = data.repositories || [];
+  const hasMultipleRepos = repositories.length > 1;
 
   return (
     <main className="min-h-screen bg-[#060913] px-4 py-8 text-slate-200 sm:px-8 lg:px-12 md:py-12">
@@ -171,7 +233,7 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
           <button
             type="button"
             onClick={copyRepoUrl}
-            className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-slate-200 transition"
+            className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-slate-200 transition cursor-pointer"
             title="Copy Repository URL"
           >
             {copied ? (
@@ -190,33 +252,73 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
 
         {/* Hero Header Card */}
         <header className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-6 sm:p-8 backdrop-blur-xl shadow-2xl">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-500/15 border border-violet-500/30 px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider text-violet-300">
-            <Sparkles className="h-3 w-3" />
-            GitHub Case Study
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-violet-500/15 border border-violet-500/30 px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider text-violet-300">
+              <Sparkles className="h-3 w-3" />
+              GitHub Case Study
+            </div>
+
+            {hasMultipleRepos && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 px-3 py-0.5 font-mono text-[11px] font-medium text-indigo-300">
+                <Code2 className="h-3.5 w-3.5" />
+                <span>{repositories.length} Modular Repositories</span>
+              </span>
+            )}
           </div>
 
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-5xl">
             {data.title}
           </h1>
 
+          {/* Multi-Repo Switcher Tabs (If project has multiple repos) */}
+          {hasMultipleRepos && (
+            <div className="mt-6 pt-5 border-t border-white/10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
+                  Select Module Case Study:
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {repositories.map((repo, idx) => {
+                    const isCurrent = activeRepoIndex === idx;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => fetchRepoData(idx)}
+                        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                          isCurrent
+                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400 scale-105"
+                            : "bg-white/5 text-slate-300 hover:text-white hover:bg-white/10 border border-white/10"
+                        }`}
+                      >
+                        <GithubIcon className="h-3.5 w-3.5" />
+                        <span>{repo.label}</span>
+                        {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CTAs / Quick Links */}
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-white/10 pt-6">
-            {data.repositoryUrl && (() => {
-              const repos = parseRepositories(data.repositoryUrl);
-              return repos.map((repo, rIdx) => (
-                <a
-                  key={rIdx}
-                  href={repo.cleanUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-semibold text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-95"
-                  title={`View ${repo.label} on GitHub`}
-                >
-                  <Code2 className="h-4 w-4 text-violet-400" />
-                  <span>{repos.length > 1 ? `Source Code (${repo.label})` : "Source Code"}</span>
-                  <ExternalLink className="h-3 w-3 text-slate-400" />
-                </a>
-              ));
-            })()}
+            {data.repositoryUrl && (
+              <a
+                href={data.repositoryUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-semibold text-slate-200 backdrop-blur-md transition hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-95"
+                title="View on GitHub"
+              >
+                <Code2 className="h-4 w-4 text-violet-400" />
+                <span>
+                  {data.selectedRepoLabel ? `Source Code (${data.selectedRepoLabel})` : "Source Code"}
+                </span>
+                <ExternalLink className="h-3 w-3 text-slate-400" />
+              </a>
+            )}
 
             {data.demoUrl && (() => {
               const isVideo = isVideoUrl(data.demoUrl);
@@ -248,6 +350,12 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
         </header>
 
         {/* GitHub README Markdown Container (Rendered like GitHub Dark) */}
+        {isSwitching ? (
+          <div className="mt-8 flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-[#0d1117]/95 p-12 text-slate-300 gap-3 shadow-2xl backdrop-blur-md">
+            <LoaderCircle className="h-7 w-7 animate-spin text-indigo-400" />
+            <p className="text-xs font-medium text-slate-400">Loading module case study...</p>
+          </div>
+        ) : (
         <article className="mt-8 rounded-2xl border border-white/10 bg-[#0d1117]/95 p-6 sm:p-10 shadow-2xl backdrop-blur-md">
           <div className="case-study-content text-slate-300 leading-relaxed space-y-4">
             <Markdown
@@ -359,6 +467,14 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
                   </td>
                 ),
                 code: ({ className, children, ...props }) => {
+                  const match = /language-(\w+)/.exec(className || "");
+                  const language = match ? match[1] : "";
+                  const codeContent = String(children).replace(/\n$/, "");
+
+                  if (language === "mermaid") {
+                    return <MermaidRenderer chart={codeContent} />;
+                  }
+
                   const isInline = !className;
                   if (isInline) {
                     return (
@@ -373,11 +489,17 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
                     </code>
                   );
                 },
-                pre: ({ children, ...props }) => (
-                  <pre className="my-4 overflow-x-auto rounded-xl border border-white/10 bg-[#060913] p-4 font-mono text-xs text-slate-200 shadow-inner" {...props}>
-                    {children}
-                  </pre>
-                ),
+                pre: ({ children, ...props }) => {
+                  const isMermaid = (children as any)?.props?.className?.includes("language-mermaid");
+                  if (isMermaid) {
+                    return <>{children}</>;
+                  }
+                  return (
+                    <pre className="my-4 overflow-x-auto rounded-xl border border-white/10 bg-[#060913] p-4 font-mono text-xs text-slate-200 shadow-inner" {...props}>
+                      {children}
+                    </pre>
+                  );
+                },
                 hr: ({ ...props }) => <hr className="my-8 border-white/10" {...props} />,
               }}
             >
@@ -385,6 +507,7 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
             </Markdown>
           </div>
         </article>
+        )}
 
         {/* Bottom Back Button */}
         <div className="mt-8 text-center pb-12">

@@ -28,7 +28,7 @@ import { getPublishedResume } from "@/features/resume/resume-api";
 import { defaultResume } from "@/features/resume/resume-schema";
 import { CopyEmailButton } from "@/features/home/HomeClientEnhancements";
 import { ContactForm } from "@/features/home/ContactForm";
-import { getProjectRepositories, isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
+import { getProjectRepositories, getProjectSlug, isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
 import { ProjectVisualFrame } from "@/features/projects/ProjectVisualFrame";
 import { FloatingNavbar } from "@/components/ui/FloatingNavbar";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
@@ -374,6 +374,7 @@ export default async function Home() {
 
             <div className="mt-12 space-y-8">
               {visibleProjects.map((project, idx) => {
+                const projectSlug = getProjectSlug(project);
                 const techList = project.techStack
                   ? project.techStack
                       .split(/[·,]/)
@@ -423,9 +424,20 @@ export default async function Home() {
                               )}
                             </div>
 
-                            {/* Project Name & Link */}
+                            {/* Project Name & Link to Case Study */}
                             <h3 className="mt-4 text-2xl font-bold text-white tracking-tight">
-                              {project.name}
+                              {projectSlug ? (
+                                <Link
+                                  href={`/projects/${projectSlug}`}
+                                  className="group/title inline-flex items-center gap-2 hover:text-indigo-300 transition-colors"
+                                  title={`Read ${project.name} Case Study`}
+                                >
+                                  <span>{project.name}</span>
+                                  <ArrowUpRight className="h-5 w-5 text-indigo-400 opacity-60 transition-all duration-200 group-hover/title:opacity-100 group-hover/title:translate-x-0.5 group-hover/title:-translate-y-0.5" />
+                                </Link>
+                              ) : (
+                                project.name
+                              )}
                             </h3>
 
                             {/* Highlight Bullet Points */}
@@ -463,6 +475,18 @@ export default async function Home() {
 
                             {/* Links / CTAs */}
                             <div className="mt-6 flex flex-wrap items-center gap-3">
+                              {projectSlug && (
+                                <Link
+                                  href={`/projects/${projectSlug}`}
+                                  className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-2 text-xs font-semibold text-indigo-300 shadow-lg shadow-indigo-500/10 backdrop-blur-md transition hover:border-indigo-500/60 hover:bg-indigo-500/20 hover:text-white active:scale-95"
+                                  title={`Read Case Study for ${project.name}`}
+                                >
+                                  <FileText className="h-3.5 w-3.5 text-indigo-400" />
+                                  <span>Case Study</span>
+                                  <ArrowUpRight className="h-3.5 w-3.5 text-indigo-400/80" />
+                                </Link>
+                              )}
+
                               {!project.hideRepository && (() => {
                                 const repos = getProjectRepositories(project);
                                 if (repos.length === 0) return null;

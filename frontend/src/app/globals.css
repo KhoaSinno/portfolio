@@ -180,3 +180,13 @@ body {
   border-radius: 4px;
 }
 
+/* GitHub-accurate Mermaid Diagram Responsive Wrapper */
+.mermaid-svg-wrapper svg {
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 auto !important;
+}
+
+
+
+
