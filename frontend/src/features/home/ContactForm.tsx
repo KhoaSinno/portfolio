@@ -13,8 +13,8 @@ import {
   Loader2,
   Sparkles,
   X,
-  Paperclip,
 } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api/client";
 
 interface ToastState {
   show: boolean;
@@ -98,7 +98,6 @@ export function ContactForm() {
     setSubmitting(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
       const formData = new FormData();
       formData.append("email", email.trim());
 
@@ -115,12 +114,15 @@ export function ContactForm() {
         formData.append("honeypot", honeypot.trim());
       }
 
-      const response = await fetch(`${apiUrl}/contact`, {
+      const response = await fetch(`${API_BASE_URL}/contact`, {
         method: "POST",
         body: formData,
       });
 
-      const data = (await response.json()) as { success?: boolean; message?: string };
+      const data = (await response.json()) as {
+        success?: boolean;
+        message?: string;
+      };
 
       if (!response.ok) {
         throw new Error(data.message || `Request failed (${response.status})`);
@@ -129,7 +131,7 @@ export function ContactForm() {
       setSubmitted(true);
       showToast(
         data.message || "Message & JD received! I'll get back to you soon.",
-        "success"
+        "success",
       );
       // Clear state
       setEmail("");
@@ -177,7 +179,9 @@ export function ContactForm() {
 
             <div className="flex-1 pr-2">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                {toast.type === "success" ? "Sent Successfully" : "Submission Notice"}
+                {toast.type === "success"
+                  ? "Sent Successfully"
+                  : "Submission Notice"}
               </p>
               <p className="mt-0.5 text-xs text-slate-200 leading-relaxed font-medium">
                 {toast.message}
@@ -206,7 +210,8 @@ export function ContactForm() {
             Let&apos;s talk opportunities
           </h3>
           <p className="mt-1 text-xs text-slate-400">
-            Send your JD document or note directly to my inbox — no email client needed.
+            Send your JD document or note directly to my inbox — no email client
+            needed.
           </p>
         </div>
 
@@ -220,7 +225,8 @@ export function ContactForm() {
                 Message & JD Received!
               </h4>
               <p className="mt-1 text-xs text-slate-300 max-w-xs mx-auto leading-relaxed">
-                Thank you for reaching out. I have received your submission and will review it promptly.
+                Thank you for reaching out. I have received your submission and
+                will review it promptly.
               </p>
             </div>
             <button

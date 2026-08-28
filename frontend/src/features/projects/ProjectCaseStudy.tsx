@@ -1,41 +1,40 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Markdown and HTML images are hosted on arbitrary GitHub repositories. */
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Code2, Copy, ExternalLink, FileText, Globe, LoaderCircle, Play, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Code2,
+  Copy,
+  ExternalLink,
+  FileText,
+  Globe,
+  LoaderCircle,
+  Play,
+  Sparkles,
+} from "lucide-react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkFrontmatter from "remark-frontmatter";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
-import { useEffect, useState } from "react";
-import { isVideoUrl, normalizeImageUrl, parseRepositories } from "@/lib/image-url";
+import { isValidElement, useEffect, useState } from "react";
+import { isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
 import { MermaidRenderer } from "@/features/projects/MermaidRenderer";
-
-type RepositoryItem = {
-  label: string;
-  url: string;
-  index: number;
-  isActive: boolean;
-};
-
-type CaseStudy = {
-  title: string;
-  repositoryUrl: string;
-  repositories?: RepositoryItem[];
-  selectedRepoIndex?: number;
-  selectedRepoLabel?: string;
-  demoUrl: string;
-  markdown: string;
-  baseUrl: string;
-};
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+import {
+  getProjectCaseStudy,
+  type ProjectCaseStudyData,
+} from "@/features/projects/project-case-study-api";
 
 function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
-    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <svg
+      className={className}
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
       <path
         fillRule="evenodd"
         d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
@@ -48,7 +47,12 @@ function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
 function absoluteUrl(url: string, baseUrl: string) {
   if (!url) return "";
   const trimmed = url.trim();
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("mailto:") || trimmed.startsWith("data:")) {
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("mailto:") ||
+    trimmed.startsWith("data:")
+  ) {
     return normalizeImageUrl(trimmed);
   }
   try {
@@ -77,7 +81,7 @@ function preprocessMarkdown(markdown: string, baseUrl: string): string {
     (match, alt, relPath) => {
       const abs = absoluteUrl(relPath, baseUrl);
       return `![${alt}](${abs})`;
-    }
+    },
   );
 
   // 2. Rewrite raw HTML <img ... src="relative/path" ...>
@@ -86,7 +90,7 @@ function preprocessMarkdown(markdown: string, baseUrl: string): string {
     (match, before, relPath, after) => {
       const abs = absoluteUrl(relPath, baseUrl);
       return `<img ${before}src="${abs}"${after}>`;
-    }
+    },
   );
 
   // 3. Rewrite raw HTML <a ... href="relative/path" ...>
@@ -95,7 +99,7 @@ function preprocessMarkdown(markdown: string, baseUrl: string): string {
     (match, before, relPath, after) => {
       const abs = absoluteUrl(relPath, baseUrl);
       return `<a ${before}href="${abs}" target="_blank" rel="noreferrer"${after}>`;
-    }
+    },
   );
 
   return result;
@@ -103,9 +107,14 @@ function preprocessMarkdown(markdown: string, baseUrl: string): string {
 
 export function ProjectCaseStudy({ slug }: { slug: string }) {
   const router = useRouter();
-  const [state, setState] = useState<{ data?: CaseStudy; error?: string }>({});
+  const [state, setState] = useState<{
+    data?: ProjectCaseStudyData;
+    error?: string;
+  }>({});
   const [activeRepoIndex, setActiveRepoIndex] = useState<number>(0);
-  const [repoCache, setRepoCache] = useState<Record<number, CaseStudy>>({});
+  const [repoCache, setRepoCache] = useState<
+    Record<number, ProjectCaseStudyData>
+  >({});
   const [isSwitching, setIsSwitching] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -126,21 +135,19 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
     }
 
     setIsSwitching(true);
-    fetch(`${API_URL}/projects/${encodeURIComponent(slug)}/case-study?repo=${repoIdx}`)
-      .then(async (response) => {
-        if (!response.ok) {
-          const body = (await response.json().catch(() => null)) as { message?: string } | null;
-          throw new Error(body?.message || "Unable to load this case study.");
-        }
-        return response.json() as Promise<CaseStudy>;
-      })
+    void getProjectCaseStudy(slug, repoIdx)
       .then((data) => {
         setRepoCache((prev) => ({ ...prev, [repoIdx]: data }));
         setState({ data });
         setActiveRepoIndex(repoIdx);
       })
       .catch((error: unknown) => {
-        setState({ error: error instanceof Error ? error.message : "Unable to load this case study." });
+        setState({
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unable to load this case study.",
+        });
       })
       .finally(() => {
         setIsSwitching(false);
@@ -149,14 +156,7 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`${API_URL}/projects/${encodeURIComponent(slug)}/case-study`, { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) {
-          const body = (await response.json().catch(() => null)) as { message?: string } | null;
-          throw new Error(body?.message || "Unable to load this case study.");
-        }
-        return response.json() as Promise<CaseStudy>;
-      })
+    void getProjectCaseStudy(slug, undefined, controller.signal)
       .then((data) => {
         const initialIndex = data.selectedRepoIndex ?? 0;
         setRepoCache({ [initialIndex]: data });
@@ -164,8 +164,14 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
         setState({ data });
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setState({ error: error instanceof Error ? error.message : "Unable to load this case study." });
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+        setState({
+          error:
+            error instanceof Error
+              ? error.message
+              : "Unable to load this case study.",
+        });
       });
     return () => controller.abort();
   }, [slug]);
@@ -183,9 +189,15 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400">
           <FileText className="h-6 w-6" />
         </div>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">Case study unavailable</p>
-        <h1 className="mt-3 text-3xl font-bold text-white">This project README cannot be displayed.</h1>
-        <p className="mt-4 text-sm text-slate-400 max-w-md mx-auto">{state.error}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">
+          Case study unavailable
+        </p>
+        <h1 className="mt-3 text-3xl font-bold text-white">
+          This project README cannot be displayed.
+        </h1>
+        <p className="mt-4 text-sm text-slate-400 max-w-md mx-auto">
+          {state.error}
+        </p>
         <button
           type="button"
           onClick={handleBack}
@@ -201,7 +213,9 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
     return (
       <main className="flex min-h-[75vh] flex-col items-center justify-center text-slate-300 gap-3">
         <LoaderCircle className="h-8 w-8 animate-spin text-violet-400" />
-        <p className="text-sm font-medium text-slate-400">Fetching and rendering GitHub README...</p>
+        <p className="text-sm font-medium text-slate-400">
+          Fetching and rendering GitHub README...
+        </p>
       </main>
     );
   }
@@ -239,7 +253,9 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
             {copied ? (
               <>
                 <Check className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-emerald-400 font-semibold">Copied URL!</span>
+                <span className="text-emerald-400 font-semibold">
+                  Copied URL!
+                </span>
               </>
             ) : (
               <>
@@ -293,7 +309,9 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
                       >
                         <GithubIcon className="h-3.5 w-3.5" />
                         <span>{repo.label}</span>
-                        {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                        {isCurrent && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        )}
                       </button>
                     );
                   })}
@@ -314,38 +332,41 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
               >
                 <Code2 className="h-4 w-4 text-violet-400" />
                 <span>
-                  {data.selectedRepoLabel ? `Source Code (${data.selectedRepoLabel})` : "Source Code"}
+                  {data.selectedRepoLabel
+                    ? `Source Code (${data.selectedRepoLabel})`
+                    : "Source Code"}
                 </span>
                 <ExternalLink className="h-3 w-3 text-slate-400" />
               </a>
             )}
 
-            {data.demoUrl && (() => {
-              const isVideo = isVideoUrl(data.demoUrl);
-              return isVideo ? (
-                <a
-                  href={externalUrl(data.demoUrl)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 px-4 text-xs font-bold text-white shadow-lg shadow-rose-600/25 transition hover:from-rose-500 hover:to-red-500 active:scale-95"
-                >
-                  <Play className="h-3.5 w-3.5 fill-white" />
-                  <span>Watch Demo Video</span>
-                  <ExternalLink className="h-3 w-3 text-white/80" />
-                </a>
-              ) : (
-                <a
-                  href={externalUrl(data.demoUrl)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 text-xs font-bold text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-500 hover:to-indigo-500 active:scale-95"
-                >
-                  <Globe className="h-4 w-4" />
-                  <span>Live Demo</span>
-                  <ExternalLink className="h-3 w-3 text-white/80" />
-                </a>
-              );
-            })()}
+            {data.demoUrl &&
+              (() => {
+                const isVideo = isVideoUrl(data.demoUrl);
+                return isVideo ? (
+                  <a
+                    href={externalUrl(data.demoUrl)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 px-4 text-xs font-bold text-white shadow-lg shadow-rose-600/25 transition hover:from-rose-500 hover:to-red-500 active:scale-95"
+                  >
+                    <Play className="h-3.5 w-3.5 fill-white" />
+                    <span>Watch Demo Video</span>
+                    <ExternalLink className="h-3 w-3 text-white/80" />
+                  </a>
+                ) : (
+                  <a
+                    href={externalUrl(data.demoUrl)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 text-xs font-bold text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-500 hover:to-indigo-500 active:scale-95"
+                  >
+                    <Globe className="h-4 w-4" />
+                    <span>Live Demo</span>
+                    <ExternalLink className="h-3 w-3 text-white/80" />
+                  </a>
+                );
+              })()}
           </div>
         </header>
 
@@ -353,179 +374,233 @@ export function ProjectCaseStudy({ slug }: { slug: string }) {
         {isSwitching ? (
           <div className="mt-8 flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-[#0d1117]/95 p-12 text-slate-300 gap-3 shadow-2xl backdrop-blur-md">
             <LoaderCircle className="h-7 w-7 animate-spin text-indigo-400" />
-            <p className="text-xs font-medium text-slate-400">Loading module case study...</p>
+            <p className="text-xs font-medium text-slate-400">
+              Loading module case study...
+            </p>
           </div>
         ) : (
-        <article className="mt-8 rounded-2xl border border-white/10 bg-[#0d1117]/95 p-6 sm:p-10 shadow-2xl backdrop-blur-md">
-          <div className="case-study-content text-slate-300 leading-relaxed space-y-4">
-            <Markdown
-              remarkPlugins={[remarkGfm, remarkFrontmatter]}
-              rehypePlugins={[rehypeRaw, rehypeHighlight]}
-              components={{
-                img: ({ src, alt, width, height, ...props }) => {
-                  const srcString = typeof src === "string" ? src : "";
-                  const resolvedSrc = srcString ? absoluteUrl(srcString, data.baseUrl) : "";
-                  const isBadge = /^https?:\/\/(?:img\.)?shields\.io\//i.test(resolvedSrc);
-
-                  // Shields are compact, inline metadata—not figures. Keeping
-                  // them out of the figure wrapper lets a README badge row
-                  // retain GitHub's natural horizontal flow and wrap cleanly.
-                  if (isBadge) {
-                    return (
-                      <img
-                        src={resolvedSrc}
-                        alt={alt || "Project badge"}
-                        width={width}
-                        height={height}
-                        loading="lazy"
-                        className="my-1 mr-1.5 inline-block h-7 w-auto max-w-full align-middle"
-                        {...props}
-                      />
+          <article className="mt-8 rounded-2xl border border-white/10 bg-[#0d1117]/95 p-6 sm:p-10 shadow-2xl backdrop-blur-md">
+            <div className="case-study-content text-slate-300 leading-relaxed space-y-4">
+              <Markdown
+                remarkPlugins={[remarkGfm, remarkFrontmatter]}
+                rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                components={{
+                  img: ({ src, alt, width, height, ...props }) => {
+                    const srcString = typeof src === "string" ? src : "";
+                    const resolvedSrc = srcString
+                      ? absoluteUrl(srcString, data.baseUrl)
+                      : "";
+                    const isBadge = /^https?:\/\/(?:img\.)?shields\.io\//i.test(
+                      resolvedSrc,
                     );
-                  }
 
-                  return (
-                    <span className="my-4 block text-center">
-                      <img
-                        src={resolvedSrc}
-                        alt={alt || "Project figure"}
-                        width={width}
-                        height={height}
-                        loading="lazy"
-                        className="inline-block max-w-full rounded-xl border border-white/10 shadow-lg object-contain"
+                    // Shields are compact, inline metadata—not figures. Keeping
+                    // them out of the figure wrapper lets a README badge row
+                    // retain GitHub's natural horizontal flow and wrap cleanly.
+                    if (isBadge) {
+                      return (
+                        <img
+                          src={resolvedSrc}
+                          alt={alt || "Project badge"}
+                          width={width}
+                          height={height}
+                          loading="lazy"
+                          className="my-1 mr-1.5 inline-block h-7 w-auto max-w-full align-middle"
+                          {...props}
+                        />
+                      );
+                    }
+
+                    return (
+                      <span className="my-4 block text-center">
+                        <img
+                          src={resolvedSrc}
+                          alt={alt || "Project figure"}
+                          width={width}
+                          height={height}
+                          loading="lazy"
+                          className="inline-block max-w-full rounded-xl border border-white/10 shadow-lg object-contain"
+                          {...props}
+                        />
+                      </span>
+                    );
+                  },
+                  a: ({ href, children, ...props }) => {
+                    const hrefString = typeof href === "string" ? href : "";
+                    const resolvedHref = hrefString
+                      ? absoluteUrl(hrefString, data.baseUrl)
+                      : undefined;
+                    return (
+                      <a
+                        href={resolvedHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-violet-400 underline decoration-violet-500/40 underline-offset-4 hover:text-violet-300 hover:decoration-violet-400 transition"
                         {...props}
-                      />
-                    </span>
-                  );
-                },
-                a: ({ href, children, ...props }) => {
-                  const hrefString = typeof href === "string" ? href : "";
-                  const resolvedHref = hrefString ? absoluteUrl(hrefString, data.baseUrl) : undefined;
-                  return (
-                    <a
-                      href={resolvedHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-medium text-violet-400 underline decoration-violet-500/40 underline-offset-4 hover:text-violet-300 hover:decoration-violet-400 transition"
+                      >
+                        {children}
+                      </a>
+                    );
+                  },
+                  h1: ({ children, ...props }) => (
+                    <h1
+                      className="mt-8 mb-4 border-b border-white/10 pb-3 text-2xl sm:text-3xl font-bold text-white tracking-tight"
                       {...props}
                     >
                       {children}
-                    </a>
-                  );
-                },
-                h1: ({ children, ...props }) => (
-                  <h1 className="mt-8 mb-4 border-b border-white/10 pb-3 text-2xl sm:text-3xl font-bold text-white tracking-tight" {...props}>
-                    {children}
-                  </h1>
-                ),
-                h2: ({ children, ...props }) => (
-                  <h2 className="mt-7 mb-3 border-b border-white/10 pb-2 text-xl sm:text-2xl font-bold text-slate-100 tracking-tight" {...props}>
-                    {children}
-                  </h2>
-                ),
-                h3: ({ children, ...props }) => (
-                  <h3 className="mt-6 mb-2 text-lg sm:text-xl font-bold text-slate-200" {...props}>
-                    {children}
-                  </h3>
-                ),
-                p: ({ children, ...props }) => (
-                  <p className="my-3 leading-relaxed text-slate-300 text-sm sm:text-base" {...props}>
-                    {children}
-                  </p>
-                ),
-                ul: ({ children, ...props }) => (
-                  <ul className="my-3 list-disc list-outside pl-6 space-y-1.5 text-sm sm:text-base text-slate-300" {...props}>
-                    {children}
-                  </ul>
-                ),
-                ol: ({ children, ...props }) => (
-                  <ol className="my-3 list-decimal list-outside pl-6 space-y-1.5 text-sm sm:text-base text-slate-300" {...props}>
-                    {children}
-                  </ol>
-                ),
-                li: ({ children, ...props }) => (
-                  <li className="leading-relaxed" {...props}>
-                    {children}
-                  </li>
-                ),
-                blockquote: ({ children, ...props }) => (
-                  <blockquote className="my-4 border-l-4 border-violet-500/60 bg-violet-500/5 py-2 px-4 rounded-r-xl text-slate-300 italic text-sm" {...props}>
-                    {children}
-                  </blockquote>
-                ),
-                table: ({ children, ...props }) => (
-                  <div className="my-6 overflow-x-auto rounded-xl border border-white/10">
-                    <table className="w-full text-left text-xs sm:text-sm border-collapse" {...props}>
+                    </h1>
+                  ),
+                  h2: ({ children, ...props }) => (
+                    <h2
+                      className="mt-7 mb-3 border-b border-white/10 pb-2 text-xl sm:text-2xl font-bold text-slate-100 tracking-tight"
+                      {...props}
+                    >
                       {children}
-                    </table>
-                  </div>
-                ),
-                thead: ({ children, ...props }) => (
-                  <thead className="bg-white/5 border-b border-white/10 text-white font-semibold" {...props}>
-                    {children}
-                  </thead>
-                ),
-                tbody: ({ children, ...props }) => (
-                  <tbody className="divide-y divide-white/5" {...props}>
-                    {children}
-                  </tbody>
-                ),
-                tr: ({ children, ...props }) => (
-                  <tr className="hover:bg-white/[0.02] transition" {...props}>
-                    {children}
-                  </tr>
-                ),
-                th: ({ children, ...props }) => (
-                  <th className="px-4 py-3 font-bold text-slate-100" {...props}>
-                    {children}
-                  </th>
-                ),
-                td: ({ children, ...props }) => (
-                  <td className="px-4 py-3 text-slate-300 align-top" {...props}>
-                    {children}
-                  </td>
-                ),
-                code: ({ className, children, ...props }) => {
-                  const match = /language-(\w+)/.exec(className || "");
-                  const language = match ? match[1] : "";
-                  const codeContent = String(children).replace(/\n$/, "");
+                    </h2>
+                  ),
+                  h3: ({ children, ...props }) => (
+                    <h3
+                      className="mt-6 mb-2 text-lg sm:text-xl font-bold text-slate-200"
+                      {...props}
+                    >
+                      {children}
+                    </h3>
+                  ),
+                  p: ({ children, ...props }) => (
+                    <p
+                      className="my-3 leading-relaxed text-slate-300 text-sm sm:text-base"
+                      {...props}
+                    >
+                      {children}
+                    </p>
+                  ),
+                  ul: ({ children, ...props }) => (
+                    <ul
+                      className="my-3 list-disc list-outside pl-6 space-y-1.5 text-sm sm:text-base text-slate-300"
+                      {...props}
+                    >
+                      {children}
+                    </ul>
+                  ),
+                  ol: ({ children, ...props }) => (
+                    <ol
+                      className="my-3 list-decimal list-outside pl-6 space-y-1.5 text-sm sm:text-base text-slate-300"
+                      {...props}
+                    >
+                      {children}
+                    </ol>
+                  ),
+                  li: ({ children, ...props }) => (
+                    <li className="leading-relaxed" {...props}>
+                      {children}
+                    </li>
+                  ),
+                  blockquote: ({ children, ...props }) => (
+                    <blockquote
+                      className="my-4 border-l-4 border-violet-500/60 bg-violet-500/5 py-2 px-4 rounded-r-xl text-slate-300 italic text-sm"
+                      {...props}
+                    >
+                      {children}
+                    </blockquote>
+                  ),
+                  table: ({ children, ...props }) => (
+                    <div className="my-6 overflow-x-auto rounded-xl border border-white/10">
+                      <table
+                        className="w-full text-left text-xs sm:text-sm border-collapse"
+                        {...props}
+                      >
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  thead: ({ children, ...props }) => (
+                    <thead
+                      className="bg-white/5 border-b border-white/10 text-white font-semibold"
+                      {...props}
+                    >
+                      {children}
+                    </thead>
+                  ),
+                  tbody: ({ children, ...props }) => (
+                    <tbody className="divide-y divide-white/5" {...props}>
+                      {children}
+                    </tbody>
+                  ),
+                  tr: ({ children, ...props }) => (
+                    <tr className="hover:bg-white/[0.02] transition" {...props}>
+                      {children}
+                    </tr>
+                  ),
+                  th: ({ children, ...props }) => (
+                    <th
+                      className="px-4 py-3 font-bold text-slate-100"
+                      {...props}
+                    >
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children, ...props }) => (
+                    <td
+                      className="px-4 py-3 text-slate-300 align-top"
+                      {...props}
+                    >
+                      {children}
+                    </td>
+                  ),
+                  code: ({ className, children, ...props }) => {
+                    const match = /language-(\w+)/.exec(className || "");
+                    const language = match ? match[1] : "";
+                    const codeContent = String(children).replace(/\n$/, "");
 
-                  if (language === "mermaid") {
-                    return <MermaidRenderer chart={codeContent} />;
-                  }
+                    if (language === "mermaid") {
+                      return <MermaidRenderer chart={codeContent} />;
+                    }
 
-                  const isInline = !className;
-                  if (isInline) {
+                    const isInline = !className;
+                    if (isInline) {
+                      return (
+                        <code
+                          className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs text-violet-200 border border-white/5"
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      );
+                    }
                     return (
-                      <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-xs text-violet-200 border border-white/5" {...props}>
+                      <code
+                        className={`${className || ""} font-mono text-xs`}
+                        {...props}
+                      >
                         {children}
                       </code>
                     );
-                  }
-                  return (
-                    <code className={`${className || ""} font-mono text-xs`} {...props}>
-                      {children}
-                    </code>
-                  );
-                },
-                pre: ({ children, ...props }) => {
-                  const isMermaid = (children as any)?.props?.className?.includes("language-mermaid");
-                  if (isMermaid) {
-                    return <>{children}</>;
-                  }
-                  return (
-                    <pre className="my-4 overflow-x-auto rounded-xl border border-white/10 bg-[#060913] p-4 font-mono text-xs text-slate-200 shadow-inner" {...props}>
-                      {children}
-                    </pre>
-                  );
-                },
-                hr: ({ ...props }) => <hr className="my-8 border-white/10" {...props} />,
-              }}
-            >
-              {processedMarkdown}
-            </Markdown>
-          </div>
-        </article>
+                  },
+                  pre: ({ children, ...props }) => {
+                    const isMermaid =
+                      isValidElement<{ className?: string }>(children) &&
+                      children.props.className?.includes("language-mermaid");
+                    if (isMermaid) {
+                      return <>{children}</>;
+                    }
+                    return (
+                      <pre
+                        className="my-4 overflow-x-auto rounded-xl border border-white/10 bg-[#060913] p-4 font-mono text-xs text-slate-200 shadow-inner"
+                        {...props}
+                      >
+                        {children}
+                      </pre>
+                    );
+                  },
+                  hr: ({ ...props }) => (
+                    <hr className="my-8 border-white/10" {...props} />
+                  ),
+                }}
+              >
+                {processedMarkdown}
+              </Markdown>
+            </div>
+          </article>
         )}
 
         {/* Bottom Back Button */}

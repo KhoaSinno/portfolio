@@ -1,7 +1,11 @@
-import { DEFAULT_SECTION_ORDER, defaultResume, resumeSchema, type ResumeData } from "./resume-schema";
+import {
+  DEFAULT_SECTION_ORDER,
+  defaultResume,
+  resumeSchema,
+  type ResumeData,
+} from "./resume-schema";
+import { API_BASE_URL } from "@/lib/api/client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 
 type ResumeResponse = {
   id?: string;
@@ -45,14 +49,20 @@ export type ResumeProfileItem = {
 };
 
 async function getAuthToken(): Promise<string> {
-  const accessToken = (await getSupabaseBrowserClient().auth.getSession()).data.session?.access_token;
-  if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
+  const accessToken = (await getSupabaseBrowserClient().auth.getSession()).data
+    .session?.access_token;
+  if (!accessToken)
+    throw new Error("Your admin session has expired. Please sign in again.");
   return accessToken;
 }
 
-function validateContent(response: { content: unknown } | null | undefined): ResumeData | null {
+function validateContent(
+  response: { content: unknown } | null | undefined,
+): ResumeData | null {
   if (!response || !response.content) return null;
-  const raw = (typeof response.content === "object" ? { ...response.content } : {}) as Record<string, unknown>;
+  const raw = (
+    typeof response.content === "object" ? { ...response.content } : {}
+  ) as Record<string, unknown>;
   if (!raw.sectionOrder) {
     raw.sectionOrder = [...DEFAULT_SECTION_ORDER];
   }
@@ -68,9 +78,13 @@ function validateContent(response: { content: unknown } | null | undefined): Res
 
 // --- Public Endpoints ---
 
-export async function getPublishedResume(slug?: string): Promise<ResumeData | null> {
+export async function getPublishedResume(
+  slug?: string,
+): Promise<ResumeData | null> {
   try {
-    const url = slug ? `${API_URL}/resume/${encodeURIComponent(slug)}` : `${API_URL}/resume`;
+    const url = slug
+      ? `${API_BASE_URL}/resume/${encodeURIComponent(slug)}`
+      : `${API_BASE_URL}/resume`;
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) {
       if (response.status === 404) return null;
@@ -89,21 +103,26 @@ export async function getPublishedResume(slug?: string): Promise<ResumeData | nu
 
 export async function listResumes(): Promise<ResumeProfileItem[]> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resumes`, {
+  const response = await fetch(`${API_BASE_URL}/admin/resumes`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
-  if (!response.ok) throw new Error(`Failed to list resumes (${response.status}).`);
+  if (!response.ok)
+    throw new Error(`Failed to list resumes (${response.status}).`);
   return (await response.json()) as ResumeProfileItem[];
 }
 
 export async function getResumeProfile(id: string): Promise<DraftResume> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resumes/${encodeURIComponent(id)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  if (!response.ok) throw new Error(`Failed to load resume profile (${response.status}).`);
+  const response = await fetch(
+    `${API_BASE_URL}/admin/resumes/${encodeURIComponent(id)}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  if (!response.ok)
+    throw new Error(`Failed to load resume profile (${response.status}).`);
   const data = (await response.json()) as ResumeResponse;
   const content = validateContent(data);
   if (!content || !data?.id) return null;
@@ -126,7 +145,7 @@ export async function createResumeProfile(dto: {
   sourceResumeId?: string;
 }): Promise<DraftResume> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resumes`, {
+  const response = await fetch(`${API_BASE_URL}/admin/resumes`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -134,9 +153,14 @@ export async function createResumeProfile(dto: {
     },
     body: JSON.stringify(dto),
   });
-  const data = (await response.json()) as { message?: string; id?: string } & ResumeResponse;
+  const data = (await response.json()) as {
+    message?: string;
+    id?: string;
+  } & ResumeResponse;
   if (!response.ok) {
-    throw new Error(data.message || `Failed to create resume profile (${response.status}).`);
+    throw new Error(
+      data.message || `Failed to create resume profile (${response.status}).`,
+    );
   }
   const content = validateContent(data);
   if (!content || !data.id) return null;
@@ -153,69 +177,93 @@ export async function createResumeProfile(dto: {
 
 export async function updateResumeMeta(
   id: string,
-  dto: { title?: string; slug?: string }
+  dto: { title?: string; slug?: string },
 ) {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resumes/${encodeURIComponent(id)}/meta`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${API_BASE_URL}/admin/resumes/${encodeURIComponent(id)}/meta`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(dto),
     },
-    body: JSON.stringify(dto),
-  });
+  );
   const data = (await response.json()) as { message?: string };
   if (!response.ok) {
-    throw new Error(data.message || `Failed to update metadata (${response.status}).`);
+    throw new Error(
+      data.message || `Failed to update metadata (${response.status}).`,
+    );
   }
   return data;
 }
 
 export async function saveResumeDraftById(id: string, content: ResumeData) {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resumes/${encodeURIComponent(id)}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${API_BASE_URL}/admin/resumes/${encodeURIComponent(id)}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ content, template: "technical" }),
     },
-    body: JSON.stringify({ content, template: "technical" }),
-  });
-  if (!response.ok) throw new Error(`Failed to save draft (${response.status}).`);
+  );
+  if (!response.ok)
+    throw new Error(`Failed to save draft (${response.status}).`);
 }
 
 export async function publishResumeById(id: string, content: ResumeData) {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resumes/${encodeURIComponent(id)}/publish`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const response = await fetch(
+    `${API_BASE_URL}/admin/resumes/${encodeURIComponent(id)}/publish`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ content, template: "technical" }),
     },
-    body: JSON.stringify({ content, template: "technical" }),
-  });
-  if (!response.ok) throw new Error(`Failed to publish resume (${response.status}).`);
+  );
+  if (!response.ok)
+    throw new Error(`Failed to publish resume (${response.status}).`);
 }
 
 export async function setResumePrimary(id: string) {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resumes/${encodeURIComponent(id)}/set-primary`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/admin/resumes/${encodeURIComponent(id)}/set-primary`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   const data = (await response.json()) as { message?: string };
-  if (!response.ok) throw new Error(data.message || `Failed to set primary (${response.status}).`);
+  if (!response.ok)
+    throw new Error(
+      data.message || `Failed to set primary (${response.status}).`,
+    );
 }
 
 export async function deleteResumeProfile(id: string) {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resumes/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/admin/resumes/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   const data = (await response.json()) as { message?: string };
   if (!response.ok) {
-    throw new Error(data.message || `Failed to delete resume profile (${response.status}).`);
+    throw new Error(
+      data.message || `Failed to delete resume profile (${response.status}).`,
+    );
   }
   return data;
 }
@@ -224,11 +272,12 @@ export async function deleteResumeProfile(id: string) {
 
 export async function getDraftResume(): Promise<DraftResume> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resume`, {
+  const response = await fetch(`${API_BASE_URL}/admin/resume`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
-  if (!response.ok) throw new Error(`Failed to load draft (${response.status}).`);
+  if (!response.ok)
+    throw new Error(`Failed to load draft (${response.status}).`);
   const data = (await response.json()) as ResumeResponse;
   const content = validateContent(data);
   if (!content || !data?.id) return null;
@@ -245,7 +294,7 @@ export async function getDraftResume(): Promise<DraftResume> {
 
 export async function saveResumeDraft(content: ResumeData) {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resume`, {
+  const response = await fetch(`${API_BASE_URL}/admin/resume`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -253,12 +302,13 @@ export async function saveResumeDraft(content: ResumeData) {
     },
     body: JSON.stringify({ content, template: "technical" }),
   });
-  if (!response.ok) throw new Error(`Failed to save draft (${response.status}).`);
+  if (!response.ok)
+    throw new Error(`Failed to save draft (${response.status}).`);
 }
 
 export async function publishResume(content: ResumeData) {
   const token = await getAuthToken();
-  const response = await fetch(`${API_URL}/admin/resume/publish`, {
+  const response = await fetch(`${API_BASE_URL}/admin/resume/publish`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -279,17 +329,20 @@ export type ResumeVersionItem = {
   content: ResumeData;
 };
 
-export async function getResumeVersions(resumeId?: string): Promise<ResumeVersionItem[]> {
+export async function getResumeVersions(
+  resumeId?: string,
+): Promise<ResumeVersionItem[]> {
   const token = await getAuthToken();
   const url = resumeId
-    ? `${API_URL}/admin/resumes/${encodeURIComponent(resumeId)}/versions`
-    : `${API_URL}/admin/resume/versions`;
+    ? `${API_BASE_URL}/admin/resumes/${encodeURIComponent(resumeId)}/versions`
+    : `${API_BASE_URL}/admin/resume/versions`;
 
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
-  if (!response.ok) throw new Error(`Failed to load versions (${response.status}).`);
+  if (!response.ok)
+    throw new Error(`Failed to load versions (${response.status}).`);
   const rawList = (await response.json()) as Array<{
     id: string;
     version: number;
@@ -306,17 +359,21 @@ export async function getResumeVersions(resumeId?: string): Promise<ResumeVersio
   }));
 }
 
-export async function rollbackResumeVersion(versionId: string, resumeId?: string): Promise<ResumeData> {
+export async function rollbackResumeVersion(
+  versionId: string,
+  resumeId?: string,
+): Promise<ResumeData> {
   const token = await getAuthToken();
   const url = resumeId
-    ? `${API_URL}/admin/resumes/${encodeURIComponent(resumeId)}/rollback/${encodeURIComponent(versionId)}`
-    : `${API_URL}/admin/resume/rollback/${encodeURIComponent(versionId)}`;
+    ? `${API_BASE_URL}/admin/resumes/${encodeURIComponent(resumeId)}/rollback/${encodeURIComponent(versionId)}`
+    : `${API_BASE_URL}/admin/resume/rollback/${encodeURIComponent(versionId)}`;
 
   const response = await fetch(url, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new Error(`Failed to rollback version (${response.status}).`);
+  if (!response.ok)
+    throw new Error(`Failed to rollback version (${response.status}).`);
   const data = (await response.json()) as { content: unknown };
   const valid = validateContent(data);
   if (!valid) throw new Error("Restored version content was invalid.");
