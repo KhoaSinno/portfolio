@@ -19,11 +19,15 @@ import {
   CreateResumeProfileDto,
   UpdateResumeMetaDto,
 } from './dto/create-resume-profile.dto';
+import { ProjectCaseStudyService } from './application/project-case-study.service';
 import { ResumeService } from './resume.service';
 
 @Controller('api')
 export class ResumeController {
-  constructor(private readonly resumeService: ResumeService) {}
+  constructor(
+    private readonly resumeService: ResumeService,
+    private readonly projectCaseStudyService: ProjectCaseStudyService,
+  ) {}
 
   @Get('health')
   health() {
@@ -69,7 +73,7 @@ export class ResumeController {
     @Param('slug') slug: string,
     @Query('repo') repo?: string,
   ) {
-    return this.resumeService.getProjectCaseStudy(slug, repo);
+    return this.projectCaseStudyService.getProjectCaseStudy(slug, repo);
   }
 
   // --- Multi-CV Admin Management Endpoints ---
@@ -91,10 +95,7 @@ export class ResumeController {
 
   @Get('admin/resumes/:id')
   @UseGuards(SupabaseAuthGuard)
-  getResumeById(
-    @Req() request: AuthenticatedRequest,
-    @Param('id') id: string,
-  ) {
+  getResumeById(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
     return this.resumeService.getResumeById(request.user.id, id);
   }
 
@@ -130,19 +131,13 @@ export class ResumeController {
 
   @Post('admin/resumes/:id/set-primary')
   @UseGuards(SupabaseAuthGuard)
-  setPrimary(
-    @Req() request: AuthenticatedRequest,
-    @Param('id') id: string,
-  ) {
+  setPrimary(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
     return this.resumeService.setPrimary(request.user.id, id);
   }
 
   @Delete('admin/resumes/:id')
   @UseGuards(SupabaseAuthGuard)
-  deleteResume(
-    @Req() request: AuthenticatedRequest,
-    @Param('id') id: string,
-  ) {
+  deleteResume(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
     return this.resumeService.deleteResume(request.user.id, id);
   }
 

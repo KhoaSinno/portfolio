@@ -9,7 +9,8 @@ export class CreateResumeProfileDto {
   @IsString()
   @Length(2, 60, { message: 'Slug must be between 2 and 60 characters.' })
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-    message: 'Slug must only contain lowercase alphanumeric characters and hyphens (e.g. ai-engineer).',
+    message:
+      'Slug must only contain lowercase alphanumeric characters and hyphens (e.g. ai-engineer).',
   })
   slug?: string;
 
@@ -28,7 +29,8 @@ export class UpdateResumeMetaDto {
   @IsString()
   @Length(2, 60, { message: 'Slug must be between 2 and 60 characters.' })
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-    message: 'Slug must only contain lowercase alphanumeric characters and hyphens (e.g. ai-engineer).',
+    message:
+      'Slug must only contain lowercase alphanumeric characters and hyphens (e.g. ai-engineer).',
   })
   slug?: string;
 }
