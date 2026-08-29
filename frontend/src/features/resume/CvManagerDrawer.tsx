@@ -112,7 +112,11 @@ export function CvManagerDrawer({
 
   const handleCopyLink = (resume: ResumeProfileItem) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = resume.isPrimary ? `${origin}/resume` : `${origin}/resume/${resume.slug || resume.id}`;
+    const url = resume.slug
+      ? `${origin}/resume/${resume.slug}`
+      : resume.isPrimary
+        ? `${origin}/resume`
+        : `${origin}/resume/${resume.id}`;
     void navigator.clipboard.writeText(url);
     setCopiedId(resume.id);
     setTimeout(() => setCopiedId(null), 2500);

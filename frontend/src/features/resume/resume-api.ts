@@ -44,6 +44,10 @@ export type ResumeProfileItem = {
   };
 };
 
+export type AdminAccessContext = {
+  isPortfolioOwner: boolean;
+};
+
 async function getAuthToken(): Promise<string> {
   const accessToken = (await getSupabaseBrowserClient().auth.getSession()).data
     .session?.access_token;
@@ -53,6 +57,37 @@ async function getAuthToken(): Promise<string> {
 }
 
 // --- Multi-CV Admin Management Endpoints ---
+
+export async function getAdminAccessContext(): Promise<AdminAccessContext> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/admin/access`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to load access context.");
+  return (await response.json()) as AdminAccessContext;
+}
+
+export async function resetDemoResume(): Promise<{
+  deletedCount: number;
+  title: string;
+}> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/admin/demo/reset`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = (await response.json()) as {
+    deletedCount?: number;
+    title?: string;
+    message?: string;
+  };
+  if (!response.ok) throw new Error(data.message || "Failed to reset demo data.");
+  return {
+    deletedCount: data.deletedCount ?? 0,
+    title: data.title ?? "Demo resume",
+  };
+}
 
 export async function listResumes(): Promise<ResumeProfileItem[]> {
   const token = await getAuthToken();

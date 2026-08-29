@@ -180,6 +180,7 @@ On Windows, `start-dev.bat` runs the same workspace development command.
 | `CORS_ORIGIN` | Allowed frontend origin, for example `http://localhost:3000` |
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | Supabase publishable/anon key used to validate sessions |
+| `PORTFOLIO_OWNER_ID` | Supabase Auth UID that exclusively owns the public portfolio CV |
 | `ADMIN_EMAILS` | Comma-separated email allowlist for CMS access |
 
 ### Frontend — `frontend/.env.local`

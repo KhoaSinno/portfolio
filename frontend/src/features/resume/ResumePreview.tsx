@@ -551,7 +551,7 @@ export function ResumePreview({
                   className="break-inside-avoid"
                 >
                   <div className="flex items-baseline justify-between gap-2">
-                    <h3 className="text-[13px] font-bold text-slate-950">
+                    <h3 className="text-[13px] font-bold text-slate-950 leading-snug">
                       <span
                         data-preview-field={`education.${index}.institution`}
                         onClick={(e) => {
@@ -591,6 +591,28 @@ export function ResumePreview({
                           </span>
                         </span>
                       )}
+                      {item.details && !item.details.includes("\n") && !item.details.trim().startsWith("•") && !item.details.trim().startsWith("-") && (
+                        <span className="font-normal text-slate-600 text-[12.5px]">
+                          {" "}·{" "}
+                          <span
+                            data-preview-field={`education.${index}.details`}
+                            onClick={(e) => {
+                              if (isInteractive) {
+                                e.stopPropagation();
+                                onSelectField?.({
+                                  section: "education",
+                                  index,
+                                  field: `education.${index}.details`,
+                                });
+                              }
+                            }}
+                            className={interactiveClass}
+                            title={isInteractive ? "Click to edit Education details" : undefined}
+                          >
+                            {item.details}
+                          </span>
+                        </span>
+                      )}
                     </h3>
                     {item.period && (
                       <span
@@ -612,7 +634,7 @@ export function ResumePreview({
                       </span>
                     )}
                   </div>
-                  {item.details && (
+                  {item.details && (item.details.includes("\n") || item.details.trim().startsWith("•") || item.details.trim().startsWith("-")) && (
                     <div
                       data-preview-field={`education.${index}.details`}
                       onClick={(e) => {
@@ -628,13 +650,7 @@ export function ResumePreview({
                       className={interactiveClass}
                       title={isInteractive ? "Click to edit Education details" : undefined}
                     >
-                      {item.details.includes("\n") || item.details.trim().startsWith("•") || item.details.trim().startsWith("-") ? (
-                        <Bullets value={item.details} />
-                      ) : (
-                        <p className="mt-0.5 text-[12px] text-slate-600">
-                          {item.details}
-                        </p>
-                      )}
+                      <Bullets value={item.details} />
                     </div>
                   )}
                 </article>

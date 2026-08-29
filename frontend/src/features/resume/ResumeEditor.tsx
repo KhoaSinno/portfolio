@@ -41,11 +41,13 @@ import { ResumePreview, type FieldSelectTarget } from "./ResumePreview";
 import {
   createResumeProfile,
   deleteResumeProfile,
+  getAdminAccessContext,
   getResumeProfile,
   getResumeVersions,
   listResumes,
   publishResumeById,
   rollbackResumeVersion,
+  resetDemoResume,
   saveResumeDraftById,
   setResumePrimary,
   type ResumeProfileItem,
@@ -79,6 +81,8 @@ export function ResumeEditor() {
   const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
   const [activeResumeTitle, setActiveResumeTitle] = useState("Main Resume");
   const [activeResumeIsPrimary, setActiveResumeIsPrimary] = useState(true);
+  const [isPortfolioOwner, setIsPortfolioOwner] = useState(false);
+  const [resettingDemo, setResettingDemo] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Accordion collapsed state IDs
@@ -253,6 +257,12 @@ export function ResumeEditor() {
   };
 
   useEffect(() => {
+    void getAdminAccessContext()
+      .then((context) => setIsPortfolioOwner(context.isPortfolioOwner))
+      .catch(() => setIsPortfolioOwner(false));
+  }, []);
+
+  useEffect(() => {
     void fetchResumesList().then(async (list) => {
       if (list && list.length > 0) {
         const primary = list.find((item) => item.isPrimary) || list[0];
@@ -349,9 +359,11 @@ export function ResumeEditor() {
 
   const copyShareableLink = () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = activeResumeIsPrimary
-      ? `${origin}/resume`
-      : `${origin}/resume/${publicSlug || activeResumeId}`;
+    const url = publicSlug
+      ? `${origin}/resume/${publicSlug}`
+      : activeResumeIsPrimary
+        ? `${origin}/resume`
+        : `${origin}/resume/${activeResumeId}`;
     void navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
@@ -360,6 +372,19 @@ export function ResumeEditor() {
   const signOut = async () => {
     await getSupabaseBrowserClient().auth.signOut();
     router.push("/admin/login");
+  };
+
+  const handleResetDemo = async () => {
+    if (!window.confirm("Reset all demo CV data to the default fixture?")) return;
+    setResettingDemo(true);
+    try {
+      const result = await resetDemoResume();
+      setNotice(`Reset ${result.deletedCount} demo CV(s): ${result.title}.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Failed to reset demo data.");
+    } finally {
+      setResettingDemo(false);
+    }
   };
 
   const moveSection = (index: number, direction: "up" | "down") => {
@@ -1248,19 +1273,6 @@ export function ResumeEditor() {
               <History className="h-3.5 w-3.5 text-indigo-600" />
               <span>History</span>
             </button>
-            <a
-              href={
-                activeResumeIsPrimary
-                  ? "/resume"
-                  : `/resume/${publicSlug || activeResumeId}`
-              }
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-2xs hover:bg-zinc-50"
-            >
-              <ExternalLink className="h-3.5 w-3.5 text-zinc-400" />
-              <span>Public CV</span>
-            </a>
             <button
               type="button"
               onClick={() => printResume()}
@@ -1280,6 +1292,38 @@ export function ResumeEditor() {
               <ImageIcon className="h-3.5 w-3.5 text-zinc-500" />
               <span>{exportingImage ? "Exporting..." : "Export PNG"}</span>
             </button>
+            <a
+              href={
+                publicSlug
+                  ? `/resume/${publicSlug}`
+                  : activeResumeIsPrimary
+                    ? "/resume"
+                    : `/resume/${activeResumeId}`
+              }
+              target="_blank"
+              rel="noreferrer"
+              className="group relative inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 ring-1 ring-white/20 transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/35 hover:brightness-110 active:scale-95"
+              title="Open public Live CV profile in new tab"
+            >
+              <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              </span>
+              <Sparkles className="h-3.5 w-3.5 text-amber-300 transition-transform group-hover:rotate-12" />
+              <span className="tracking-wide">Sinoo&apos;s CV</span>
+              <ExternalLink className="h-3 w-3 text-indigo-200 transition-transform group-hover:translate-x-0.5" />
+            </a>
+            {isPortfolioOwner && (
+              <button
+                type="button"
+                disabled={resettingDemo}
+                onClick={() => void handleResetDemo()}
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 shadow-2xs hover:bg-amber-100 disabled:opacity-60"
+                title="Reset demo@gmail.com to the default CV fixture"
+              >
+                <span>{resettingDemo ? "Resetting…" : "Reset Demo"}</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={signOut}

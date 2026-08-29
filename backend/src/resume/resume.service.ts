@@ -1,9 +1,13 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { createClient } from '@supabase/supabase-js';
 import { Prisma, ResumeStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpsertResumeDto } from './dto/upsert-resume.dto';
@@ -16,8 +20,73 @@ import {
 export class ResumeService {
   private readonly legacyResumeId = 'portfolio-resume';
   private readonly reservedSlugs = new Set(['admin', 'api', 'login', 'resume']);
+  private readonly portfolioOwnerId: string;
+  private readonly supabaseUrl?: string;
+  private readonly serviceRoleKey?: string;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    config: ConfigService,
+  ) {
+    this.portfolioOwnerId =
+      config.get<string>('PORTFOLIO_OWNER_ID')?.trim() ?? '';
+    this.supabaseUrl = config.get<string>('SUPABASE_URL');
+    this.serviceRoleKey = config.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+  }
+
+  private getPortfolioOwnerId() {
+    if (!this.portfolioOwnerId) {
+      throw new ServiceUnavailableException(
+        'Portfolio owner has not been configured.',
+      );
+    }
+    return this.portfolioOwnerId;
+  }
+
+  isPortfolioOwner(ownerId: string) {
+    return ownerId === this.getPortfolioOwnerId();
+  }
+
+  async resetDemoResume(requesterId: string) {
+    if (!this.isPortfolioOwner(requesterId)) {
+      throw new ForbiddenException(
+        'Only the portfolio owner can reset demo data.',
+      );
+    }
+    if (!this.supabaseUrl || !this.serviceRoleKey) {
+      throw new ServiceUnavailableException(
+        'Demo reset has not been configured on this server.',
+      );
+    }
+
+    const supabase = createClient(this.supabaseUrl, this.serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await supabase.auth.admin.listUsers({
+      perPage: 1000,
+    });
+    if (error) {
+      throw new ServiceUnavailableException(
+        'Could not look up the demo account.',
+      );
+    }
+    const demoEmail = 'demo@gmail.com';
+    const demoUser = data.users.find(
+      (user) => user.email?.toLowerCase() === demoEmail,
+    );
+    if (!demoUser) throw new NotFoundException('Demo account was not found.');
+
+    const deleted = await this.prisma.resume.deleteMany({
+      where: { ownerId: demoUser.id },
+    });
+    const resumes = await this.listResumes(demoUser.id, demoEmail);
+    const seeded = resumes[0];
+    if (!seeded) {
+      throw new ServiceUnavailableException('Could not seed the demo resume.');
+    }
+
+    return { deletedCount: deleted.count, title: seeded.title };
+  }
 
   /**
    * Helper to slugify a title into a clean URL slug
@@ -62,32 +131,14 @@ export class ResumeService {
     }
   }
 
-  /**
-   * Ensure user has at least one initial primary resume
-   */
-  private async ensurePrimaryResume(ownerId: string) {
+  /** Ensure every allowed user has an isolated primary resume. */
+  private async ensurePrimaryResume(ownerId: string, userEmail?: string) {
+    const portfolioOwnerId = this.getPortfolioOwnerId();
     const existing = await this.prisma.resume.findFirst({
       where: { ownerId },
     });
 
-    if (!existing) {
-      // Check legacy resume
-      const legacy = await this.prisma.resume.findUnique({
-        where: { id: this.legacyResumeId },
-      });
-      if (legacy?.ownerId === null) {
-        await this.prisma.resume.updateMany({
-          where: { id: legacy.id, ownerId: null },
-          data: {
-            ownerId,
-            title: 'Fullstack General',
-            isPrimary: true,
-            slug: 'general',
-          },
-        });
-      }
-    } else {
-      // Ensure at least one is primary
+    if (existing) {
       const hasPrimary = await this.prisma.resume.findFirst({
         where: { ownerId, isPrimary: true },
       });
@@ -97,14 +148,180 @@ export class ResumeService {
           data: { isPrimary: true },
         });
       }
+      return;
     }
+
+    if (ownerId === portfolioOwnerId) {
+      const legacy = await this.prisma.resume.findUnique({
+        where: { id: this.legacyResumeId },
+      });
+      if (legacy) {
+        await this.prisma.resume.update({
+          where: { id: legacy.id },
+          data: { ownerId, isPrimary: true },
+        });
+        return;
+      }
+    }
+
+    const isDemoUser = userEmail?.toLowerCase() === 'demo@gmail.com';
+    const content = this.getDefaultMockResumeContent();
+    const suffix = ownerId.replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'cv';
+    const slug = await this.generateUniqueSlug(
+      `${isDemoUser ? 'demo' : 'resume'}-${suffix}`,
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      const created = await tx.resume.create({
+        data: {
+          ownerId,
+          title: isDemoUser
+            ? 'Candidate Profile (Demo Test)'
+            : 'Fullstack Developer Profile',
+          slug,
+          isPrimary: true,
+          status: ResumeStatus.DRAFT,
+          template: 'technical',
+          content,
+        },
+      });
+      await tx.resumeVersion.create({
+        data: {
+          resumeId: created.id,
+          version: 1,
+          template: 'technical',
+          content,
+        },
+      });
+    });
+  }
+
+  private getDefaultMockResumeContent(): Prisma.InputJsonValue {
+    return {
+      basics: {
+        name: 'Demo Candidate',
+        headline: 'Fullstack Developer',
+        email: 'demo@example.com',
+        location: 'Can Tho City, Vietnam',
+        website: 'https://example.com',
+        linkedin: 'linkedin.com/in/demo-candidate',
+        github: 'github.com/demo-candidate',
+      },
+      summary:
+        'Demo profile for exploring the portfolio CMS. This content is isolated from the portfolio owner account.',
+      technicalSkills: [
+        {
+          category: 'Frontend',
+          items: 'TypeScript, Next.js, React, Tailwind CSS, responsive UI',
+          isVisible: true,
+        },
+        {
+          category: 'Backend & Database',
+          items: 'NestJS, FastAPI, PostgreSQL, Prisma, Supabase',
+          isVisible: true,
+        },
+        {
+          category: 'DevOps & Tools',
+          items: 'Git/GitHub, Docker, Postman, Vercel, Render',
+          isVisible: true,
+        },
+        {
+          category: 'AI & Realtime',
+          items: 'Hybrid RAG, RRF, Vector DB, LiveKit WebRTC',
+          isVisible: true,
+        },
+      ],
+      experience: [
+        {
+          role: 'Fullstack Developer Intern',
+          company: 'Tech Solutions Lab',
+          period: '06/2025 — 12/2025',
+          description:
+            'Developed reusable UI components with Next.js and Tailwind CSS.\nImplemented RESTful APIs and PostgreSQL schema with NestJS and Prisma ORM.\nCollaborated on optimizing database query performance and CI/CD pipelines.',
+          isVisible: true,
+          showOnWeb: true,
+          showOnCv: true,
+        },
+      ],
+      projects: [
+        {
+          name: 'SafeNews - Intelligent News Aggregator',
+          role: 'Fullstack Developer',
+          period: '2026',
+          techStack: 'Flutter · Python · FastAPI · PostgreSQL',
+          repository: 'github.com/khoasinno/safenews_flutter',
+          repositories: [
+            {
+              label: 'Mobile App',
+              url: 'github.com/KhoaSinno/safenews_flutter',
+            },
+            {
+              label: 'Crawler Service',
+              url: 'github.com/KhoaSinno/safe_news_crawlTool_RSS',
+            },
+          ],
+          projectType: 'mobile',
+          demoUrl: 'https://youtu.be/yfFyHzl_rc0',
+          projectSlug: 'safenews-app',
+          thumbnailUrl: '',
+          thumbnailAlt: 'SafeNews preview',
+          highlights:
+            'Developed a cross-platform mobile application with Flutter and Riverpod.\nBuilt an automated RSS content crawler and NLP analyzer with Python.\nIntegrated YouTube interactive demo video and smart thumbnail caching.',
+          isVisible: true,
+          showOnWeb: true,
+          showOnCv: true,
+          hideRepository: false,
+          hideDemoUrl: false,
+        },
+        {
+          name: 'Portfolio Platform & CV Builder',
+          role: 'Lead Fullstack Developer',
+          period: '2026',
+          techStack: 'Next.js · TypeScript · NestJS · PostgreSQL · Supabase',
+          repository: 'github.com/khoasinno/portfolio',
+          repositories: [
+            { label: 'Source Code', url: 'github.com/khoasinno/portfolio' },
+          ],
+          projectType: 'web',
+          demoUrl: 'https://www.nguyentrananhkhoa.id.vn',
+          projectSlug: 'portfolio-platform',
+          thumbnailUrl: '',
+          thumbnailAlt: 'Portfolio Platform preview',
+          highlights:
+            'Designed a multi-tenant resume editor with Zod schema validation and A4 print export.\nImplemented PostgreSQL JSONB document storage with version history and rollback.\nAdded multi-repository management and dynamic mockup frames.',
+          isVisible: true,
+          showOnWeb: true,
+          showOnCv: true,
+          hideRepository: false,
+          hideDemoUrl: false,
+        },
+      ],
+      education: [
+        {
+          institution: 'Can Tho University of Technology',
+          period: '2022 — 2026',
+          degree: 'Bachelor of Information Technology',
+          details: 'GPA: 3.2/4.0 · Major in Software Engineering',
+          isVisible: true,
+        },
+      ],
+      sectionOrder: [
+        'summary',
+        'technicalSkills',
+        'experience',
+        'projects',
+        'education',
+      ],
+      hiddenSections: [],
+      hiddenBasicsFields: [],
+    };
   }
 
   /**
    * List all resumes for an owner
    */
-  async listResumes(ownerId: string) {
-    await this.ensurePrimaryResume(ownerId);
+  async listResumes(ownerId: string, userEmail?: string) {
+    await this.ensurePrimaryResume(ownerId, userEmail);
     return this.prisma.resume.findMany({
       where: { ownerId },
       orderBy: [{ isPrimary: 'desc' }, { updatedAt: 'desc' }],
@@ -130,8 +347,8 @@ export class ResumeService {
   /**
    * Get single resume details by ID
    */
-  async getResumeById(ownerId: string, id: string) {
-    await this.ensurePrimaryResume(ownerId);
+  async getResumeById(ownerId: string, id: string, userEmail?: string) {
+    await this.ensurePrimaryResume(ownerId, userEmail);
     const resume = await this.prisma.resume.findFirst({
       where: { id, ownerId },
     });
@@ -144,10 +361,10 @@ export class ResumeService {
   /**
    * Get draft for active or primary resume
    */
-  async getDraft(ownerId: string, resumeId?: string) {
-    await this.ensurePrimaryResume(ownerId);
+  async getDraft(ownerId: string, resumeId?: string, userEmail?: string) {
+    await this.ensurePrimaryResume(ownerId, userEmail);
     if (resumeId) {
-      return this.getResumeById(ownerId, resumeId);
+      return this.getResumeById(ownerId, resumeId, userEmail);
     }
     // Return primary resume draft
     const primary = await this.prisma.resume.findFirst({
@@ -163,8 +380,12 @@ export class ResumeService {
   /**
    * Create or Duplicate a CV Profile
    */
-  async createOrDuplicate(ownerId: string, dto: CreateResumeProfileDto) {
-    await this.ensurePrimaryResume(ownerId);
+  async createOrDuplicate(
+    ownerId: string,
+    dto: CreateResumeProfileDto,
+    userEmail?: string,
+  ) {
+    await this.ensurePrimaryResume(ownerId, userEmail);
 
     const title = dto.title.trim();
     const slug = await this.generateUniqueSlug(dto.slug || title);
@@ -457,18 +678,17 @@ export class ResumeService {
   }
 
   /**
-   * Public: Get Primary Published Resume (with viewsCount tracking)
+   * Public: get the configured portfolio owner's primary published resume.
    */
   async getPublished() {
-    let resume = await this.prisma.resume.findFirst({
-      where: { isPrimary: true, status: ResumeStatus.PUBLISHED },
+    const resume = await this.prisma.resume.findFirst({
+      where: {
+        ownerId: this.getPortfolioOwnerId(),
+        isPrimary: true,
+        status: ResumeStatus.PUBLISHED,
+      },
     });
-    if (!resume) {
-      resume = await this.prisma.resume.findFirst({
-        where: { status: ResumeStatus.PUBLISHED },
-        orderBy: { publishedAt: 'desc' },
-      });
-    }
+
     if (!resume) throw new NotFoundException('No published resume exists yet.');
 
     // Increment view count asynchronously

@@ -78,10 +78,24 @@ export class ResumeController {
 
   // --- Multi-CV Admin Management Endpoints ---
 
+  @Get('admin/access')
+  @UseGuards(SupabaseAuthGuard)
+  getAccessContext(@Req() request: AuthenticatedRequest) {
+    return {
+      isPortfolioOwner: this.resumeService.isPortfolioOwner(request.user.id),
+    };
+  }
+
+  @Post('admin/demo/reset')
+  @UseGuards(SupabaseAuthGuard)
+  resetDemoResume(@Req() request: AuthenticatedRequest) {
+    return this.resumeService.resetDemoResume(request.user.id);
+  }
+
   @Get('admin/resumes')
   @UseGuards(SupabaseAuthGuard)
   listResumes(@Req() request: AuthenticatedRequest) {
-    return this.resumeService.listResumes(request.user.id);
+    return this.resumeService.listResumes(request.user.id, request.user.email);
   }
 
   @Post('admin/resumes')
@@ -90,13 +104,21 @@ export class ResumeController {
     @Req() request: AuthenticatedRequest,
     @Body() dto: CreateResumeProfileDto,
   ) {
-    return this.resumeService.createOrDuplicate(request.user.id, dto);
+    return this.resumeService.createOrDuplicate(
+      request.user.id,
+      dto,
+      request.user.email,
+    );
   }
 
   @Get('admin/resumes/:id')
   @UseGuards(SupabaseAuthGuard)
   getResumeById(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
-    return this.resumeService.getResumeById(request.user.id, id);
+    return this.resumeService.getResumeById(
+      request.user.id,
+      id,
+      request.user.email,
+    );
   }
 
   @Put('admin/resumes/:id/meta')
@@ -165,7 +187,11 @@ export class ResumeController {
   @Get('admin/resume')
   @UseGuards(SupabaseAuthGuard)
   async getDraft(@Req() request: AuthenticatedRequest) {
-    const resume = await this.resumeService.getDraft(request.user.id);
+    const resume = await this.resumeService.getDraft(
+      request.user.id,
+      undefined,
+      request.user.email,
+    );
     return resume
       ? {
           id: resume.id,
@@ -186,7 +212,11 @@ export class ResumeController {
     @Req() request: AuthenticatedRequest,
     @Body() dto: UpsertResumeDto,
   ) {
-    const primary = await this.resumeService.getDraft(request.user.id);
+    const primary = await this.resumeService.getDraft(
+      request.user.id,
+      undefined,
+      request.user.email,
+    );
     if (!primary) return null;
     return this.resumeService.saveDraftById(request.user.id, primary.id, dto);
   }
@@ -197,7 +227,11 @@ export class ResumeController {
     @Req() request: AuthenticatedRequest,
     @Body() dto: UpsertResumeDto,
   ) {
-    const primary = await this.resumeService.getDraft(request.user.id);
+    const primary = await this.resumeService.getDraft(
+      request.user.id,
+      undefined,
+      request.user.email,
+    );
     if (!primary) return null;
     return this.resumeService.publishById(request.user.id, primary.id, dto);
   }
@@ -205,7 +239,11 @@ export class ResumeController {
   @Get('admin/resume/versions')
   @UseGuards(SupabaseAuthGuard)
   async getVersions(@Req() request: AuthenticatedRequest) {
-    const primary = await this.resumeService.getDraft(request.user.id);
+    const primary = await this.resumeService.getDraft(
+      request.user.id,
+      undefined,
+      request.user.email,
+    );
     if (!primary) return [];
     return this.resumeService.getVersions(primary.id, request.user.id);
   }
@@ -216,7 +254,11 @@ export class ResumeController {
     @Req() request: AuthenticatedRequest,
     @Param('versionId') versionId: string,
   ) {
-    const primary = await this.resumeService.getDraft(request.user.id);
+    const primary = await this.resumeService.getDraft(
+      request.user.id,
+      undefined,
+      request.user.email,
+    );
     if (!primary) return null;
     return this.resumeService.rollbackVersion(
       primary.id,
