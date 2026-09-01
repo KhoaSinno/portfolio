@@ -13,7 +13,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { ResumePreview } from "./ResumePreview";
-import { defaultResume, type ResumeData } from "./resume-schema";
+import type { ResumeData } from "./resume-schema";
 
 export function PublicResume({
   initialResume,
@@ -21,14 +21,13 @@ export function PublicResume({
   initialResume: ResumeData | null;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
-  const resume = initialResume ?? defaultResume;
   const notFound = initialResume === null;
   const [zoomLevel, setZoomLevel] = useState(100);
   const [exportingImage, setExportingImage] = useState(false);
 
   const printResume = useReactToPrint({
     contentRef,
-    documentTitle: `${(resume.basics.name || "Resume").replace(/\s+/g, "_")}_CV`,
+    documentTitle: `${(initialResume?.basics.name || "Resume").replace(/\s+/g, "_")}_CV`,
     pageStyle: `
       @page {
         size: A4 portrait;
@@ -92,7 +91,7 @@ export function PublicResume({
         backgroundColor: "#ffffff",
       });
       const link = document.createElement("a");
-      link.download = `${(resume.basics.name || "Resume").replace(/\s+/g, "_")}_CV.png`;
+      link.download = `${(initialResume?.basics.name || "Resume").replace(/\s+/g, "_")}_CV.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -126,7 +125,7 @@ export function PublicResume({
               <span className="text-xs text-zinc-400">/</span>
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-800">
                 <FileText className="h-3.5 w-3.5 text-blue-600" />
-                {resume.basics.name}&apos;s CV
+                {initialResume?.basics.name || "Resume"}&apos;s CV
               </span>
             </div>
           </div>
@@ -227,7 +226,7 @@ export function PublicResume({
               </a>
             </section>
           ) : (
-            <ResumePreview resume={resume} contentRef={contentRef} />
+            <ResumePreview resume={initialResume} contentRef={contentRef} />
           )}
         </div>
       </main>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PublicResume } from "@/features/resume/PublicResume";
-import { getPublishedResume } from "@/features/resume/public-resume-api";
+import { getPrimaryPublicResume } from "@/features/resume/public-resume-api";
 
 export const metadata: Metadata = {
   title: "Resume",
@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ResumePage() {
-  const resume = await getPublishedResume().catch(() => null);
+  const result = await getPrimaryPublicResume();
+  const resume = result.state === "unavailable" ? null : result.resume;
   return <PublicResume initialResume={resume} />;
 }

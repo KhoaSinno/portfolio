@@ -25,8 +25,7 @@ import {
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
-import { getPublishedResume } from "@/features/resume/public-resume-api";
-import { defaultResume } from "@/features/resume/resume-schema";
+import { getPrimaryPublicResume } from "@/features/resume/public-resume-api";
 import { CopyEmailButton } from "@/features/home/HomeClientEnhancements";
 import { ContactForm } from "@/features/home/ContactForm";
 import {
@@ -125,13 +124,38 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  let resume = defaultResume;
-  try {
-    const published = await getPublishedResume();
-    if (published) resume = published;
-  } catch {
-    resume = defaultResume;
+  const publicResume = await getPrimaryPublicResume();
+
+  if (publicResume.state === "unavailable") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#030712] px-5 text-slate-100">
+        <meta name="robots" content="noindex, nofollow" />
+        <section
+          className="w-full max-w-lg rounded-3xl border border-indigo-400/20 bg-slate-950/80 p-8 text-center shadow-2xl shadow-indigo-950/50 sm:p-10"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10">
+            <Wifi className="h-6 w-6 text-amber-200" aria-hidden="true" />
+          </div>
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-white">
+            Portfolio is temporarily unavailable
+          </h1>
+          <p className="mt-3 text-base leading-7 text-slate-300">
+            The latest portfolio data is starting up. Please try again shortly.
+          </p>
+          <a
+            href="/"
+            className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+          >
+            Try again
+          </a>
+        </section>
+      </main>
+    );
   }
+
+  const resume = publicResume.resume;
 
   const {
     basics,

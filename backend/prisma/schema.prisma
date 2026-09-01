@@ -14,19 +14,19 @@ enum ResumeStatus {
 }
 
 model Resume {
-  id           String         @id @default(cuid())
+  id           String          @id @default(cuid())
   ownerId      String?
-  title        String         @default("Main Resume")
-  slug         String?        @unique
-  isPrimary    Boolean        @default(false)
-  viewsCount   Int            @default(0)
+  title        String          @default("Main Resume")
+  slug         String?         @unique
+  isPrimary    Boolean         @default(false)
+  viewsCount   Int             @default(0)
   lastViewedAt DateTime?
   content      Json
-  template     String         @default("technical")
-  status       ResumeStatus   @default(DRAFT)
+  template     String          @default("technical")
+  status       ResumeStatus    @default(DRAFT)
   publishedAt  DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   versions     ResumeVersion[]
 }
 
@@ -40,6 +40,16 @@ model ResumeVersion {
   resume    Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   @@unique([resumeId, version])
+}
+
+model PublicResumeSnapshot {
+  key             String    @id
+  resumeId        String    @unique
+  content         Json
+  sourceUpdatedAt DateTime?
+  savedAt         DateTime  @updatedAt
+
+  @@map("public_resume_snapshots")
 }
 
 model ContactMessage {

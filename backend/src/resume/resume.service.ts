@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -23,6 +24,9 @@ export class ResumeService {
   private readonly portfolioOwnerId: string;
   private readonly supabaseUrl?: string;
   private readonly serviceRoleKey?: string;
+  private readonly frontendRevalidateUrl?: string;
+  private readonly resumeRevalidateSecret?: string;
+  private readonly logger = new Logger(ResumeService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -32,6 +36,58 @@ export class ResumeService {
       config.get<string>('PORTFOLIO_OWNER_ID')?.trim() ?? '';
     this.supabaseUrl = config.get<string>('SUPABASE_URL');
     this.serviceRoleKey = config.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    this.frontendRevalidateUrl = config.get<string>('FRONTEND_REVALIDATE_URL');
+    this.resumeRevalidateSecret = config.get<string>(
+      'RESUME_REVALIDATE_SECRET',
+    );
+  }
+
+  /**
+   * Mirrors a committed public resume to the frontend's durable snapshot and
+   * expires the public Next cache. Failure must never roll back a publish.
+   */
+  private async refreshPublicResumeCache(resume: {
+    id: string;
+    content: unknown;
+    updatedAt: Date;
+  }) {
+    if (resume.id !== this.legacyResumeId) return;
+
+    if (!this.frontendRevalidateUrl || !this.resumeRevalidateSecret) {
+      this.logger.warn(
+        'Public resume was published but frontend revalidation is not configured.',
+      );
+      return;
+    }
+
+    const payload = JSON.stringify({
+      resumeId: resume.id,
+      content: resume.content,
+      sourceUpdatedAt: resume.updatedAt.toISOString(),
+    });
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const response = await fetch(this.frontendRevalidateUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.resumeRevalidateSecret}`,
+            'Content-Type': 'application/json',
+          },
+          body: payload,
+          signal: AbortSignal.timeout(5_000),
+        });
+        if (response.ok) return;
+        throw new Error(`Frontend returned HTTP ${response.status}.`);
+      } catch (error) {
+        if (attempt === 2) {
+          this.logger.warn(
+            `Public resume revalidation failed after publish: ${error instanceof Error ? error.message : 'unknown error'}`,
+          );
+          return;
+        }
+      }
+    }
   }
 
   private getPortfolioOwnerId() {
@@ -500,7 +556,7 @@ export class ResumeService {
    * Publish specific resume and create version snapshot
    */
   async publishById(ownerId: string, id: string, dto: UpsertResumeDto) {
-    return this.prisma.$transaction(
+    const updated = await this.prisma.$transaction(
       async (tx) => {
         const resume = await tx.resume.findFirst({
           where: { id, ownerId },
@@ -535,6 +591,8 @@ export class ResumeService {
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     );
+    await this.refreshPublicResumeCache(updated);
+    return updated;
   }
 
   /**
@@ -628,7 +686,7 @@ export class ResumeService {
    * Rollback version for specific resume
    */
   async rollbackVersion(id: string, versionId: string, ownerId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const rollback = await this.prisma.$transaction(async (tx) => {
       const resume = await tx.resume.findFirst({
         where: { id, ownerId },
       });
@@ -669,12 +727,18 @@ export class ResumeService {
       });
 
       return {
-        content: updated.content,
-        template: updated.template,
+        updated,
         version: nextVersionNumber,
         sourceVersion: targetVersion.version,
       };
     });
+    await this.refreshPublicResumeCache(rollback.updated);
+    return {
+      content: rollback.updated.content,
+      template: rollback.updated.template,
+      version: rollback.version,
+      sourceVersion: rollback.sourceVersion,
+    };
   }
 
   /**

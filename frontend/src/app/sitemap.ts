@@ -1,21 +1,12 @@
 import type { MetadataRoute } from "next";
-import { getPublishedResume } from "@/features/resume/public-resume-api";
-import { defaultResume } from "@/features/resume/resume-schema";
+import { getPrimaryPublicResume } from "@/features/resume/public-resume-api";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL || "https://www.nguyentrananhkhoa.id.vn";
-  let resumeData = null;
-  try {
-    resumeData = await getPublishedResume();
-  } catch {
-    resumeData = defaultResume;
-  }
-
+  const publicResume = await getPrimaryPublicResume();
   const projects =
-    resumeData?.projects && resumeData.projects.length > 0
-      ? resumeData.projects
-      : defaultResume.projects;
+    publicResume.state === "unavailable" ? [] : publicResume.resume.projects;
 
   const projectRoutes: MetadataRoute.Sitemap = projects
     .filter(

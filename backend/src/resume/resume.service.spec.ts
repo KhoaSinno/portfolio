@@ -5,7 +5,7 @@ import { ResumeService } from './resume.service';
 
 const portfolioOwnerId = 'portfolio-owner-id';
 
-function createService() {
+function createService(configValues: Record<string, string | undefined> = {}) {
   const prisma = {
     resume: {
       findFirst: jest.fn(),
@@ -16,6 +16,7 @@ function createService() {
     },
     resumeVersion: {
       create: jest.fn(),
+      findFirst: jest.fn(),
     },
     $transaction: jest.fn(),
   };
@@ -25,7 +26,9 @@ function createService() {
   );
 
   const config = {
-    get: jest.fn().mockReturnValue(portfolioOwnerId),
+    get: jest.fn((key: string) =>
+      key === 'PORTFOLIO_OWNER_ID' ? portfolioOwnerId : configValues[key],
+    ),
   };
   return {
     prisma,
@@ -105,5 +108,53 @@ describe('ResumeService ownership bootstrap', () => {
         status: ResumeStatus.PUBLISHED,
       },
     });
+  });
+
+  it('updates the frontend snapshot only after publishing the canonical resume', async () => {
+    const { prisma, service } = createService({
+      FRONTEND_REVALIDATE_URL:
+        'https://portfolio.example/api/internal/revalidate-resume',
+      RESUME_REVALIDATE_SECRET: 'test-secret',
+    });
+    const updatedAt = new Date('2026-09-01T00:00:00.000Z');
+    const content = { basics: { name: 'Khoa' } };
+    prisma.resume.findFirst.mockResolvedValue({
+      id: 'portfolio-resume',
+      ownerId: portfolioOwnerId,
+      template: 'technical',
+    });
+    prisma.resume.update.mockResolvedValue({
+      id: 'portfolio-resume',
+      content,
+      updatedAt,
+      template: 'technical',
+    });
+    prisma.resumeVersion.findFirst.mockResolvedValue({ version: 4 });
+    prisma.resumeVersion.create.mockResolvedValue({ id: 'version-5' });
+
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 200 }));
+
+    await service.publishById(portfolioOwnerId, 'portfolio-resume', {
+      content,
+      template: 'technical',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://portfolio.example/api/internal/revalidate-resume',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-secret',
+        }),
+        body: JSON.stringify({
+          resumeId: 'portfolio-resume',
+          content,
+          sourceUpdatedAt: updatedAt.toISOString(),
+        }),
+      }),
+    );
+    fetchMock.mockRestore();
   });
 });
