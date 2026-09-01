@@ -192,7 +192,7 @@ export function FloatingNavbar({
           >
             <span className="flex items-center gap-1.5 rounded-[11px] bg-[#030712]/90 px-3.5 py-1.5 transition duration-300 group-hover:bg-opacity-0">
               <FileText className="h-3.5 w-3.5 text-indigo-300 group-hover:text-white" />
-              <span>View CV (A4)</span>
+              <span>View CV</span>
             </span>
           </a>
 

@@ -936,7 +936,7 @@ export default async function Home() {
                       className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:shadow-indigo-500/40 hover:scale-105 active:scale-95"
                     >
                       <FileText className="h-4 w-4" />
-                      <span>Read Full CV (A4)</span>
+                      <span>Read Full CV</span>
                     </a>
                   </div>
                 </div>

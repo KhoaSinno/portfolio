@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Onboarding — Phân quyền & Demo Portfolio</title>
+  <style>
+    :root{--ink:#172033;--muted:#5f6b7d;--paper:#fff;--canvas:#f4f7fb;--line:#dbe3ee;--brand:#4f46e5;--soft:#eef2ff;--ok:#047857;--warn:#a16207;--danger:#b42318;--dark:#111827}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);background:var(--canvas);font:15px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}.hero{color:#fff;background:linear-gradient(125deg,#111827,#312e81 58%,#4f46e5);padding:64px max(24px,calc((100vw - 1160px)/2))}.hero p{max-width:790px;color:#dbeafe;font-size:1.05rem}h1{margin:0 0 8px;font-size:clamp(2rem,5vw,3.45rem);line-height:1.1;letter-spacing:-.04em}h2{margin:50px 0 16px;font-size:1.65rem;letter-spacing:-.025em}h3{margin:26px 0 10px;font-size:1.1rem}a{color:var(--brand)}code{color:#312e81;border-radius:5px;background:#eef2ff;padding:2px 5px;font:.9em ui-monospace,SFMono-Regular,Consolas,monospace}pre{overflow:auto;margin:14px 0;padding:18px;color:#e5e7eb;border-radius:12px;background:var(--dark);font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}pre code{padding:0;color:inherit;background:transparent}.shell{width:min(1160px,calc(100% - 32px));margin:0 auto}.toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 0}.toc a{color:#eef2ff;border:1px solid #818cf8;border-radius:999px;padding:5px 11px;text-decoration:none;font-size:.85rem}main{padding:12px 0 64px}.card{margin-top:18px;padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--paper);box-shadow:0 8px 28px rgba(15,23,42,.04)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.callout{margin:18px 0;padding:14px 16px;border-left:4px solid var(--brand);border-radius:8px;background:var(--soft)}.warning{border-left-color:#d97706;background:#fffbeb}.danger{border-left-color:var(--danger);background:#fff1f2}.ok{border-left-color:var(--ok);background:#ecfdf5}.badge{display:inline-block;margin:0 5px 5px 0;padding:3px 8px;border-radius:999px;font-size:.76rem;font-weight:700}.root{color:#3730a3;background:#e0e7ff}.demo{color:#047857;background:#d1fae5}.other{color:#9a3412;background:#ffedd5}.public{color:#075985;background:#e0f2fe}table{width:100%;border-collapse:collapse;border:1px solid var(--line)}th,td{padding:11px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{color:#344054;background:#f8fafc;font-size:.85rem}tr:last-child td{border-bottom:0}.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:center;margin:22px 0}.node{min-height:94px;display:flex;flex-direction:column;justify-content:center;padding:13px;text-align:center;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 3px 12px rgba(15,23,42,.05)}.node strong{display:block}.arrow{color:var(--brand);font-size:1.6rem;font-weight:800}ul,ol{padding-left:23px}li{margin:6px 0}.mini{color:var(--muted);font-size:.9rem}.file{color:#0f766e;font-family:ui-monospace,monospace}footer{color:var(--muted);padding:26px 0 0;font-size:.9rem}@media(max-width:760px){.grid,.three{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg);text-align:center}th,td{padding:9px}}
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="shell">
+      <p class="mini" style="color:#c7d2fe;margin:0 0 8px">Portfolio Platform · Fresher onboarding</p>
+      <h1>Phân quyền, CV ownership<br />và Demo workspace</h1>
+      <p>Tài liệu mô tả logic đang chạy trong dự án: Supabase Auth, CMS allowlist, quyền sở hữu CV, public publish, demo account và reset demo. Hãy đọc trước khi sửa authentication, ResumeService hoặc API admin.</p>
+      <nav class="toc"><a href="#quick">Đọc trong 10 phút</a><a href="#architecture">Sơ đồ</a><a href="#layers">Các lớp quyền</a><a href="#flows">Luồng nghiệp vụ</a><a href="#code-walkthrough">Walkthrough code</a><a href="#api">API</a><a href="#runbook">Runbook</a></nav>
+    </div>
+  </header>
+  <main class="shell">
+    <section id="quick" class="card">
+      <h2 style="margin-top:0">Tóm tắt cho fresher</h2>
+      <ol>
+        <li><code>ADMIN_EMAILS</code> quyết định ai <strong>được vào CMS</strong>.</li>
+        <li><code>PORTFOLIO_OWNER_ID</code> quyết định ai là <strong>chủ portfolio</strong>; đây là Supabase UID, không phải email.</li>
+        <li>Mọi CV có <code>ownerId</code>. API admin luôn query theo UID đó, vì vậy user không đọc/sửa CV của nhau.</li>
+        <li><code>GET /api/resume</code> chỉ phục vụ CV <em>primary + published</em> của chủ portfolio. Demo publish không thể thay đổi homepage.</li>
+        <li>Demo là workspace showcase dùng chung. Người test có thể thử edit, multi-CV, publish và rollback; owner có nút <strong>Reset Demo</strong> để seed lại fixture sạch.</li>
+      </ol>
+      <div class="callout ok"><strong>Nguyên tắc:</strong> UI là trải nghiệm; backend mới là security boundary. Dù user tự gọi API bằng DevTools, server vẫn kiểm tra token và <code>ownerId</code>.</div>
+    </section>
+
+    <section id="architecture" class="card">
+      <h2 style="margin-top:0">1. Sơ đồ kiến trúc</h2>
+      <div class="flow"><div class="node"><strong>Next.js frontend</strong><span class="mini">Login, editor, toolbar</span></div><div class="arrow">→</div><div class="node"><strong>NestJS API</strong><span class="mini">Guard + Controller + Service</span></div><div class="arrow">→</div><div class="node"><strong>Supabase</strong><span class="mini">Auth + PostgreSQL</span></div></div>
+      <pre><code>Browser → Supabase signInWithPassword → access token (JWT) → Authorization: Bearer &lt;token&gt; → SupabaseAuthGuard → request.user → ResumeService query theo ownerId</code></pre>
+    </section>
+
+    <section id="layers" class="card">
+      <h2 style="margin-top:0">2. Ba lớp khái niệm quyền</h2>
+      <div class="three">
+        <div class="card" style="margin:0"><span class="badge public">Public</span><h3>Khách truy cập</h3><p>Không có token. Chỉ đọc CV đã published qua API public.</p><code>GET /api/resume</code></div>
+        <div class="card" style="margin:0"><span class="badge other">CMS admin</span><h3>Người trong allowlist</h3><p>Đăng nhập CMS, nhưng chỉ thao tác CV có <code>ownerId</code> bằng UID của mình.</p><code>ADMIN_EMAILS</code></div>
+        <div class="card" style="margin:0"><span class="badge root">Portfolio owner</span><h3>Chủ portfolio</h3><p>UID khớp config. Có thêm quyền canonical public CV và Reset Demo.</p><code>PORTFOLIO_OWNER_ID</code></div>
+      </div>
+      <h3>Biến môi trường quan trọng</h3>
+      <table><thead><tr><th>Biến</th><th>Mục đích</th><th>Không được làm</th></tr></thead><tbody>
+        <tr><td><code>SUPABASE_URL</code></td><td>URL project Supabase.</td><td>Không thay đổi tùy ý giữa frontend/backend.</td></tr>
+        <tr><td><code>SUPABASE_PUBLISHABLE_KEY</code></td><td>Xác thực token và browser auth.</td><td>Không dùng để admin reset user.</td></tr>
+        <tr><td><code>ADMIN_EMAILS</code></td><td>Allowlist email vào CMS.</td><td>Không dùng để suy ra root owner.</td></tr>
+        <tr><td><code>PORTFOLIO_OWNER_ID</code></td><td>Supabase UID duy nhất sở hữu public portfolio.</td><td>Không đặt UID demo vào đây.</td></tr>
+        <tr><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>Server-only: lookup demo user/reset data.</td><td><strong>Không bao giờ</strong> đưa vào frontend hoặc git.</td></tr>
+      </tbody></table>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0">3. Data model: CV thuộc về ai?</h2>
+      <pre><code>Resume: id, ownerId, title, slug (unique), isPrimary, status (DRAFT|PUBLISHED), content (JSON), versions[]
+ResumeVersion: resumeId → Resume.id, version, content snapshot
+Rule DB: mỗi owner có tối đa một CV primary; một owner vẫn có thể có nhiều CV.</code></pre>
+      <div class="callout"><strong>Rule bắt buộc khi viết admin query:</strong> dùng <code>where: { id, ownerId }</code> (hoặc <code>where: { ownerId }</code> khi list). Query chỉ theo <code>id</code> là lỗ hổng cross-user.</div>
+    </section>
+
+    <section id="flows" class="card">
+      <h2 style="margin-top:0">4. Luồng xác thực và ownership</h2>
+      <h3>4.1 Guard chặn từ ngoài vào</h3>
+      <pre><code>// backend/src/auth/supabase-auth.guard.ts — ý nghĩa rút gọn
+const token = getBearerToken(request.headers.authorization);
+const { data, error } = await client.auth.getUser(token);
+if (error || !data.user) throw new UnauthorizedException();
+if (!adminEmails.includes(data.user.email.toLowerCase())) throw new ForbiddenException();
+request.user = data.user;</code></pre>
+      <p>Token hợp lệ nhưng email không thuộc <code>ADMIN_EMAILS</code> vẫn nhận <code>403</code>. Tất cả <code>/api/admin/...</code> trong ResumeController dùng guard này.</p>
+      <h3>4.2 Lần đầu mở CMS: <code>ensurePrimaryResume</code></h3>
+      <ol>
+        <li>Tìm CV theo <code>ownerId</code>. Có rồi thì dùng; nếu chưa có primary thì sửa CV đầu tiên thành primary.</li>
+        <li>Nếu UID là <code>PORTFOLIO_OWNER_ID</code> và canonical record <code>portfolio-resume</code> tồn tại, gán record đó cho owner. Đây là recovery có kiểm soát cho dữ liệu legacy.</li>
+        <li>Nếu là demo hoặc admin mới: tạo CV fixture riêng, slug riêng và Version 1 trong transaction.</li>
+      </ol>
+      <pre><code>if (ownerId === portfolioOwnerId && legacyResumeExists) claim canonical portfolio-resume;
+else create a new owner-scoped CV + first snapshot;</code></pre>
+      <div class="callout danger"><strong>Không quay lại logic cũ:</strong> “không phải demo ⇒ root”. Mọi admin không phải demo sẽ có thể chiếm canonical CV. Root phải luôn so bằng UID cấu hình.</div>
+      <h3>4.3 CRUD, publish và history</h3>
+      <table><thead><tr><th>Thao tác</th><th>Backend làm gì?</th><th>Ảnh hưởng public?</th></tr></thead><tbody>
+        <tr><td>Save draft</td><td>Tìm <code>{ id, ownerId }</code>, cập nhật JSON content.</td><td>Không; status không tự đổi.</td></tr>
+        <tr><td>Publish</td><td>Kiểm tra owner, đặt <code>PUBLISHED</code>, <code>publishedAt</code>, tạo version mới.</td><td>CV đó mở được bằng slug; không tự đổi homepage.</td></tr>
+        <tr><td>Rollback</td><td>Kiểm tra owner, đọc version cùng <code>resumeId</code>, tạo version mới rồi publish content cũ.</td><td>Slug đó hiển thị content rollback.</td></tr>
+        <tr><td>Set primary</td><td>Clear/set primary chỉ trong cùng <code>ownerId</code>.</td><td>Chỉ homepage đổi nếu owner là portfolio owner.</td></tr>
+      </tbody></table>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0">5. Public route: vì sao demo không thay trang chủ?</h2>
+      <div class="grid">
+        <div><h3><code>GET /api/resume</code></h3><p>Homepage và <code>/resume</code> chỉ lấy:</p><pre><code>{ ownerId: PORTFOLIO_OWNER_ID, isPrimary: true, status: PUBLISHED }</code></pre></div>
+        <div><h3><code>GET /api/resume/:slug</code></h3><p>Shareable URL chỉ lấy:</p><pre><code>{ slug, status: PUBLISHED }</code></pre><p>Demo có thể showcase publish qua slug riêng; homepage vẫn giữ CV owner.</p></div>
+      </div>
+      <div class="callout ok"><strong>Ý nghĩa UI demo:</strong> Copy URL, CVs, History, Print/PDF, Export PNG, Publish và “Sinoo’s CV” có thể hiển thị để showcase. Hiện nút không mở quyền sửa CV owner; backend vẫn scope bằng <code>ownerId</code>.</div>
+    </section>
+
+    <section id="api" class="card">
+      <h2 style="margin-top:0">6. API reference tối thiểu</h2>
+      <table><thead><tr><th>Route</th><th>Guard</th><th>Ai dùng</th><th>Ghi chú</th></tr></thead><tbody>
+        <tr><td><code>GET /api/health</code></td><td>Không</td><td>Monitoring</td><td>Kiểm tra API sống.</td></tr>
+        <tr><td><code>GET /api/resume</code></td><td>Không</td><td>Public site</td><td>Primary published của owner.</td></tr>
+        <tr><td><code>GET /api/resume/:slug</code></td><td>Không</td><td>Public share link</td><td>CV published bất kỳ theo slug.</td></tr>
+        <tr><td><code>GET/POST /api/admin/resumes</code></td><td>SupabaseAuthGuard</td><td>CMS user</td><td>List/create CV của chính user.</td></tr>
+        <tr><td><code>PUT /api/admin/resumes/:id</code></td><td>SupabaseAuthGuard</td><td>CMS user</td><td>Save draft; service kiểm tra <code>id + ownerId</code>.</td></tr>
+        <tr><td><code>POST /api/admin/resumes/:id/publish</code></td><td>SupabaseAuthGuard</td><td>CMS user</td><td>Publish CV riêng + snapshot.</td></tr>
+        <tr><td><code>POST /api/admin/demo/reset</code></td><td>Guard + owner UID</td><td>Portfolio owner</td><td>Reset <code>demo@gmail.com</code> về fixture.</td></tr>
+      </tbody></table>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0">7. Reset Demo: chi tiết và an toàn</h2>
+      <div class="flow"><div class="node"><strong>Owner click Reset Demo</strong><span class="mini">Confirm dialog</span></div><div class="arrow">→</div><div class="node"><strong>POST /api/admin/demo/reset</strong><span class="mini">Guard kiểm tra token</span></div><div class="arrow">→</div><div class="node"><strong>ResumeService</strong><span class="mini">So UID với PORTFOLIO_OWNER_ID</span></div></div>
+      <ol><li>Server dùng <code>SUPABASE_SERVICE_ROLE_KEY</code> để tìm đúng Auth user <code>demo@gmail.com</code>.</li><li>Chỉ xóa Resume có <code>ownerId = demoUser.id</code>; ResumeVersion bị xóa theo cascade.</li><li>Gọi luồng seed bình thường để tạo fixture mới và Version 1.</li></ol>
+      <div class="callout warning"><strong>Hệ quả:</strong> reset xóa mọi CV và history của demo. Chỉ dùng cho demo workspace, không dùng cho dữ liệu khách hàng thật.</div>
+      <h3>Fallback CLI</h3>
+      <pre><code># Từ repository root
+$env:RESET_DEMO_CONFIRM = 'demo@gmail.com'
+pnpm --filter backend demo:reset</code></pre>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0">8. Frontend: toolbar và quyền thật</h2>
+      <table><thead><tr><th>Nút</th><th>Demo có dùng?</th><th>Điều gì xảy ra?</th></tr></thead><tbody>
+        <tr><td>Copy URL</td><td>Có</td><td>Copy URL public của CV đang mở: ưu tiên <code>/resume/{publicSlug}</code>, nếu không có slug thì <code>/resume</code>. Không trao quyền sửa CV owner.</td></tr>
+        <tr><td>CVs</td><td>Có</td><td>Tạo/đổi/xóa CV thuộc demo UID.</td></tr>
+        <tr><td>History</td><td>Có</td><td>Khôi phục version của CV demo.</td></tr>
+        <tr><td>Publish</td><td>Có</td><td>Publish CV demo theo slug; homepage không đổi.</td></tr>
+        <tr><td>Sinoo’s CV</td><td>Có</td><td>Link quảng bá portfolio owner; không phải quyền quản trị.</td></tr>
+        <tr><td>Reset Demo</td><td>Không</td><td>Chỉ owner thấy; API cũng từ chối non-owner.</td></tr>
+      </tbody></table>
+    </section>
+
+    <section id="runbook" class="card">
+      <h2 style="margin-top:0">9. Runbook cho người mới</h2>
+      <h3>Thêm CMS admin</h3>
+      <ol><li>Tạo user trong Supabase Auth.</li><li>Thêm email vào <code>ADMIN_EMAILS</code> trên backend deployment.</li><li>Không đổi <code>PORTFOLIO_OWNER_ID</code>; user mới nhận workspace CV riêng.</li><li>Đăng nhập một lần để seed primary CV riêng.</li></ol>
+      <h3>Khôi phục demo sau interview</h3>
+      <ol><li>Đăng nhập portfolio owner.</li><li>Nhấn <strong>Reset Demo</strong> và xác nhận.</li><li>Đăng nhập <code>demo@gmail.com</code>; kiểm tra có fixture và History Version 1.</li></ol>
+      <h3>Checklist deploy</h3>
+      <ul><li>Render có <code>SUPABASE_URL</code>, <code>SUPABASE_PUBLISHABLE_KEY</code>, <code>ADMIN_EMAILS</code>, <code>PORTFOLIO_OWNER_ID</code>.</li><li>Chỉ backend có <code>SUPABASE_SERVICE_ROLE_KEY</code>.</li><li>Vercel frontend chỉ nhận biến <code>NEXT_PUBLIC_*</code> browser-safe.</li><li>Đăng nhập owner/demo và kiểm tra mỗi người chỉ thấy CV của mình.</li><li>Publish demo, xác nhận <code>/api/resume</code> vẫn trả CV owner.</li></ul>
+    </section>
+
+    <section id="code-walkthrough" class="card">
+          <h2 style="margin-top:0">10. Walkthrough code: Frontend làm gì?</h2>
+          <p>Fresher nên đọc theo thứ tự bảng này. Mục tiêu là lần từ màn hình đến hàm gọi API, không cần đọc cả file UI dài ngay từ đầu.</p>
+          <table><thead><tr><th>File</th><th>Trách nhiệm</th><th>Hàm/điểm cần đọc</th></tr></thead><tbody>
+            <tr><td><code>frontend/src/app/admin/login/page.tsx</code></td><td>Đăng nhập và shortcut demo.</td><td><code>signIn()</code> gọi <code>signInWithPassword</code>; <code>loginDemo()</code> đăng nhập demo rồi push <code>/admin/resume</code>.</td></tr>
+            <tr><td><code>frontend/src/proxy.ts</code></td><td>Route UX gate cho <code>/admin/resume</code>.</td><td><code>getClaims()</code> không có session thì redirect <code>/admin/login?next=...</code>. Proxy không kiểm tra <code>ADMIN_EMAILS</code>.</td></tr>
+            <tr><td><code>frontend/src/features/resume/ResumeEditor.tsx</code></td><td>Client component: form, active CV, notice, toolbar.</td><td><code>getAdminAccessContext</code>, <code>fetchResumesList</code>, <code>handleSelectResume</code>, <code>saveDraft</code>, <code>publish</code>, <code>handleRollback</code>.</td></tr>
+            <tr><td><code>frontend/src/features/resume/resume-api.ts</code></td><td>HTTP adapter cho CMS.</td><td><code>getAuthToken()</code> lấy access token Supabase; từng hàm fetch tự đính header Bearer.</td></tr>
+            <tr><td><code>frontend/src/features/resume/resume-schema.ts</code></td><td>Hợp đồng dữ liệu form.</td><td><code>ResumeData</code>, <code>defaultResume</code>, Zod <code>resumeSchema</code>. Thêm trường CV phải cập nhật đây.</td></tr>
+            <tr><td><code>frontend/src/features/resume/resume-content.ts</code></td><td>Biên an toàn giữa JSON DB và form.</td><td><code>parseResumeContent()</code> chuyển dữ liệu <code>unknown</code> thành ResumeData hợp lệ trước khi render.</td></tr>
+          </tbody></table>
+          <h3>10.1 Khi mở editor</h3>
+          <pre><code>// ResumeEditor.tsx — rút gọn theo code hiện tại
+    useEffect(() =&gt; {
+      getAdminAccessContext().then((ctx) =&gt;
+        setIsPortfolioOwner(ctx.isPortfolioOwner));
+    }, []);
+    
+    useEffect(() =&gt; {
+      fetchResumesList().then(async (list) =&gt; {
+        const selected = list.find((x) =&gt; x.isPrimary) || list[0];
+        if (selected) await handleSelectResume(selected.id);
+      });
+    }, [reset]);</code></pre>
+          <ol><li><code>GET /api/admin/access</code> chỉ cung cấp cờ để UI quyết định hiện Reset Demo.</li><li><code>GET /api/admin/resumes</code> trả list metadata của đúng user; service có thể seed primary CV nếu lần đầu.</li><li><code>handleSelectResume(id)</code> gọi endpoint detail, set <code>activeResumeId</code>/<code>publicSlug</code>, rồi <code>reset(content)</code> cho react-hook-form.</li><li><code>useWatch</code> theo dõi form và <code>useDeferredValue</code> giảm lag preview.</li></ol>
+          <div class="callout"><strong>Security note:</strong> <code>activeResumeId</code> chỉ là state browser. User có thể sửa nó bằng DevTools, nên backend luôn phải kiểm tra lại <code>id + ownerId</code>.</div>
+          <h3>10.2 Mỗi nút gọi API nào?</h3>
+          <table><thead><tr><th>Nút / action</th><th>Hàm FE</th><th>HTTP</th><th>Kết quả UI</th></tr></thead><tbody>
+            <tr><td>Save</td><td><code>saveResumeDraftById</code></td><td><code>PUT /admin/resumes/:id</code></td><td>Lưu content, giữ status; rồi refresh list.</td></tr>
+            <tr><td>Publish</td><td><code>publishResumeById</code></td><td><code>POST /admin/resumes/:id/publish</code></td><td>Server tạo snapshot; UI hiển thị thông báo published.</td></tr>
+            <tr><td>CVs</td><td><code>createResumeProfile</code>, <code>setResumePrimary</code>, <code>deleteResumeProfile</code></td><td>Multi-CV routes</td><td>Refresh list và chọn CV vừa tạo khi phù hợp.</td></tr>
+            <tr><td>History</td><td><code>getResumeVersions</code>, <code>rollbackResumeVersion</code></td><td><code>/versions</code>, <code>/rollback/:versionId</code></td><td>Form reset theo content returned, nhưng history vẫn được giữ.</td></tr>
+            <tr><td>Reset Demo</td><td><code>resetDemoResume</code></td><td><code>POST /admin/demo/reset</code></td><td>Chỉ owner UI thấy nút; server vẫn kiểm tra quyền lần nữa.</td></tr>
+          </tbody></table>
+          <p><code>copyShareableLink()</code>, Print/PDF, Export PNG và <code>signOut()</code> là thao tác browser: copy clipboard, render DOM hoặc bỏ session. Chúng không cấp quyền và không sửa Resume database.</p>
+        </section>
+    
+        <section class="card">
+          <h2 style="margin-top:0">11. Walkthrough code: Backend làm gì?</h2>
+          <p>Luồng NestJS là: Guard xác thực và allowlist → Controller chỉ map route/DTO → Service áp nghiệp vụ/ownership → Prisma query database.</p>
+          <div class="flow"><div class="node"><strong>SupabaseAuthGuard</strong><span class="mini">JWT + allowlist</span></div><div class="arrow">→</div><div class="node"><strong>ResumeController</strong><span class="mini">route + request.user</span></div><div class="arrow">→</div><div class="node"><strong>ResumeService / Prisma</strong><span class="mini">ownerId + transaction</span></div></div>
+          <h3>11.1 Guard: authentication khác allowlist</h3>
+          <pre><code>// backend/src/auth/supabase-auth.guard.ts — canActivate()
+    const token = getBearerToken(request.headers.authorization);
+    const { data, error } = await client.auth.getUser(token);
+    if (error || !data.user) throw new UnauthorizedException(); // 401
+    if (!adminEmails.includes(data.user.email.toLowerCase())) {
+      throw new ForbiddenException();                            // 403
+    }
+    request.user = data.user;</code></pre>
+          <p>Token cho biết “ai đang gọi”; <code>ADMIN_EMAILS</code> quyết định “ai được dùng CMS”. Controller chỉ sử dụng UID tin cậy <code>request.user.id</code>, không nhận ownerId từ request body.</p>
+          <h3>11.2 Controller giữ mỏng</h3>
+          <pre><code>// backend/src/resume/resume.controller.ts
+    @Get('admin/resumes/:id')
+    @UseGuards(SupabaseAuthGuard)
+    getResumeById(@Req() req, @Param('id') id) {
+      return resumeService.getResumeById(req.user.id, id, req.user.email);
+    }
+    
+    @Post('admin/resumes/:id/publish')
+    @UseGuards(SupabaseAuthGuard)
+    publishById(@Req() req, @Param('id') id, @Body() dto) {
+      return resumeService.publishById(req.user.id, id, dto);
+    }</code></pre>
+          <p>Controller không tự phân biệt demo/owner và không tự query DB. Các legacy route <code>/api/admin/resume</code> vẫn có để tương thích, nhưng resolve primary CV của chính UID caller.</p>
+          <h3>11.3 Câu lệnh ownership bắt buộc</h3>
+          <pre><code>// resume.service.ts — saveDraftById()
+    const resume = await prisma.resume.findFirst({
+      where: { id, ownerId },
+    });
+    if (!resume) throw new NotFoundException('Resume not found.');
+    return prisma.resume.update({ where: { id }, data: { content } });</code></pre>
+          <p>Đây là chống cross-account thật sự: demo gửi ID owner thì không tìm thấy record <code>{ id, ownerId: demoUid }</code>. Chỉ sau khi xác minh object thuộc owner mới update theo id.</p>
+          <h3>11.4 Publish/rollback và version history</h3>
+          <pre><code>// publishById() — transaction Serializable
+    1. find Resume where { id, ownerId }
+    2. update content + template + status=PUBLISHED + publishedAt
+    3. lấy version lớn nhất
+    4. create ResumeVersion(version = latest + 1)
+    
+    // rollbackVersion()
+    1. kiểm tra Resume { id, ownerId }
+    2. tìm version where { id: versionId, resumeId: id }
+    3. create version mới chứa content cũ
+    4. update Resume thành content cũ và PUBLISHED</code></pre>
+          <div class="callout ok"><strong>Nghiệp vụ History:</strong> rollback không xóa hay chỉnh version cũ. Nó tạo một snapshot mới, nên audit trail luôn giữ được đường đi của nội dung.</div>
+          <h3>11.5 Seed và public route</h3>
+          <pre><code>// ensurePrimaryResume(ownerId, userEmail)
+    if (owner đã có CV) return;
+    if (ownerId === PORTFOLIO_OWNER_ID && legacy portfolio-resume tồn tại)
+      claim legacy record cho owner;
+    else
+      create owner-scoped Resume (primary, DRAFT, mock JSON)
+      create ResumeVersion(version 1);
+    
+    // getPublished() canonical homepage
+    where: { ownerId: PORTFOLIO_OWNER_ID, isPrimary: true, status: PUBLISHED }</code></pre>
+          <p>Demo được seed <code>Candidate Profile (Demo Test)</code> và slug <code>demo-...</code>. <code>GET /api/resume/:slug</code> có thể đọc CV published bất kỳ theo slug để demo chia sẻ; homepage chỉ gọi <code>GET /api/resume</code> nên luôn lấy CV chủ portfolio.</p>
+        </section>
+    
+        <section class="card">
+          <h2 style="margin-top:0">12. Bốn request flow cần thuộc</h2>
+          <h3>A. Demo login → CMS</h3><ol><li>Login page tạo Supabase session.</li><li><code>proxy.ts</code> thấy claims và cho vào editor.</li><li>Editor gửi JWT; Guard xác thực + kiểm tra email demo trong allowlist.</li><li><code>listResumes(demoUid)</code> seed nếu cần và query <code>where: { ownerId: demoUid }</code>.</li></ol>
+          <h3>B. Demo publish → homepage không đổi</h3><ol><li>Publish endpoint chỉ update resume <code>{ id, ownerId: demoUid }</code> và snapshot.</li><li>Slug demo public được, nhưng canonical endpoint query <code>PORTFOLIO_OWNER_ID</code>.</li></ol>
+          <h3>C. Demo cố gửi owner resume ID</h3><ol><li>Guard có thể pass vì demo là CMS user hợp lệ.</li><li>Service tìm <code>{ id: ownerResumeId, ownerId: demoUid }</code> không thấy và trả 404.</li><li>Không có dữ liệu owner nào được read/update.</li></ol>
+          <h3>D. Owner Reset Demo</h3><ol><li>Guard pass, service còn so UID với <code>PORTFOLIO_OWNER_ID</code>.</li><li>Server-only service role key tìm UID <code>demo@gmail.com</code>, delete Resume theo đúng UID đó rồi seed fixture Version 1.</li><li>Resume owner không khớp điều kiện delete nên an toàn.</li></ol>
+        </section>
+    
+        <section class="card">
+          <h2 style="margin-top:0">13. Khi sửa code, hãy tự hỏi</h2>
+      <ol><li>Route là public hay admin? Đã có guard đúng chưa?</li><li>Admin route nhận <code>id</code> có query thêm <code>ownerId</code> không?</li><li>Logic root có so với <code>PORTFOLIO_OWNER_ID</code> thay vì suy luận từ email/demo không?</li><li>Code có vô tình dùng service-role key ở frontend không?</li><li>Demo seed có copy CV thật không? Câu trả lời phải là <strong>không</strong>.</li><li>Publish có làm <code>GET /api/resume</code> chọn nhầm CV ngoài owner không?</li></ol>
+    </section>
+    <footer>File: <span class="file">doc-phases/authorization-and-demo-onboarding.html</span> · Cập nhật theo codebase ngày 30/08/2026.</footer>
+  </main>
+</body>
+</html>
