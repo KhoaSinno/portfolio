@@ -19,6 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # Prisma validates its datasource configuration even for `prisma generate`.
+    # These are non-routable placeholders: CI never runs migrations or connects to a DB.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/portfolio_ci
+      DIRECT_URL: postgresql://ci:ci@localhost:5432/portfolio_ci
+
     steps:
       - name: Check out source
         uses: actions/checkout@v4
