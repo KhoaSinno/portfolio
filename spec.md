@@ -34,7 +34,7 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 
 - [~] Cần xác minh production: Render chạy hết `prisma migrate deploy`, các biến public-resume revalidation có đủ, và publish thực sự làm mới dữ liệu Vercel.
 - [~] API đã hỗ trợ custom slug, generate slug duy nhất và chặn slug hệ thống; cần xác minh UI/public URL trên production sau deploy.
-- [~] GitHub Actions Quality Gate đã chạy lint/test/build cho frontend và backend khi push/PR vào `main`. Đã xử lý Prisma config và toàn bộ lỗi lint frontend/backend; chờ lượt GitHub chạy xanh xác nhận, sau đó bật branch protection để biến nó thành merge gate.
+- [~] GitHub Actions Quality Gate đã chạy xanh lint/test/build cho frontend và backend khi push/PR vào `main` (xác minh 02/09/2026). Cần bật branch protection để biến nó thành merge gate bắt buộc.
 
 ### Chưa triển khai
 
@@ -47,7 +47,7 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [ ] Blog, newsletter.
 - [ ] RAG, pgvector, Gemini/OpenAI fallback.
 - [ ] Telegram Bot, webhook, SSE live chat.
-- [~] Unit tests: backend 4 suites / 10 tests pass; frontend 1 suite / 3 tests pass. Chưa có integration/E2E cho Resume publish và Contact upload/inbox, monitoring/error tracking. GitHub Actions Quality Gate đang chờ lượt chạy xanh xác nhận sau khi xử lý baseline lint.
+- [~] Unit tests: backend 4 suites / 10 tests pass; frontend 1 suite / 3 tests pass. Chưa có integration/E2E cho Resume publish và Contact upload/inbox, monitoring/error tracking. GitHub Actions Quality Gate đã xanh; branch protection chưa được bật.
 
 ### Theo dõi hậu triển khai (không chặn Phase hiện tại)
 
