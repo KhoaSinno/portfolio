@@ -1,8 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Battery, Code2, ExternalLink, Play, Smartphone, Sparkles, Video, Wifi, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  Battery,
+  Code2,
+  ExternalLink,
+  Play,
+  Smartphone,
+  Sparkles,
+  Video,
+  Wifi,
+  X,
+} from "lucide-react";
 import {
   getProjectSlug,
   getYouTubeThumbnailUrl,
@@ -31,7 +42,15 @@ type ProjectVisualFrameProps = {
   className?: string;
 };
 
-export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFrameProps) {
+export function ProjectVisualFrame(props: ProjectVisualFrameProps) {
+  const visualKey = `${resolveProjectThumbnail(props.project)}:${props.project.demoUrl ?? ""}`;
+  return <ProjectVisualFrameContent key={visualKey} {...props} />;
+}
+
+function ProjectVisualFrameContent({
+  project,
+  className = "",
+}: ProjectVisualFrameProps) {
   const isMobile = isMobileProject(project);
   const isVideo = isVideoUrl(project.demoUrl) && !project.hideDemoUrl;
   const ytId = getYouTubeVideoId(project.demoUrl);
@@ -42,13 +61,6 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Synchronize when project data changes
-  useEffect(() => {
-    setCurrentSrc(resolvedThumbnailUrl);
-    setImageError(false);
-    setIsPlaying(false);
-  }, [resolvedThumbnailUrl]);
-
   const handleImageError = () => {
     // If maxres YouTube thumbnail fails, fallback to standard HQ
     if (currentSrc && currentSrc.includes("maxresdefault.jpg") && ytId) {
@@ -57,9 +69,17 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
     }
 
     // If auto-captured Microlink screenshot fails, fallback to Thum.io
-    if (currentSrc && currentSrc.includes("api.microlink.io") && project.demoUrl) {
-      const cleanUrl = project.demoUrl.startsWith("http") ? project.demoUrl : `https://${project.demoUrl}`;
-      setCurrentSrc(`https://image.thum.io/get/width/1200/crop/750/noanimate/${cleanUrl}`);
+    if (
+      currentSrc &&
+      currentSrc.includes("api.microlink.io") &&
+      project.demoUrl
+    ) {
+      const cleanUrl = project.demoUrl.startsWith("http")
+        ? project.demoUrl
+        : `https://${project.demoUrl}`;
+      setCurrentSrc(
+        `https://image.thum.io/get/width/1200/crop/750/noanimate/${cleanUrl}`,
+      );
       return;
     }
     // Otherwise fallback gracefully to high-tech architecture placeholder
@@ -67,13 +87,17 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
   };
 
   const hasValidImage = Boolean(currentSrc && !imageError);
-  const isAutoCaptured = Boolean(!project.thumbnailUrl && currentSrc && !isMobile && !isVideo);
+  const isAutoCaptured = Boolean(
+    !project.thumbnailUrl && currentSrc && !isMobile && !isVideo,
+  );
 
   // Extract a clean display domain for web projects
   let displayDomain = `${project.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.app`;
   if (project.demoUrl) {
     try {
-      const cleanUrl = project.demoUrl.startsWith("http") ? project.demoUrl : `https://${project.demoUrl}`;
+      const cleanUrl = project.demoUrl.startsWith("http")
+        ? project.demoUrl
+        : `https://${project.demoUrl}`;
       const parsed = new URL(cleanUrl);
       displayDomain = parsed.hostname;
     } catch {
@@ -97,7 +121,9 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
           <div className="flex items-center gap-2 text-slate-400">
             {isVideo && (
               <span className="flex items-center gap-1 font-mono text-[9px] font-medium text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
-                <span className={`h-1.5 w-1.5 rounded-full bg-rose-500 ${isPlaying ? "animate-ping" : "animate-pulse"}`} />
+                <span
+                  className={`h-1.5 w-1.5 rounded-full bg-rose-500 ${isPlaying ? "animate-ping" : "animate-pulse"}`}
+                />
                 {isPlaying ? "Playing Video" : "Demo Video"}
               </span>
             )}
@@ -297,5 +323,3 @@ export function ProjectVisualFrame({ project, className = "" }: ProjectVisualFra
     </div>
   );
 }
-
-

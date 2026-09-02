@@ -3,7 +3,15 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
-import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import {
+  useFieldArray,
+  useForm,
+  useWatch,
+  type Control,
+  type FieldPath,
+  type Resolver,
+  type UseFormRegister,
+} from "react-hook-form";
 import { useReactToPrint } from "react-to-print";
 import { useRouter } from "next/navigation";
 import {
@@ -66,6 +74,31 @@ import {
 } from "./resume-schema";
 import { getProjectRepositories } from "@/lib/image-url";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isProjectType(
+  value: unknown,
+): value is ResumeData["projects"][number]["projectType"] {
+  return (
+    value === "auto" ||
+    value === "web" ||
+    value === "mobile" ||
+    value === "system"
+  );
+}
+
+function isProjectRepository(
+  value: unknown,
+): value is { label: string; url: string } {
+  return (
+    isRecord(value) &&
+    typeof value.label === "string" &&
+    typeof value.url === "string"
+  );
+}
+
 export function ResumeEditor() {
   const router = useRouter();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -96,7 +129,7 @@ export function ResumeEditor() {
   };
 
   const form = useForm<ResumeData>({
-    resolver: zodResolver(resumeSchema) as any,
+    resolver: zodResolver(resumeSchema) as Resolver<ResumeData>,
     defaultValues: defaultResume,
     mode: "onBlur",
   });
@@ -215,27 +248,40 @@ export function ResumeEditor() {
     }
   };
 
-  const normalizeResumeData = (content: any): ResumeData => {
-    if (!content || typeof content !== "object") return defaultResume;
+  const normalizeResumeData = (content: unknown): ResumeData => {
+    if (!isRecord(content)) return defaultResume;
     const projects = Array.isArray(content.projects)
-      ? content.projects.map((p: any) => {
-          const repos = getProjectRepositories(p);
-          return {
-            ...p,
-            repositories:
-              Array.isArray(p.repositories) && p.repositories.length > 0
-                ? p.repositories
-                : repos.map((r) => ({ label: r.label, url: r.url })),
-            projectType: p.projectType || "auto",
-          };
+      ? content.projects.flatMap((project) => {
+          if (!isRecord(project)) return [];
+          const repositories = Array.isArray(project.repositories)
+            ? project.repositories.filter(isProjectRepository)
+            : [];
+          const fallbackRepositories = getProjectRepositories({
+            repository:
+              typeof project.repository === "string"
+                ? project.repository
+                : null,
+          }).map(({ label, url }) => ({ label, url }));
+
+          return [
+            {
+              ...project,
+              repositories:
+                repositories.length > 0 ? repositories : fallbackRepositories,
+              projectType: isProjectType(project.projectType)
+                ? project.projectType
+                : "auto",
+            },
+          ];
         })
       : defaultResume.projects;
 
-    return {
+    const parsed = resumeSchema.safeParse({
       ...defaultResume,
       ...content,
       projects,
-    };
+    });
+    return parsed.success ? parsed.data : defaultResume;
   };
 
   const handleSelectResume = async (id: string) => {
@@ -376,13 +422,16 @@ export function ResumeEditor() {
   };
 
   const handleResetDemo = async () => {
-    if (!window.confirm("Reset all demo CV data to the default fixture?")) return;
+    if (!window.confirm("Reset all demo CV data to the default fixture?"))
+      return;
     setResettingDemo(true);
     try {
       const result = await resetDemoResume();
       setNotice(`Reset ${result.deletedCount} demo CV(s): ${result.title}.`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Failed to reset demo data.");
+      setNotice(
+        error instanceof Error ? error.message : "Failed to reset demo data.",
+      );
     } finally {
       setResettingDemo(false);
     }
@@ -434,9 +483,13 @@ export function ResumeEditor() {
     const items = resume[arrayName] as Array<{ isVisible?: boolean }>;
     if (!items || !items[index]) return;
     const currentVal = items[index].isVisible !== false; // defaults to true
-    setValue(`${arrayName}.${index}.isVisible` as any, !currentVal, {
-      shouldDirty: true,
-    });
+    setValue(
+      `${arrayName}.${index}.isVisible` as FieldPath<ResumeData>,
+      !currentVal,
+      {
+        shouldDirty: true,
+      },
+    );
   };
 
   const toggleTargetVisibility = (
@@ -450,9 +503,13 @@ export function ResumeEditor() {
     }>;
     if (!items || !items[index]) return;
     const currentVal = items[index][target] !== false; // defaults to true
-    setValue(`${arrayName}.${index}.${target}` as any, !currentVal, {
-      shouldDirty: true,
-    });
+    setValue(
+      `${arrayName}.${index}.${target}` as FieldPath<ResumeData>,
+      !currentVal,
+      {
+        shouldDirty: true,
+      },
+    );
   };
 
   const handleSelectFieldFromPreview = (target: FieldSelectTarget) => {
@@ -871,7 +928,6 @@ export function ResumeEditor() {
                       projectIndex={index}
                       register={register}
                       control={control}
-                      setValue={setValue}
                       isHidden={Boolean(
                         resume.projects?.[index]?.hideRepository,
                       )}
@@ -880,7 +936,7 @@ export function ResumeEditor() {
                           resume.projects?.[index]?.hideRepository,
                         );
                         setValue(
-                          `projects.${index}.hideRepository` as any,
+                          `projects.${index}.hideRepository` as FieldPath<ResumeData>,
                           !current,
                           {
                             shouldDirty: true,
@@ -925,8 +981,8 @@ export function ResumeEditor() {
                               type="button"
                               onClick={() => {
                                 setValue(
-                                  `projects.${index}.projectType` as any,
-                                  item.value as any,
+                                  `projects.${index}.projectType` as FieldPath<ResumeData>,
+                                  item.value as ResumeData["projects"][number]["projectType"],
                                   {
                                     shouldDirty: true,
                                   },
@@ -959,7 +1015,7 @@ export function ResumeEditor() {
                           resume.projects?.[index]?.hideDemoUrl,
                         );
                         setValue(
-                          `projects.${index}.hideDemoUrl` as any,
+                          `projects.${index}.hideDemoUrl` as FieldPath<ResumeData>,
                           !current,
                           {
                             shouldDirty: true,
@@ -1929,14 +1985,12 @@ function ProjectRepositoriesEditor({
   projectIndex,
   register,
   control,
-  setValue,
   isHidden,
   onToggleVisibility,
 }: {
   projectIndex: number;
-  register: any;
-  control: any;
-  setValue: any;
+  register: UseFormRegister<ResumeData>;
+  control: Control<ResumeData>;
   isHidden: boolean;
   onToggleVisibility: () => void;
 }) {

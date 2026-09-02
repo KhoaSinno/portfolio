@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { FileText, Lock, Menu, X } from "lucide-react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
@@ -29,18 +30,27 @@ export function FloatingNavbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const lockScrollUntil = useRef<number>(0);
 
-  const isExpVisible = showExperience !== undefined ? showExperience : hasExperience;
+  const isExpVisible =
+    showExperience !== undefined ? showExperience : hasExperience;
 
   const navItems: NavItem[] = useMemo(
     () => [
       { label: "About", href: "#about", id: "about" },
-      ...(showProjects ? [{ label: "Projects", href: "#projects", id: "projects" }] : []),
-      ...(showSkills ? [{ label: "Skills", href: "#skills", id: "skills" }] : []),
-      ...(isExpVisible ? [{ label: "Experience", href: "#experience", id: "experience" }] : []),
-      ...(showEducation ? [{ label: "Education", href: "#education", id: "education" }] : []),
+      ...(showProjects
+        ? [{ label: "Projects", href: "#projects", id: "projects" }]
+        : []),
+      ...(showSkills
+        ? [{ label: "Skills", href: "#skills", id: "skills" }]
+        : []),
+      ...(isExpVisible
+        ? [{ label: "Experience", href: "#experience", id: "experience" }]
+        : []),
+      ...(showEducation
+        ? [{ label: "Education", href: "#education", id: "education" }]
+        : []),
       { label: "Contact", href: "#contact", id: "contact" },
     ],
-    [showProjects, showSkills, isExpVisible, showEducation]
+    [showProjects, showSkills, isExpVisible, showEducation],
   );
 
   useEffect(() => {
@@ -55,7 +65,10 @@ export function FloatingNavbar({
       }
 
       // 3. Check if near bottom of page -> Contact
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 90) {
+      if (
+        window.innerHeight + window.scrollY >=
+        document.body.offsetHeight - 90
+      ) {
         setActiveSection("contact");
         return;
       }
@@ -151,7 +164,9 @@ export function FloatingNavbar({
                   type="button"
                   onClick={(e) => handleNavClick(e, item.href)}
                   className={`relative px-4 py-1.5 text-xs font-semibold transition-colors duration-200 cursor-pointer select-none bg-transparent border-none ${
-                    isActive ? "text-white" : "text-slate-400 hover:text-slate-200"
+                    isActive
+                      ? "text-white"
+                      : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   {isActive && (
@@ -176,17 +191,17 @@ export function FloatingNavbar({
         {/* Action Buttons (Transparent Floating) */}
         <div className="pointer-events-auto flex items-center gap-3">
           {/* Admin CMS */}
-          <a
+          <Link
             href="/admin/resume"
             className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-xs font-medium text-slate-300 shadow-lg shadow-black/40 backdrop-blur-xl transition hover:border-white/25 hover:bg-white/10 hover:text-white"
             title="Admin Resume CMS"
           >
             <Lock className="h-3.5 w-3.5 text-slate-400" />
             <span className="hidden sm:inline">CMS</span>
-          </a>
+          </Link>
 
           {/* View Full A4 CV CTA */}
-          <a
+          <Link
             href="/resume"
             className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] text-xs font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all duration-300 hover:shadow-indigo-500/50 hover:scale-[1.03] active:scale-95"
           >
@@ -194,7 +209,7 @@ export function FloatingNavbar({
               <FileText className="h-3.5 w-3.5 text-indigo-300 group-hover:text-white" />
               <span>View CV</span>
             </span>
-          </a>
+          </Link>
 
           {/* Mobile Menu Toggle */}
           <button
@@ -203,7 +218,11 @@ export function FloatingNavbar({
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/40 text-slate-300 shadow-lg shadow-black/40 backdrop-blur-xl transition hover:bg-white/10 md:hidden"
             aria-label="Toggle navigation menu"
           >
-            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            {mobileMenuOpen ? (
+              <X className="h-4 w-4" />
+            ) : (
+              <Menu className="h-4 w-4" />
+            )}
           </button>
         </div>
       </div>
