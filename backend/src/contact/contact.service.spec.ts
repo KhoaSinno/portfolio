@@ -31,7 +31,10 @@ describe('ContactService', () => {
         return undefined;
       }),
     };
-    return new ContactService(prisma as never, config as unknown as ConfigService);
+    return new ContactService(
+      prisma as never,
+      config as unknown as ConfigService,
+    );
   }
 
   it('persists a general contact with normalized email and no attachment', async () => {

@@ -17,7 +17,10 @@ import {
   Prisma,
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateContactDto, type UploadedFileDoc } from './dto/create-contact.dto';
+import {
+  CreateContactDto,
+  type UploadedFileDoc,
+} from './dto/create-contact.dto';
 import { ListContactsDto } from './dto/list-contacts.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 
@@ -43,7 +46,8 @@ export class ContactService {
     private readonly prisma: PrismaService,
     config: ConfigService,
   ) {
-    this.portfolioOwnerId = config.get<string>('PORTFOLIO_OWNER_ID')?.trim() ?? '';
+    this.portfolioOwnerId =
+      config.get<string>('PORTFOLIO_OWNER_ID')?.trim() ?? '';
     this.supabaseUrl = config.get<string>('SUPABASE_URL');
     this.serviceRoleKey = config.get<string>('SUPABASE_SERVICE_ROLE_KEY');
     this.attachmentBucket =
@@ -61,7 +65,10 @@ export class ContactService {
   ) {
     if (dto.honeypot?.trim()) {
       this.logger.warn('Bot submission blocked via honeypot.');
-      return { success: true, message: "Message received — I'll reply by email." };
+      return {
+        success: true,
+        message: "Message received — I'll reply by email.",
+      };
     }
 
     this.assertRateLimit(clientIp);
@@ -99,11 +106,15 @@ export class ContactService {
             data: { attachmentPath },
           });
         } catch (error) {
-          await storage.storage.from(this.attachmentBucket).remove([attachmentPath]);
+          await storage.storage
+            .from(this.attachmentBucket)
+            .remove([attachmentPath]);
           throw error;
         }
       } catch (error) {
-        await this.prisma.contactMessage.delete({ where: { id: saved.id } }).catch(() => undefined);
+        await this.prisma.contactMessage
+          .delete({ where: { id: saved.id } })
+          .catch(() => undefined);
         this.logger.error(
           `Contact attachment storage failed: ${error instanceof Error ? error.message : 'unknown error'}`,
         );
@@ -163,7 +174,7 @@ export class ContactService {
     });
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
-    return { items, nextCursor: hasMore ? items.at(-1)?.id ?? null : null };
+    return { items, nextCursor: hasMore ? (items.at(-1)?.id ?? null) : null };
   }
 
   async getContact(requesterId: string, id: string) {
@@ -195,8 +206,11 @@ export class ContactService {
 
   async updateContact(requesterId: string, id: string, dto: UpdateContactDto) {
     this.assertOwner(requesterId);
-    const existing = await this.prisma.contactMessage.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Contact message was not found.');
+    const existing = await this.prisma.contactMessage.findUnique({
+      where: { id },
+    });
+    if (!existing)
+      throw new NotFoundException('Contact message was not found.');
     const status = dto.status ?? existing.status;
     return this.prisma.contactMessage.update({
       where: { id },
@@ -225,16 +239,22 @@ export class ContactService {
     });
     if (!contact) throw new NotFoundException('Contact message was not found.');
     if (!contact.attachmentPath)
-      throw new BadRequestException('This contact has no private PDF attachment.');
+      throw new BadRequestException(
+        'This contact has no private PDF attachment.',
+      );
 
-    const { data, error } = await this.getStorageClient().storage
-      .from(this.attachmentBucket)
+    const { data, error } = await this.getStorageClient()
+      .storage.from(this.attachmentBucket)
       .createSignedUrl(contact.attachmentPath, SIGNED_URL_TTL_SECONDS, {
         download: contact.fileName || 'job-description.pdf',
       });
     if (error || !data?.signedUrl) {
-      this.logger.error(`Could not create signed contact attachment URL: ${error?.message ?? 'unknown error'}`);
-      throw new ServiceUnavailableException('The private attachment is temporarily unavailable.');
+      this.logger.error(
+        `Could not create signed contact attachment URL: ${error?.message ?? 'unknown error'}`,
+      );
+      throw new ServiceUnavailableException(
+        'The private attachment is temporarily unavailable.',
+      );
     }
     return { url: data.signedUrl, expiresInSeconds: SIGNED_URL_TTL_SECONDS };
   }
@@ -246,19 +266,28 @@ export class ContactService {
     const jdLink = dto.jdLink?.trim() || null;
     if (!message) throw new BadRequestException('Message is required.');
     if (topic !== ContactTopic.HIRING && (jdLink || file)) {
-      throw new BadRequestException('JD links and PDF attachments are available for Hiring inquiries only.');
+      throw new BadRequestException(
+        'JD links and PDF attachments are available for Hiring inquiries only.',
+      );
     }
     if (jdLink && file) {
-      throw new BadRequestException('Attach a PDF or provide a JD link, not both.');
+      throw new BadRequestException(
+        'Attach a PDF or provide a JD link, not both.',
+      );
     }
     return { topic, email, message, jdLink };
   }
 
   private assertValidPdf(file: UploadedFileDoc) {
     if (file.size > MAX_ATTACHMENT_BYTES) {
-      throw new BadRequestException('PDF is too large. The maximum file size is 10 MB.');
+      throw new BadRequestException(
+        'PDF is too large. The maximum file size is 10 MB.',
+      );
     }
-    if (file.mimetype !== 'application/pdf' || file.buffer.subarray(0, 5).toString('ascii') !== '%PDF-') {
+    if (
+      file.mimetype !== 'application/pdf' ||
+      file.buffer.subarray(0, 5).toString('ascii') !== '%PDF-'
+    ) {
       throw new BadRequestException('Only valid PDF attachments are accepted.');
     }
   }
@@ -271,7 +300,10 @@ export class ContactService {
     const record = this.rateLimits.get(ipKey);
     if (record && now < record.resetTime) {
       if (record.count >= maxRequests) {
-        throw new HttpException('Too many submissions. Please wait a few minutes before sending another message.', HttpStatus.TOO_MANY_REQUESTS);
+        throw new HttpException(
+          'Too many submissions. Please wait a few minutes before sending another message.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
       }
       record.count += 1;
       return;
@@ -281,16 +313,22 @@ export class ContactService {
 
   private assertOwner(requesterId: string) {
     if (!this.portfolioOwnerId) {
-      throw new ServiceUnavailableException('Portfolio owner has not been configured.');
+      throw new ServiceUnavailableException(
+        'Portfolio owner has not been configured.',
+      );
     }
     if (requesterId !== this.portfolioOwnerId) {
-      throw new ForbiddenException('Only the portfolio owner can access contact messages.');
+      throw new ForbiddenException(
+        'Only the portfolio owner can access contact messages.',
+      );
     }
   }
 
   private getStorageClient() {
     if (!this.supabaseUrl || !this.serviceRoleKey) {
-      throw new ServiceUnavailableException('Private contact attachment storage has not been configured.');
+      throw new ServiceUnavailableException(
+        'Private contact attachment storage has not been configured.',
+      );
     }
     this.storageClient ??= createClient(this.supabaseUrl, this.serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -307,7 +345,11 @@ export class ContactService {
     fileName: string | null;
     fileSize: number | null;
   }) {
-    if (!this.resendApiKey || !this.contactFromEmail || !this.contactOwnerEmail) {
+    if (
+      !this.resendApiKey ||
+      !this.contactFromEmail ||
+      !this.contactOwnerEmail
+    ) {
       await this.prisma.contactMessage.update({
         where: { id: contact.id },
         data: {
@@ -315,7 +357,9 @@ export class ContactService {
           notificationError: 'Resend notification is not configured.',
         },
       });
-      this.logger.warn('Contact stored, but Resend notification is not configured.');
+      this.logger.warn(
+        'Contact stored, but Resend notification is not configured.',
+      );
       return;
     }
 
@@ -328,7 +372,13 @@ export class ContactService {
       'Message:',
       contact.message,
       ...(contact.jdLink ? ['', `JD link: ${contact.jdLink}`] : []),
-      ...(contact.fileName ? ['', `Private PDF attachment: ${contact.fileName}${contact.fileSize ? ` (${Math.round(contact.fileSize / 1024)} KB)` : ''}`, 'Open the CMS inbox to download it securely.'] : []),
+      ...(contact.fileName
+        ? [
+            '',
+            `Private PDF attachment: ${contact.fileName}${contact.fileSize ? ` (${Math.round(contact.fileSize / 1024)} KB)` : ''}`,
+            'Open the CMS inbox to download it securely.',
+          ]
+        : []),
     ].join('\n');
 
     try {
@@ -347,16 +397,26 @@ export class ContactService {
         }),
         signal: AbortSignal.timeout(10_000),
       });
-      if (!response.ok) throw new Error(`Resend returned HTTP ${response.status}`);
+      if (!response.ok)
+        throw new Error(`Resend returned HTTP ${response.status}`);
       await this.prisma.contactMessage.update({
         where: { id: contact.id },
-        data: { notificationStatus: ContactNotificationStatus.SENT, notificationError: null },
+        data: {
+          notificationStatus: ContactNotificationStatus.SENT,
+          notificationError: null,
+        },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message.slice(0, 500) : 'Unknown notification error';
+      const message =
+        error instanceof Error
+          ? error.message.slice(0, 500)
+          : 'Unknown notification error';
       await this.prisma.contactMessage.update({
         where: { id: contact.id },
-        data: { notificationStatus: ContactNotificationStatus.FAILED, notificationError: message },
+        data: {
+          notificationStatus: ContactNotificationStatus.FAILED,
+          notificationError: message,
+        },
       });
     }
   }

@@ -18,7 +18,10 @@ import {
   type AuthenticatedRequest,
 } from '../auth/supabase-auth.guard';
 import { ContactService } from './contact.service';
-import { CreateContactDto, type UploadedFileDoc } from './dto/create-contact.dto';
+import {
+  CreateContactDto,
+  type UploadedFileDoc,
+} from './dto/create-contact.dto';
 import { ListContactsDto } from './dto/list-contacts.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 
@@ -46,8 +49,8 @@ export class ContactController {
     const clientIp = Array.isArray(rawIp)
       ? rawIp[0]
       : typeof rawIp === 'string'
-      ? rawIp.split(',')[0].trim()
-      : undefined;
+        ? rawIp.split(',')[0].trim()
+        : undefined;
 
     return this.contactService.submitContact(dto, file, clientIp);
   }
