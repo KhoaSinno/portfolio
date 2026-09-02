@@ -22,7 +22,9 @@ export class ListContactsDto {
   @IsOptional()
   @IsString()
   @MaxLength(100, { message: 'Search query is too long.' })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : undefined,
+  )
   q?: string;
 
   @IsOptional()

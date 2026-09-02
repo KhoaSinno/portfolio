@@ -24,7 +24,7 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [x] Frontend đã deploy Vercel; backend đã deploy Render; CORS đã cấu hình cho production Vercel URL.
 - [x] Public Landing Page hoàn chỉnh: Hero, Projects, Skills, Experience, Education, Contact, kết nối trực tiếp với Backend API `getPublishedResume()`.
 - [x] Resume Version History & Rollback UI: Xem lịch sử các bản snapshot đã publish, xem chi tiết và khôi phục (Rollback) bản cũ ngay trong Admin CMS.
-- [~] Contact Hub & Admin Inbox: Form public tối giản (Topic, Email, Message), JD link/PDF chỉ cho Hiring, PostgreSQL inbox owner-only, rate limit, private signed PDF download và trạng thái Resend notification đã implement/migrate. Không còn legacy public attachment URL; còn cần Resend verified sender và smoke test production.
+- [x] Contact Hub & Admin Inbox: Form public tối giản (Topic, Email, Message), JD link/PDF chỉ cho Hiring, PostgreSQL inbox owner-only, rate limit, private signed PDF download và trạng thái Resend notification. Legacy public attachment URL/data đã được xoá; production UI và `/api/health` đã xác minh ngày 02/09/2026.
 - [x] SEO nền tảng: metadata theo route, Open Graph/Twitter image, JSON-LD cho case study, `robots.txt` và `sitemap.xml` động gồm các project public.
 - [x] Case Study SSR: trang `/projects/[slug]` có metadata riêng, cache/revalidate 5 phút, README GitHub, Mermaid diagrams, ảnh/link relative và chọn README theo từng repository của một project.
 - [x] CTA Project theo URL: Source Code, Live Demo hoặc Demo Video (tự nhận diện video URL).
@@ -34,7 +34,7 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 
 - [~] Cần xác minh production: Render chạy hết `prisma migrate deploy`, các biến public-resume revalidation có đủ, và publish thực sự làm mới dữ liệu Vercel.
 - [~] API đã hỗ trợ custom slug, generate slug duy nhất và chặn slug hệ thống; cần xác minh UI/public URL trên production sau deploy.
-- [~] CI/CD deploy tự động qua GitHub → Vercel/Render đã có; chưa có workflow GitHub Actions chạy lint/test/build độc lập.
+- [~] GitHub Actions Quality Gate đã cấu hình lint/test/build cho frontend và backend khi push/PR vào `main`; chờ GitHub chạy xanh lần đầu và bật branch protection để biến nó thành merge gate.
 
 ### Chưa triển khai
 
@@ -47,7 +47,14 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [ ] Blog, newsletter.
 - [ ] RAG, pgvector, Gemini/OpenAI fallback.
 - [ ] Telegram Bot, webhook, SSE live chat.
-- [~] Unit tests: 3 suite / 7 test pass (Resume Service và Project Case Study). Chưa có integration/E2E cho flow Resume publish, monitoring/error tracking hoặc GitHub Actions CI.
+- [~] Unit tests: backend 4 suites / 10 tests pass; frontend 1 suite / 3 tests pass. Chưa có integration/E2E cho Resume publish và Contact upload/inbox, monitoring/error tracking; GitHub Actions Quality Gate chờ run đầu tiên.
+
+### Theo dõi hậu triển khai (không chặn Phase hiện tại)
+
+- [ ] Lighthouse measurement cho Landing, Resume và Case Study; mục tiêu 90+ theo từng route.
+- [ ] Keyboard/screen-reader accessibility audit cho navbar, Contact form, Resume editor và Inbox.
+- [ ] Browser verification README sanitizer: Mermaid, ảnh/link relative, `<details>` và URL độc hại.
+- [ ] Theo dõi Render logs/cold-start, lỗi Resend và failed notification trong Inbox sau khi có traffic thật.
 
 ## 1. Mục tiêu dự án
 
