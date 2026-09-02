@@ -30,11 +30,11 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [x] CTA Project theo URL: Source Code, Live Demo hoặc Demo Video (tự nhận diện video URL).
 - [x] Public-resume snapshot và backend revalidation sau publish đã có trong source để giảm phụ thuộc trực tiếp vào API khi render public pages.
 
-### Đang triển khai / cần xác minh sau deploy mới nhất
+### Đã xác minh production — 02/09/2026
 
-- [~] Cần xác minh production: Render chạy hết `prisma migrate deploy`, các biến public-resume revalidation có đủ, và publish thực sự làm mới dữ liệu Vercel.
-- [~] API đã hỗ trợ custom slug, generate slug duy nhất và chặn slug hệ thống; cần xác minh UI/public URL trên production sau deploy.
-- [~] GitHub Actions Quality Gate đã chạy xanh lint/test/build cho frontend và backend khi push/PR vào `main` (xác minh 02/09/2026). Cần bật branch protection để biến nó thành merge gate bắt buộc.
+- [x] Render đã chạy `prisma migrate deploy`; các biến public-resume revalidation có đủ và publish đã làm mới dữ liệu Vercel.
+- [x] Custom slug: backend/API tạo slug duy nhất, chặn slug hệ thống và UI/public URL đã xác minh trên production.
+- [x] GitHub Actions Quality Gate chạy xanh lint/test/build cho frontend và backend khi push/PR vào `main`; Branch Protection đã yêu cầu check này trước khi merge vào `main`.
 
 ### Chưa triển khai
 
@@ -122,7 +122,7 @@ Xây dựng portfolio tiếng Anh, chuẩn production, thể hiện rõ năng l�
 
 - Skills phân nhóm: Frontend, Backend & Database, DevOps & Tools.
 - Education, certificates, awards và hoạt động liên quan.
-- [~] Contact form: Topic, Email, Message; JD link hoặc private PDF chỉ khi Hiring; validate/rate-limit, lưu PostgreSQL, inbox `/admin/inbox` owner-only và notification Resend có trạng thái. Chờ cấu hình Storage/Resend production để kiểm chứng end-to-end.
+- [x] Contact form: Topic, Email, Message; JD link hoặc private PDF chỉ khi Hiring; validate/rate-limit, lưu PostgreSQL, inbox `/admin/inbox` owner-only và notification Resend có trạng thái. Storage/Resend production và luồng end-to-end đã được xác minh.
 
 ---
 
