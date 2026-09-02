@@ -2,419 +2,295 @@
 
 import { useRef, useState } from "react";
 import {
-  Send,
-  Mail,
-  Link2,
-  UploadCloud,
-  FileText,
-  MessageSquare,
-  CheckCircle2,
   AlertCircle,
+  CheckCircle2,
+  FileText,
+  Link2,
   Loader2,
-  Sparkles,
+  Mail,
+  MessageSquare,
+  Send,
+  UploadCloud,
   X,
 } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api/client";
+import { API_BASE_URL, getApiErrorMessage } from "@/lib/api/client";
 
-interface ToastState {
-  show: boolean;
-  message: string;
-  type: "success" | "error";
+type ContactTopic = "HIRING" | "COLLABORATION" | "GENERAL";
+type HiringJdMode = "link" | "file";
+
+const TOPICS: Array<{ value: ContactTopic; label: string }> = [
+  { value: "HIRING", label: "Hiring" },
+  { value: "COLLABORATION", label: "Collaboration" },
+  { value: "GENERAL", label: "General" },
+];
+
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+function submitLabel(topic: ContactTopic) {
+  if (topic === "HIRING") return "Send hiring inquiry";
+  if (topic === "COLLABORATION") return "Send collaboration inquiry";
+  return "Send message";
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function ContactForm() {
+  const [topic, setTopic] = useState<ContactTopic>("GENERAL");
+  const [jdMode, setJdMode] = useState<HiringJdMode>("link");
   const [email, setEmail] = useState("");
-  const [jdMode, setJdMode] = useState<"file" | "link">("file");
+  const [message, setMessage] = useState("");
   const [jdLink, setJdLink] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [message, setMessage] = useState("");
   const [honeypot, setHoneypot] = useState("");
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const successHeadingRef = useRef<HTMLHeadingElement>(null);
 
-  const [toast, setToast] = useState<ToastState>({
-    show: false,
-    message: "",
-    type: "success",
-  });
-
-  const showToast = (msg: string, type: "success" | "error" = "success") => {
-    setToast({ show: true, message: msg, type });
-    setTimeout(() => {
-      setToast((prev) => ({ ...prev, show: false }));
-    }, 6000);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 15 * 1024 * 1024) {
-        setErrorMessage("File is too large (max 15MB).");
-        return;
-      }
-      setSelectedFile(file);
-      setErrorMessage(null);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.size > 15 * 1024 * 1024) {
-        setErrorMessage("File is too large (max 15MB).");
-        return;
-      }
-      setSelectedFile(file);
-      setErrorMessage(null);
-    }
-  };
-
-  const removeFile = () => {
+  const clearJd = () => {
+    setJdLink("");
     setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const chooseTopic = (nextTopic: ContactTopic) => {
+    setTopic(nextTopic);
+    setErrorMessage(null);
+    if (nextTopic !== "HIRING") clearJd();
+  };
+
+  const chooseMode = (mode: HiringJdMode) => {
+    setJdMode(mode);
+    setErrorMessage(null);
+    if (mode === "link") {
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } else {
+      setJdLink("");
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  const setFile = (file?: File) => {
+    if (!file) return;
+    if (file.size > MAX_FILE_BYTES) {
+      setErrorMessage("PDF is too large. Please attach a file under 10 MB.");
+      return;
+    }
+    if (file.type !== "application/pdf") {
+      setErrorMessage("Please attach a PDF file only.");
+      return;
+    }
+    setSelectedFile(file);
+    setJdLink("");
+    setErrorMessage(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setErrorMessage(null);
-
-    if (!email.trim()) {
-      setErrorMessage("Please enter your work email.");
+    if (!email.trim() || !message.trim()) {
+      setErrorMessage("Please enter your email and a short message before sending.");
       return;
     }
 
     setSubmitting(true);
-
     try {
       const formData = new FormData();
+      formData.append("topic", topic);
       formData.append("email", email.trim());
-
-      if (selectedFile) {
-        formData.append("file", selectedFile);
-      }
-      if (jdLink.trim()) {
+      formData.append("message", message.trim());
+      if (topic === "HIRING" && jdMode === "link" && jdLink.trim()) {
         formData.append("jdLink", jdLink.trim());
       }
-      if (message.trim()) {
-        formData.append("message", message.trim());
+      if (topic === "HIRING" && jdMode === "file" && selectedFile) {
+        formData.append("file", selectedFile);
       }
-      if (honeypot.trim()) {
-        formData.append("honeypot", honeypot.trim());
-      }
+      if (honeypot.trim()) formData.append("honeypot", honeypot.trim());
 
       const response = await fetch(`${API_BASE_URL}/contact`, {
         method: "POST",
         body: formData,
       });
-
-      const data = (await response.json()) as {
-        success?: boolean;
-        message?: string;
-      };
-
       if (!response.ok) {
-        throw new Error(data.message || `Request failed (${response.status})`);
+        throw new Error(
+          await getApiErrorMessage(
+            response,
+            "Unable to send your message. Please try again or email me directly.",
+          ),
+        );
       }
-
       setSubmitted(true);
-      showToast(
-        data.message || "Message & JD received! I'll get back to you soon.",
-        "success",
-      );
-      // Clear state
       setEmail("");
-      setJdLink("");
-      setSelectedFile(null);
       setMessage("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    } catch (err) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Failed to send message. Please try again or copy email directly.";
-      setErrorMessage(msg);
-      showToast(msg, "error");
+      clearJd();
+      window.setTimeout(() => successHeadingRef.current?.focus(), 0);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to send your message. Please try again or email me directly.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <>
-      {/* Toast Notification Container */}
-      {toast.show && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-md animate-in slide-in-from-bottom-5 fade-in duration-300">
-          <div
-            className={`flex items-start gap-3 rounded-2xl p-4 shadow-2xl backdrop-blur-xl border ${
-              toast.type === "success"
-                ? "bg-slate-900/95 border-emerald-500/40 text-slate-100 shadow-emerald-950/50"
-                : "bg-slate-900/95 border-rose-500/40 text-slate-100 shadow-rose-950/50"
-            }`}
+    <div className="relative rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
+      <div className="mb-6">
+        <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-200">
+          <MessageSquare aria-hidden="true" className="h-3.5 w-3.5" />
+          <span>DIRECT MESSAGE</span>
+        </div>
+        <h3 className="mt-3 text-xl font-bold text-white">Let&apos;s connect</h3>
+        <p className="mt-1 text-sm leading-relaxed text-slate-300">
+          Tell me how I can help. I&apos;ll reply by email.
+        </p>
+      </div>
+
+      {submitted ? (
+        <div className="space-y-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-6 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-300 ring-1 ring-emerald-400/30">
+            <CheckCircle2 aria-hidden="true" className="h-6 w-6" />
+          </div>
+          <div>
+            <h4 ref={successHeadingRef} tabIndex={-1} className="text-base font-bold text-white outline-none">
+              Message received
+            </h4>
+            <p className="mt-1 text-sm leading-relaxed text-slate-200">
+              Thank you for reaching out. I&apos;ll reply by email.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSubmitted(false)}
+            className="min-h-11 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-300"
           >
-            <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
-                toast.type === "success"
-                  ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30"
-                  : "bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30"
-              }`}
-            >
-              {toast.type === "success" ? (
-                <CheckCircle2 className="h-5 w-5" />
-              ) : (
-                <AlertCircle className="h-5 w-5" />
-              )}
-            </div>
-
-            <div className="flex-1 pr-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                {toast.type === "success"
-                  ? "Sent Successfully"
-                  : "Submission Notice"}
-              </p>
-              <p className="mt-0.5 text-xs text-slate-200 leading-relaxed font-medium">
-                {toast.message}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setToast((prev) => ({ ...prev, show: false }))}
-              className="text-slate-400 hover:text-white transition p-0.5"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+            Send another message
+          </button>
         </div>
-      )}
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+          <input
+            aria-hidden="true"
+            tabIndex={-1}
+            autoComplete="off"
+            className="hidden"
+            name="website"
+            value={honeypot}
+            onChange={(event) => setHoneypot(event.target.value)}
+          />
 
-      {/* Main Form Card */}
-      <div className="relative rounded-3xl border border-white/10 bg-slate-900/80 p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/40">
-        <div className="mb-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-300">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Direct Message & JD Drop</span>
-          </div>
-          <h3 className="mt-3 text-lg font-bold text-white sm:text-xl">
-            Let&apos;s talk opportunities
-          </h3>
-          <p className="mt-1 text-xs text-slate-400">
-            Send your JD document or note directly to my inbox — no email client
-            needed.
-          </p>
-        </div>
-
-        {submitted ? (
-          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center space-y-4 animate-in fade-in duration-300">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40 mx-auto">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white">
-                Message & JD Received!
-              </h4>
-              <p className="mt-1 text-xs text-slate-300 max-w-xs mx-auto leading-relaxed">
-                Thank you for reaching out. I have received your submission and
-                will review it promptly.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSubmitted(false)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10 transition active:scale-95"
-            >
-              <span>Send another message</span>
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Honeypot field (hidden from real users) */}
-            <input
-              type="text"
-              name="website"
-              value={honeypot}
-              onChange={(e) => setHoneypot(e.target.value)}
-              className="hidden"
-              tabIndex={-1}
-              autoComplete="off"
-            />
-
-            {/* 1. Work Email (Required) */}
-            <div>
-              <label className="block text-xs font-medium text-slate-300">
-                Work Email <span className="text-rose-400">*</span>
-              </label>
-              <div className="relative mt-1.5">
-                <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="hr@company.com or your email"
-                  className="w-full rounded-xl border border-white/10 bg-slate-950/60 py-2.5 pl-10 pr-3 text-xs text-white placeholder-slate-500 transition focus:border-indigo-500 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-            </div>
-
-            {/* 2. Job Description (JD) File Upload or Link */}
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-medium text-slate-300">
-                  Job Description (JD){" "}
-                  <span className="text-slate-400 text-[11px]">(Optional)</span>
-                </label>
-                <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-lg border border-white/10 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => setJdMode("file")}
-                    className={`px-2 py-0.5 rounded-md transition font-medium ${
-                      jdMode === "file"
-                        ? "bg-indigo-600 text-white shadow-xs"
-                        : "text-slate-400 hover:text-slate-200"
+          <fieldset>
+            <legend className="text-sm font-medium text-slate-200">
+              What would you like to discuss?
+            </legend>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {TOPICS.map((item) => {
+                const selected = item.value === topic;
+                return (
+                  <label
+                    key={item.value}
+                    className={`cursor-pointer rounded-xl border px-4 py-2 text-sm font-semibold transition has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-indigo-300 ${
+                      selected
+                        ? "border-indigo-400 bg-indigo-500/25 text-white shadow-sm shadow-indigo-950/40"
+                        : "border-white/10 bg-slate-950/50 text-slate-300 hover:border-white/25 hover:bg-white/5"
                     }`}
                   >
-                    Upload File
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setJdMode("link")}
-                    className={`px-2 py-0.5 rounded-md transition font-medium ${
-                      jdMode === "link"
-                        ? "bg-indigo-600 text-white shadow-xs"
-                        : "text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    Paste Link
-                  </button>
+                    <input
+                      type="radio"
+                      name="contact-topic"
+                      value={item.value}
+                      checked={selected}
+                      onChange={() => chooseTopic(item.value)}
+                      className="sr-only"
+                    />
+                    {item.label}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <div>
+            <label htmlFor="contact-email" className="text-sm font-medium text-slate-200">
+              Email <span className="text-rose-300">*</span>
+            </label>
+            <div className="relative mt-2">
+              <Mail aria-hidden="true" className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+              <input
+                id="contact-email"
+                required
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@company.com"
+                className="min-h-11 w-full rounded-xl border border-white/10 bg-slate-950/60 py-2.5 pl-10 pr-3 text-base text-white placeholder:text-slate-500 transition focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 sm:text-sm"
+              />
+            </div>
+          </div>
+
+          {topic === "HIRING" && (
+            <fieldset className="rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.06] p-4">
+              <legend className="text-sm font-medium text-slate-100">Job description <span className="font-normal text-slate-400">(optional)</span></legend>
+              <div className="mt-2 flex flex-wrap items-baseline justify-end gap-2">
+                <div className="flex rounded-lg border border-white/10 bg-slate-950/70 p-0.5" aria-label="JD input mode">
+                  <button type="button" aria-pressed={jdMode === "link"} onClick={() => chooseMode("link")} className={`min-h-9 rounded-md px-3 text-xs font-semibold transition ${jdMode === "link" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}>Paste link</button>
+                  <button type="button" aria-pressed={jdMode === "file"} onClick={() => chooseMode("file")} className={`min-h-9 rounded-md px-3 text-xs font-semibold transition ${jdMode === "file" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}>Attach PDF</button>
                 </div>
               </div>
 
-              {jdMode === "file" ? (
-                <div className="mt-1.5">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    id="jd-file-input"
-                  />
-
+              {jdMode === "link" ? (
+                <div className="relative mt-3">
+                  <Link2 aria-hidden="true" className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                  <input id="contact-jd-link" type="url" inputMode="url" value={jdLink} onChange={(event) => { setJdLink(event.target.value); setErrorMessage(null); }} placeholder="https://company.com/job-description" className="min-h-11 w-full rounded-xl border border-white/10 bg-slate-950/60 py-2.5 pl-10 pr-3 text-base text-white placeholder:text-slate-500 transition focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 sm:text-sm" />
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <input ref={fileInputRef} id="contact-jd-file" type="file" accept="application/pdf,.pdf" onChange={(event) => setFile(event.target.files?.[0])} className="sr-only" />
                   {selectedFile ? (
-                    <div className="flex items-center justify-between rounded-xl border border-indigo-500/40 bg-indigo-500/10 p-3 text-xs">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
-                          <FileText className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-white truncate text-xs">
-                            {selectedFile.name}
-                          </p>
-                          <p className="text-[11px] text-indigo-300">
-                            {formatFileSize(selectedFile.size)}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={removeFile}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition"
-                        title="Remove file"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-indigo-400/30 bg-slate-950/50 p-3">
+                      <div className="flex min-w-0 items-center gap-2.5"><FileText aria-hidden="true" className="h-5 w-5 shrink-0 text-indigo-300" /><div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{selectedFile.name}</p><p className="text-xs text-slate-400">{formatFileSize(selectedFile.size)} · Private PDF</p></div></div>
+                      <button type="button" onClick={clearJd} aria-label="Remove selected PDF" className="min-h-11 min-w-11 rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white"><X aria-hidden="true" className="mx-auto h-4 w-4" /></button>
                     </div>
                   ) : (
-                    <div
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={handleDrop}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-slate-950/40 p-4 text-center transition hover:border-indigo-500/60 hover:bg-slate-950/70"
-                    >
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition">
-                        <UploadCloud className="h-4 w-4" />
-                      </div>
-                      <p className="mt-2 text-xs font-semibold text-slate-200">
-                        Click or drag JD file here
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-slate-400">
-                        PDF, DOCX, DOC or Image (Max 15MB)
-                      </p>
-                    </div>
+                    <label htmlFor="contact-jd-file" className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-slate-950/40 px-4 text-center transition hover:border-indigo-400/60 hover:bg-slate-950/70 focus-within:ring-2 focus-within:ring-indigo-400/30">
+                      <UploadCloud aria-hidden="true" className="h-5 w-5 text-indigo-300" />
+                      <span className="mt-2 text-sm font-semibold text-slate-100">Choose a PDF</span>
+                      <span className="mt-1 text-xs text-slate-400">One private PDF · maximum 10 MB</span>
+                    </label>
                   )}
                 </div>
-              ) : (
-                <div className="relative mt-1.5">
-                  <Link2 className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={jdLink}
-                    onChange={(e) => setJdLink(e.target.value)}
-                    placeholder="Paste Notion, Google Docs, LinkedIn Job, or PDF URL"
-                    className="w-full rounded-xl border border-white/10 bg-slate-950/60 py-2.5 pl-10 pr-3 text-xs text-white placeholder-slate-500 transition focus:border-indigo-500 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono text-[11px]"
-                  />
-                </div>
               )}
+            </fieldset>
+          )}
+
+          <div>
+            <label htmlFor="contact-message" className="text-sm font-medium text-slate-200">
+              Message <span className="text-rose-300">*</span>
+            </label>
+            <div className="relative mt-2">
+              <MessageSquare aria-hidden="true" className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+              <textarea id="contact-message" required rows={4} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Tell me a little about the role, idea, or project…" className="w-full resize-y rounded-xl border border-white/10 bg-slate-950/60 py-3 pl-10 pr-3 text-base leading-relaxed text-white placeholder:text-slate-500 transition focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 sm:text-sm" />
             </div>
+          </div>
 
-            {/* 3. Message / Note (Optional) */}
-            <div>
-              <label className="block text-xs font-medium text-slate-300">
-                Message / Note{" "}
-                <span className="text-slate-400 text-[11px]">(Optional)</span>
-              </label>
-              <div className="relative mt-1.5">
-                <MessageSquare className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                <textarea
-                  rows={3}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Brief note about the role, team, or interview timeline..."
-                  className="w-full rounded-xl border border-white/10 bg-slate-950/60 py-2.5 pl-10 pr-3 text-xs text-white placeholder-slate-500 transition focus:border-indigo-500 focus:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
-                />
-              </div>
-            </div>
+          <p className="text-xs leading-relaxed text-slate-400">Your message is used only to reply to you. Hiring attachments are private and visible only to the portfolio owner.</p>
 
-            {errorMessage && (
-              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300 flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-rose-400" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+          {errorMessage && (
+            <p role="alert" className="flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm leading-relaxed text-rose-100"><AlertCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />{errorMessage}</p>
+          )}
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 transition duration-200 hover:opacity-95 hover:shadow-indigo-500/40 active:scale-[0.99] disabled:opacity-60"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Sending Message & JD...</span>
-                </>
-              ) : (
-                <>
-                  <span>Send Message & JD</span>
-                  <Send className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-                </>
-              )}
-            </button>
-          </form>
-        )}
-      </div>
-    </>
+          <button type="submit" disabled={submitting} className="group flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-200 disabled:cursor-not-allowed disabled:opacity-60">
+            {submitting ? <><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />Sending…</> : <>{submitLabel(topic)}<Send aria-hidden="true" className="h-4 w-4 transition group-hover:translate-x-0.5" /></>}
+          </button>
+        </form>
+      )}
+    </div>
   );
 }

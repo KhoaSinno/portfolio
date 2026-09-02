@@ -28,4 +28,4 @@ function redirectToLogin(request: NextRequest, reason?: string) {
   return NextResponse.redirect(loginUrl);
 }
 
-export const config = { matcher: ['/admin/resume/:path*'] };
+export const config = { matcher: ['/admin/resume/:path*', '/admin/inbox/:path*'] };

@@ -26,6 +26,7 @@ import {
   History,
   Image as ImageIcon,
   LogOut,
+  Mail,
   Plus,
   Printer,
   Save,
@@ -1227,6 +1228,14 @@ export function ResumeEditor() {
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
+            <a
+              href="/admin/inbox"
+              className="inline-flex items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50/60 px-2.5 py-1 text-xs font-medium text-indigo-700 shadow-2xs hover:bg-indigo-100 transition"
+              title="Open private portfolio contact inbox"
+            >
+              <Mail className="h-3.5 w-3.5 text-indigo-600" />
+              <span>Inbox</span>
+            </a>
             {/* 1-Click Copy Public URL Button */}
             <button
               type="button"

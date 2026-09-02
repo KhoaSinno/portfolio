@@ -1,15 +1,26 @@
 import {
   Body,
   Controller,
+  Get,
+  Param,
+  Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
+import {
+  SupabaseAuthGuard,
+  type AuthenticatedRequest,
+} from '../auth/supabase-auth.guard';
 import { ContactService } from './contact.service';
 import { CreateContactDto, type UploadedFileDoc } from './dto/create-contact.dto';
+import { ListContactsDto } from './dto/list-contacts.dto';
+import { UpdateContactDto } from './dto/update-contact.dto';
 
 @Controller('api')
 export class ContactController {
@@ -19,7 +30,7 @@ export class ContactController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
-        fileSize: 15 * 1024 * 1024, // 15MB max file size
+        fileSize: 10 * 1024 * 1024,
       },
     }),
   )
@@ -39,5 +50,39 @@ export class ContactController {
       : undefined;
 
     return this.contactService.submitContact(dto, file, clientIp);
+  }
+
+  @Get('admin/contacts')
+  @UseGuards(SupabaseAuthGuard)
+  listContacts(
+    @Req() request: AuthenticatedRequest,
+    @Query() dto: ListContactsDto,
+  ) {
+    return this.contactService.listContacts(request.user.id, dto);
+  }
+
+  @Get('admin/contacts/:id')
+  @UseGuards(SupabaseAuthGuard)
+  getContact(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
+    return this.contactService.getContact(request.user.id, id);
+  }
+
+  @Patch('admin/contacts/:id')
+  @UseGuards(SupabaseAuthGuard)
+  updateContact(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateContactDto,
+  ) {
+    return this.contactService.updateContact(request.user.id, id, dto);
+  }
+
+  @Post('admin/contacts/:id/attachment-url')
+  @UseGuards(SupabaseAuthGuard)
+  createAttachmentUrl(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.contactService.createAttachmentUrl(request.user.id, id);
   }
 }

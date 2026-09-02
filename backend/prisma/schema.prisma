@@ -13,6 +13,25 @@ enum ResumeStatus {
   PUBLISHED
 }
 
+enum ContactTopic {
+  HIRING
+  COLLABORATION
+  GENERAL
+}
+
+enum ContactStatus {
+  NEW
+  REVIEWED
+  FOLLOW_UP
+  ARCHIVED
+}
+
+enum ContactNotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 model Resume {
   id           String          @id @default(cuid())
   ownerId      String?
@@ -53,14 +72,22 @@ model PublicResumeSnapshot {
 }
 
 model ContactMessage {
-  id        String   @id @default(cuid())
-  email     String
-  jdLink    String?
-  fileName  String?
-  fileUrl   String?
-  fileSize  Int?
-  message   String?
-  ip        String?
-  status    String   @default("UNREAD")
-  createdAt DateTime @default(now())
+  id                 String                    @id @default(cuid())
+  topic              ContactTopic              @default(GENERAL)
+  email              String
+  jdLink             String?
+  fileName           String?
+  attachmentPath     String?                   @unique
+  attachmentMimeType String?
+  fileSize           Int?
+  message            String
+  ip                 String?
+  status             ContactStatus             @default(NEW)
+  internalNote       String?
+  notificationStatus ContactNotificationStatus @default(PENDING)
+  notificationError  String?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  reviewedAt         DateTime?
+  archivedAt         DateTime?
 }

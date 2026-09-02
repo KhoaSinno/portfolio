@@ -24,7 +24,7 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [x] Frontend đã deploy Vercel; backend đã deploy Render; CORS đã cấu hình cho production Vercel URL.
 - [x] Public Landing Page hoàn chỉnh: Hero, Projects, Skills, Experience, Education, Contact, kết nối trực tiếp với Backend API `getPublishedResume()`.
 - [x] Resume Version History & Rollback UI: Xem lịch sử các bản snapshot đã publish, xem chi tiết và khôi phục (Rollback) bản cũ ngay trong Admin CMS.
-- [x] Contact Form & Send Mail API: Tích hợp tại `#contact` trên Landing Page với 3 trường (Work Email, JD Link, Message), lưu trữ PostgreSQL `ContactMessage`, Rate Limit chống spam, Toast notification và gửi email thông báo.
+- [~] Contact Hub & Admin Inbox: Form public tối giản (Topic, Email, Message), JD link/PDF chỉ cho Hiring, PostgreSQL inbox owner-only, rate limit, private signed PDF download và trạng thái Resend notification đã implement/migrate. Không còn legacy public attachment URL; còn cần Resend verified sender và smoke test production.
 - [x] SEO nền tảng: metadata theo route, Open Graph/Twitter image, JSON-LD cho case study, `robots.txt` và `sitemap.xml` động gồm các project public.
 - [x] Case Study SSR: trang `/projects/[slug]` có metadata riêng, cache/revalidate 5 phút, README GitHub, Mermaid diagrams, ảnh/link relative và chọn README theo từng repository của một project.
 - [x] CTA Project theo URL: Source Code, Live Demo hoặc Demo Video (tự nhận diện video URL).
@@ -115,7 +115,7 @@ Xây dựng portfolio tiếng Anh, chuẩn production, thể hiện rõ năng l�
 
 * Skills phân nhóm: Frontend, Backend & Database, DevOps & Tools.
 * Education, certificates, awards và hoạt động liên quan.
-* [x] Contact form: Work Email, JD Link, Message; validate, rate-limit, lưu PostgreSQL và gửi notification email.
+* [~] Contact form: Topic, Email, Message; JD link hoặc private PDF chỉ khi Hiring; validate/rate-limit, lưu PostgreSQL, inbox `/admin/inbox` owner-only và notification Resend có trạng thái. Chờ cấu hình Storage/Resend production để kiểm chứng end-to-end.
 
 ---
 
