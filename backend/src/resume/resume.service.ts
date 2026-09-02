@@ -131,10 +131,11 @@ export class ResumeService {
       (user) => user.email?.toLowerCase() === demoEmail,
     );
     if (!demoUser) throw new NotFoundException('Demo account was not found.');
-
+    // DELETE CASCASE
     const deleted = await this.prisma.resume.deleteMany({
       where: { ownerId: demoUser.id },
     });
+    // FETCH or Create new resume
     const resumes = await this.listResumes(demoUser.id, demoEmail);
     const seeded = resumes[0];
     if (!seeded) {
@@ -194,6 +195,7 @@ export class ResumeService {
       where: { ownerId },
     });
 
+    // Case 1: Existed Resume
     if (existing) {
       const hasPrimary = await this.prisma.resume.findFirst({
         where: { ownerId, isPrimary: true },
@@ -206,6 +208,7 @@ export class ResumeService {
       }
       return;
     }
+    // Case 2: Not Existed Resume: Check owner and admin
 
     if (ownerId === portfolioOwnerId) {
       const legacy = await this.prisma.resume.findUnique({

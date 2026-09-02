@@ -237,8 +237,12 @@ export function ContactForm() {
 
           {topic === "HIRING" && (
             <fieldset className="rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.06] p-4">
-              <legend className="text-sm font-medium text-slate-100">Job description <span className="font-normal text-slate-400">(optional)</span></legend>
-              <div className="mt-2 flex flex-wrap items-baseline justify-end gap-2">
+              <legend className="sr-only">Job description (optional)</legend>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm font-medium text-slate-100">
+                  Job description{" "}
+                  <span className="font-normal text-slate-400">(optional)</span>
+                </p>
                 <div className="flex rounded-lg border border-white/10 bg-slate-950/70 p-0.5" aria-label="JD input mode">
                   <button type="button" aria-pressed={jdMode === "link"} onClick={() => chooseMode("link")} className={`min-h-9 rounded-md px-3 text-xs font-semibold transition ${jdMode === "link" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}>Paste link</button>
                   <button type="button" aria-pressed={jdMode === "file"} onClick={() => chooseMode("file")} className={`min-h-9 rounded-md px-3 text-xs font-semibold transition ${jdMode === "file" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"}`}>Attach PDF</button>
