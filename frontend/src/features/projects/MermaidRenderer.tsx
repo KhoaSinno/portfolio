@@ -10,7 +10,7 @@ function loadMermaid() {
     mermaid.initialize({
       startOnLoad: false,
       theme: "dark",
-      securityLevel: "loose",
+      securityLevel: "strict",
       // Native SVG labels prevent host layout metrics from inflating the viewBox.
       htmlLabels: false,
       fontFamily:

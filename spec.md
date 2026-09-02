@@ -4,7 +4,7 @@ FE: https://portfolio-frontend-rust-theta.vercel.app
 
 BE: https://portfolio-api-fna4.onrender.com/api/health
 
-## Trạng thái triển khai thực tế — 22/08/2026
+## Trạng thái triển khai thực tế — 02/09/2026
 
 **Ký hiệu:** `[x]` hoàn thành trong source code · `[~]` đã có nền tảng nhưng còn thiếu/đang chờ xác minh production · `[ ]` chưa triển khai.
 
@@ -25,24 +25,29 @@ BE: https://portfolio-api-fna4.onrender.com/api/health
 - [x] Public Landing Page hoàn chỉnh: Hero, Projects, Skills, Experience, Education, Contact, kết nối trực tiếp với Backend API `getPublishedResume()`.
 - [x] Resume Version History & Rollback UI: Xem lịch sử các bản snapshot đã publish, xem chi tiết và khôi phục (Rollback) bản cũ ngay trong Admin CMS.
 - [x] Contact Form & Send Mail API: Tích hợp tại `#contact` trên Landing Page với 3 trường (Work Email, JD Link, Message), lưu trữ PostgreSQL `ContactMessage`, Rate Limit chống spam, Toast notification và gửi email thông báo.
+- [x] SEO nền tảng: metadata theo route, Open Graph/Twitter image, JSON-LD cho case study, `robots.txt` và `sitemap.xml` động gồm các project public.
+- [x] Case Study SSR: trang `/projects/[slug]` có metadata riêng, cache/revalidate 5 phút, README GitHub, Mermaid diagrams, ảnh/link relative và chọn README theo từng repository của một project.
+- [x] CTA Project theo URL: Source Code, Live Demo hoặc Demo Video (tự nhận diện video URL).
+- [x] Public-resume snapshot và backend revalidation sau publish đã có trong source để giảm phụ thuộc trực tiếp vào API khi render public pages.
 
 ### Đang triển khai / cần xác minh sau deploy mới nhất
 
-- [~] Hai migration mới `add_resume_owner` và `add_resume_slug` đã commit/push. Render cần chạy xong `prisma migrate deploy`; sau đó đăng nhập `/admin/resume` một lần để claim CV cũ và tạo slug.
-- [~] Nút **Public resume** trong editor đã trỏ vào URL riêng của owner sau khi draft được tải. Cần kiểm tra lại trên production sau deploy.
+- [~] Cần xác minh production: Render chạy hết `prisma migrate deploy`, các biến public-resume revalidation có đủ, và publish thực sự làm mới dữ liệu Vercel.
+- [~] API đã hỗ trợ custom slug, generate slug duy nhất và chặn slug hệ thống; cần xác minh UI/public URL trên production sau deploy.
 - [~] CI/CD deploy tự động qua GitHub → Vercel/Render đã có; chưa có workflow GitHub Actions chạy lint/test/build độc lập.
 
 ### Chưa triển khai
 
-- [~] Project cards đã có thumbnail 16:9 (kèm fallback), độ cao đồng đều, Source Code / Live Demo / Case Study. Case Study render README public GitHub an toàn qua backend; Project CMS độc lập, Demo Video và Request Access chưa làm.
+- [~] Project cards đã có thumbnail 16:9/fallback, dynamic mockup preview, visibility controls, nhiều repository, Source Code / Live Demo / Demo Video / Case Study. Case Study render README GitHub qua backend, SSR và Mermaid. Raw README HTML hiện được allowlist-sanitize, unsafe URL protocols bị chặn, Mermaid chạy strict mode và có regression tests; vẫn cần kiểm tra production/browser trước khi coi là hardened hoàn toàn. Project CMS/Storage độc lập và Request Access chưa làm.
 - [ ] Template CV `Minimal` / `Modern`; hiện chỉ dùng template kỹ thuật.
 - [ ] Avatar, certificates, file đính kèm và Supabase Storage.
-- [ ] Tự chọn public slug thân thiện (hiện slug ổn định được sinh từ user ID).
-- [ ] Global Search / Command Palette, Dark/Light mode, SEO metadata/sitemap và accessibility audit.
+- [~] Tự chọn public slug thân thiện: backend/API đã hỗ trợ; cần xác minh UI và production.
+- [ ] Global Search / Command Palette, Dark/Light mode và accessibility audit.
+- [~] SEO metadata/sitemap: đã có nền tảng; chưa có Lighthouse 90+ measurement và audit structured-data/preview trên production.
 - [ ] Blog, newsletter.
 - [ ] RAG, pgvector, Gemini/OpenAI fallback.
 - [ ] Telegram Bot, webhook, SSE live chat.
-- [ ] Unit/integration/E2E tests cho flow Resume; monitoring/error tracking; GitHub Actions CI.
+- [~] Unit tests: 3 suite / 7 test pass (Resume Service và Project Case Study). Chưa có integration/E2E cho flow Resume publish, monitoring/error tracking hoặc GitHub Actions CI.
 
 ## 1. Mục tiêu dự án
 
@@ -96,7 +101,7 @@ Xây dựng portfolio tiếng Anh, chuẩn production, thể hiện rõ năng l�
 * [x] Form: profile/contact, summary, experience, education, skills, projects; experience có thể để trống.
 * [x] Live preview cạnh form.
 * [ ] Chọn template `Minimal` hoặc `Modern` (hiện chỉ `technical`).
-* [~] Lưu draft/publish, `updatedAt` và snapshot version đã có; UI history/rollback chưa có.
+* [x] Lưu draft/publish, `updatedAt`, snapshot version, Version History drawer và rollback có xác nhận.
 * [ ] Avatar, certificates và Supabase Storage.
 
 #### Nguyên tắc dữ liệu và xuất PDF
@@ -110,7 +115,7 @@ Xây dựng portfolio tiếng Anh, chuẩn production, thể hiện rõ năng l�
 
 * Skills phân nhóm: Frontend, Backend & Database, DevOps & Tools.
 * Education, certificates, awards và hoạt động liên quan.
-* Contact form: name, email, message; validate, rate-limit và gửi notification email qua Resend/Nodemailer.
+* [x] Contact form: Work Email, JD Link, Message; validate, rate-limit, lưu PostgreSQL và gửi notification email.
 
 ---
 
@@ -208,15 +213,15 @@ Hệ thống chat có hai chế độ: AI RAG trả lời thông tin portfolio/C
 
 * [x] Khởi tạo monorepo/frontend/backend, Supabase và deploy cơ bản.
 * [~] Resume public + editor: structured data, draft/publish, owner isolation, preview, print/PDF browser.
-* [ ] Hoàn thành public pages: Hero, Projects, Skills, Education, Contact.
-* [~] Thêm template thứ hai; project case study README GitHub và CTA Source Code / Live Demo đã làm. Demo Video / Request Access chưa làm.
+* [x] Hoàn thành public pages: Hero, Projects, Skills, Education, Contact.
+* [~] Project case study README GitHub, nhiều repository và CTA Source Code / Live Demo / Demo Video đã làm. Template thứ hai và Request Access chưa làm.
 
 ### Phase 2 — Admin, Search & Polish
 
 * [x] Supabase Auth + NestJS guard cho admin và owner-specific resume.
 * [~] Resume CRUD; Projects CRUD và Supabase Storage chưa làm.
 * [ ] Nút Search trên navbar + Command Palette/Fuse.js.
-* [ ] Dark/Light mode, SEO, accessibility và responsive polish.
+* [~] SEO nền tảng đã làm (metadata, OG, sitemap, robots, JSON-LD); Dark/Light mode, accessibility audit, Lighthouse measurement và responsive polish còn lại.
 
 ### Phase 3 — Blog & RAG
 

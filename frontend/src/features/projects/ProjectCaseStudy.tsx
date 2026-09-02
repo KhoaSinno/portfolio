@@ -18,10 +18,18 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkFrontmatter from "remark-frontmatter";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import rehypeHighlight from "rehype-highlight";
 import { isValidElement, useMemo, useState } from "react";
-import { isVideoUrl, normalizeImageUrl } from "@/lib/image-url";
+import { isVideoUrl } from "@/lib/image-url";
 import { MermaidRenderer } from "@/features/projects/MermaidRenderer";
+import {
+  caseStudySanitizeSchema,
+  preprocessCaseStudyMarkdown,
+  resolveCaseStudyImage,
+  resolveCaseStudyLink,
+  resolveExternalUrl,
+} from "@/features/projects/case-study-sanitize";
 import {
   getProjectCaseStudy,
   type ProjectCaseStudyData,
@@ -42,67 +50,6 @@ function GithubIcon({ className = "h-4 w-4" }: { className?: string }) {
       />
     </svg>
   );
-}
-
-function absoluteUrl(url: string, baseUrl: string) {
-  if (!url) return "";
-  const trimmed = url.trim();
-  if (
-    trimmed.startsWith("http://") ||
-    trimmed.startsWith("https://") ||
-    trimmed.startsWith("mailto:") ||
-    trimmed.startsWith("data:")
-  ) {
-    return normalizeImageUrl(trimmed);
-  }
-  try {
-    const resolved = new URL(trimmed, baseUrl);
-    return normalizeImageUrl(resolved.toString());
-  } catch {
-    const cleanBase = baseUrl.replace(/\/+$/, "");
-    const cleanPath = trimmed.replace(/^\.?\/+/, "");
-    return `${cleanBase}/${cleanPath}`;
-  }
-}
-
-function externalUrl(url: string) {
-  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
-}
-
-/**
- * Preprocess markdown to rewrite relative images and links in both Markdown and raw HTML tags.
- */
-function preprocessMarkdown(markdown: string, baseUrl: string): string {
-  if (!markdown) return "";
-
-  // 1. Rewrite markdown relative images: ![alt](relative/path)
-  let result = markdown.replace(
-    /!\[([^\]]*)\]\((?!https?:\/\/|data:|\/)([^)]+)\)/g,
-    (match, alt, relPath) => {
-      const abs = absoluteUrl(relPath, baseUrl);
-      return `![${alt}](${abs})`;
-    },
-  );
-
-  // 2. Rewrite raw HTML <img ... src="relative/path" ...>
-  result = result.replace(
-    /<img\s+([^>]*?)src=["'](?!https?:\/\/|data:|\/)([^"']+)["']([^>]*?)>/gi,
-    (match, before, relPath, after) => {
-      const abs = absoluteUrl(relPath, baseUrl);
-      return `<img ${before}src="${abs}"${after}>`;
-    },
-  );
-
-  // 3. Rewrite raw HTML <a ... href="relative/path" ...>
-  result = result.replace(
-    /<a\s+([^>]*?)href=["'](?!https?:\/\/|mailto:|#|\/)([^"']+)["']([^>]*?)>/gi,
-    (match, before, relPath, after) => {
-      const abs = absoluteUrl(relPath, baseUrl);
-      return `<a ${before}href="${abs}" target="_blank" rel="noreferrer"${after}>`;
-    },
-  );
-
-  return result;
 }
 
 export function ProjectCaseStudy({
@@ -137,7 +84,7 @@ export function ProjectCaseStudy({
   const processedMarkdown = useMemo(
     () =>
       caseStudyData
-        ? preprocessMarkdown(caseStudyData.markdown, caseStudyData.baseUrl)
+        ? preprocessCaseStudyMarkdown(caseStudyData.markdown, caseStudyData.baseUrl)
         : "",
     [caseStudyData],
   );
@@ -346,7 +293,7 @@ export function ProjectCaseStudy({
                 const isVideo = isVideoUrl(data.demoUrl);
                 return isVideo ? (
                   <a
-                    href={externalUrl(data.demoUrl)}
+                    href={resolveExternalUrl(data.demoUrl)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 px-4 text-xs font-bold text-white shadow-lg shadow-rose-600/25 transition hover:from-rose-500 hover:to-red-500 active:scale-95"
@@ -357,7 +304,7 @@ export function ProjectCaseStudy({
                   </a>
                 ) : (
                   <a
-                    href={externalUrl(data.demoUrl)}
+                    href={resolveExternalUrl(data.demoUrl)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 text-xs font-bold text-white shadow-lg shadow-violet-600/20 transition hover:from-violet-500 hover:to-indigo-500 active:scale-95"
@@ -384,12 +331,16 @@ export function ProjectCaseStudy({
             <div className="case-study-content text-slate-300 leading-relaxed space-y-4">
               <Markdown
                 remarkPlugins={[remarkGfm, remarkFrontmatter]}
-                rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                rehypePlugins={[
+                  rehypeRaw,
+                  [rehypeSanitize, caseStudySanitizeSchema],
+                  rehypeHighlight,
+                ]}
                 components={{
                   img: ({ src, alt, width, height, ...props }) => {
                     const srcString = typeof src === "string" ? src : "";
                     const resolvedSrc = srcString
-                      ? absoluteUrl(srcString, data.baseUrl)
+                      ? resolveCaseStudyImage(srcString, data.baseUrl)
                       : "";
                     const isBadge = /^https?:\/\/(?:img\.)?shields\.io\//i.test(
                       resolvedSrc,
@@ -401,13 +352,13 @@ export function ProjectCaseStudy({
                     if (isBadge) {
                       return (
                         <img
-                          src={resolvedSrc}
+                          {...props}
+                          src={resolvedSrc || undefined}
                           alt={alt || "Project badge"}
                           width={width}
                           height={height}
                           loading="lazy"
                           className="my-1 mr-1.5 inline-block h-7 w-auto max-w-full align-middle"
-                          {...props}
                         />
                       );
                     }
@@ -415,13 +366,13 @@ export function ProjectCaseStudy({
                     return (
                       <span className="my-4 block text-center">
                         <img
-                          src={resolvedSrc}
+                          {...props}
+                          src={resolvedSrc || undefined}
                           alt={alt || "Project figure"}
                           width={width}
                           height={height}
                           loading="lazy"
                           className="inline-block max-w-full rounded-xl border border-white/10 shadow-lg object-contain"
-                          {...props}
                         />
                       </span>
                     );
@@ -429,15 +380,15 @@ export function ProjectCaseStudy({
                   a: ({ href, children, ...props }) => {
                     const hrefString = typeof href === "string" ? href : "";
                     const resolvedHref = hrefString
-                      ? absoluteUrl(hrefString, data.baseUrl)
+                      ? resolveCaseStudyLink(hrefString, data.baseUrl)
                       : undefined;
                     return (
                       <a
-                        href={resolvedHref}
+                        {...props}
+                        href={resolvedHref || undefined}
                         target="_blank"
                         rel="noreferrer"
                         className="font-medium text-violet-400 underline decoration-violet-500/40 underline-offset-4 hover:text-violet-300 hover:decoration-violet-400 transition"
-                        {...props}
                       >
                         {children}
                       </a>
